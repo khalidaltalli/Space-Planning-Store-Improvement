@@ -1122,7 +1122,6 @@
         const c   = req<=0?'#475569':rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
         const lbl = req<=0?'-':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
         const bg  = i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
-        const bg  = i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
         const safeId = (branch.code+'_'+item.label).replace(/[^a-zA-Z0-9]/g,'_');
         const tr  = document.createElement('tr');
         tr.innerHTML = `
