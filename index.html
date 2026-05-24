@@ -1407,7 +1407,11 @@
       const value = input.value.trim();
       if (!value) return;
       const rec  = parseInt(value) || 0;
-      const req  = parseInt(input.closest('td').querySelector('span').textContent.match(/Req\s*(\d+)/)?.[1] || 0) || 0;
+      const rec  = parseInt(value) || 0;
+      /* Get req from sibling input in same row */
+      const allInputs = Array.from(input.closest('tr').querySelectorAll('input[type="number"]'));
+      const reqInput  = allInputs.find(i => i !== input);
+      const req  = reqInput ? parseInt(reqInput.value) || 0 : 0;
       const diff = rec - req;
       const c    = req<=0?'#475569':rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
       const lbl  = req<=0?'—':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
@@ -1424,6 +1428,10 @@
       qtyData[branch][field] = value;
       await fetch(APPS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ action:'updateFridgeQty', branch, field, value }) });
+      /* Log the edit */
+      const ts = new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'logEdit', user: currentUser||'Unknown', branch, asset: '—', field, value, timestamp: ts }) });
       showSaveToast();
     }
 
