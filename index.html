@@ -1124,7 +1124,7 @@
         const bg  = i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
         const bg  = i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
         const safeId = (branch.code+'_'+item.label).replace(/[^a-zA-Z0-9]/g,'_');
-        tr.style.background = bg;
+        const tr  = document.createElement('tr');
         tr.innerHTML = `
           <td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,0.1);">${item.label}</td>
           <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
