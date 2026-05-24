@@ -379,7 +379,7 @@
 
       /* Report branch selector */
       const reportSel = document.getElementById('report-branch');
-      reportSel.innerHTML = '<option value="">— Select Branch —</option>' + allBranches.map(b => `<option value="${b.code}">${b.code}</option>`).join('');
+      reportSel.innerHTML = '<option value="">- Select Branch -</option>' + allBranches.map(b => `<option value="${b.code}">${b.code}</option>`).join('');
     }
 
     function onStatusFilter() {
@@ -596,7 +596,7 @@
           const sRows = checklistData.filter(r => (r['Branch Code']||'').trim()===b.code && r['Section']===s);
           const sc    = statusCounts(sRows);
           html += `<td>
-            <span style="font-family:'DM Mono',monospace;font-size:11px;color:${getColor(sc.pct)};">${sc.total>0?sc.pct+'%':'—'}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:${getColor(sc.pct)};">${sc.total>0?sc.pct+'%':'-'}</span>
             ${sc.total>0?`<div class="progress-bar-wrap" style="margin-top:4px;"><div class="progress-bar-fill" style="width:${sc.pct}%;background:${getColor(sc.pct)};"></div></div>`:''}
           </td>`;
         });
@@ -610,7 +610,7 @@
 
     /* ── Section detail (asset × branch) ── */
     function renderSectionDetail(rows, branches, section) {
-      document.getElementById('section-table-title').textContent = `${section} — Asset Breakdown`;
+      document.getElementById('section-table-title').textContent = `${section} - Asset Breakdown`;
 
       /* Asset × Branch table */
       const assets = assetList.filter(a => a['Section'] === section);
@@ -638,7 +638,7 @@
         thtml += `<tr>
           <td style="font-weight:500;border-right:2px solid rgba(255,255,255,0.5);">${aName}</td>
           <td style="text-align:center;border-right:2px solid rgba(255,255,255,0.5);">
-            <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${getColor(pct)};">${total>0?pct+'%':'—'}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${getColor(pct)};">${total>0?pct+'%':'-'}</span>
             ${total>0?`<div class="progress-bar-wrap" style="margin-top:4px;"><div class="progress-bar-fill" style="width:${pct}%;background:${getColor(pct)};"></div></div>`:''}
           </td>
           ${cells.join('')}
@@ -650,10 +650,10 @@
 
     /* ── Qty section (Shelves/Fridges) ── */
     function renderQtySection(branches, section) {
-      document.getElementById('qty-table-title').textContent = `${section} — Quantities`;
+      document.getElementById('qty-table-title').textContent = `${section} - Quantities`;
 
       const qtyCell = (rec, req) => {
-        if (!req || req <= 0) return `<td style="text-align:center;color:#475569;">—</td>`;
+        if (!req || req <= 0) return `<td style="text-align:center;color:#475569;">-</td>`;
         const diff = rec - req;
         const pct  = Math.round(rec/req*100);
         const c    = rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
@@ -684,7 +684,7 @@
         }).join('')}
       </tr></thead><tbody>`;
 
-      /* Status assets — only show for Shelves section (Coldroom etc), skip for Fridges */
+      /* Status assets - only show for Shelves section (Coldroom etc), skip for Fridges */
       const SKIP_STATUS_ASSETS = new Set(['Heavy Rack','Heavyrack']);
       const filteredStatusAssets = section === 'Fridges'
         ? [] /* Fridges: qty only */
@@ -701,7 +701,7 @@
         html += '</tr>';
       });
 
-      /* Qty items — use section-specific list */
+      /* Qty items - use section-specific list */
       const sectionQtyItems = section === 'Shelves' ? QTY_ITEMS_SHELVES : QTY_ITEMS_FRIDGES;
       sectionQtyItems.forEach(item => {
         html += `<tr><td style="font-weight:500;border-right:2px solid rgba(255,255,255,0.5);">${item.label}</td>`;
@@ -754,7 +754,7 @@
       function drawFooter(pg, total) {
         doc.setFillColor(...CLR.card); doc.rect(0,pageH-8,pageW,8,'F');
         doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.grey);
-        doc.text('Asset Receiving Report — '+branch, 10, pageH-3);
+        doc.text('Asset Receiving Report - '+branch, 10, pageH-3);
         doc.text(`Page ${pg} of ${total}`, pageW/2, pageH-3, {align:'center'});
         doc.text(today, pageW-10, pageH-3, {align:'right'});
       }
@@ -1050,7 +1050,7 @@
         tr.dataset.status = st;
         tr.innerHTML=`
           <td style="padding:8px 10px;font-weight:500;border-right:2px solid rgba(255,255,255,0.5);border-bottom:0.5px solid rgba(255,255,255,0.1);">${asset}</td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span class="${pClass}">${pri||'—'}</span></td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span class="${pClass}">${pri||'-'}</span></td>
           <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
             <select onchange="saveTrackerField(this,'${key}','Asset Status')" style="background:#0f1117;border:0.5px solid ${st==='Received'?'rgba(74,222,128,0.4)':st==='Delivered'?'rgba(251,191,36,0.4)':st==='Not Received'?'rgba(248,113,113,0.4)':'rgba(100,116,139,0.3)'};color:${st==='Received'?'#4ade80':st==='Delivered'?'#fbbf24':st==='Not Received'?'#f87171':'#94a3b8'};font-size:11px;padding:3px 6px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;" id="sel_${safeKey}">
               <option value="None" ${st==='None'?'selected':''}>None</option>
@@ -1119,7 +1119,7 @@
         const rec = parseInt(fqBranch[item.rec]||0)||0;
         const diff= rec-req;
         const c   = req<=0?'#475569':rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
-        const lbl = req<=0?'—':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
+        const lbl = req<=0?'-':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
         const bg  = i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
         const tr  = document.createElement('tr');
         tr.style.background = bg;
@@ -1130,13 +1130,13 @@
               <input type="number" min="0" value="${req||''}" placeholder="0"
                 style="width:60px;background:#0f1117;border:0.5px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:11px;padding:2px 8px 2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;"
                 onblur="saveQtyField('${branch.code}','${item.req}',this,'${cardId}')" />
-              <span style="font-size:9px;color:#64748b;"> Req — </span>
+              <span style="font-size:9px;color:#64748b;"> Req - </span>
               <input type="number" min="0" value="${rec||''}" placeholder="0"
                 style="width:60px;background:#0f1117;border:0.5px solid ${c}40;color:${c};font-size:11px;padding:2px 8px 2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;"
                 onblur="saveQtyField('${branch.code}','${item.rec}',this,'${cardId}')" />
               <span style="font-size:9px;color:#64748b;"> Rec</span>
             </span>
-            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>`:'—'}
+            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>`:'-'}
           </td>
           <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
             <span style="font-size:11px;color:${c};font-weight:600;">${lbl}</span>
@@ -1243,7 +1243,7 @@
       /* Log the edit */
       const ts = new Date().toLocaleString('en-GB');
       await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch,asset:'—',field:'D.N. Folder',value:val,timestamp:ts})
+        body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch,asset:'-',field:'D.N. Folder',value:val,timestamp:ts})
       });
       showSaveToast();
     }
@@ -1319,7 +1319,7 @@
       if (!taskList) return;
       taskList.style.display = 'block';
 
-      /* Table 1: Branch Status — Received% + Not Received count */
+      /* Table 1: Branch Status - Received% + Not Received count */
       const branchRows = branchCodes.map(b => {
         const assets    = trackerData.filter(r => (r['Branch Code']||'').trim() === b);
         const received  = assets.filter(a => a['Asset Status'] === 'Received').length;
@@ -1407,14 +1407,13 @@
       const value = input.value.trim();
       if (!value) return;
       const rec  = parseInt(value) || 0;
-      const rec  = parseInt(value) || 0;
       /* Get req from sibling input in same row */
       const allInputs = Array.from(input.closest('tr').querySelectorAll('input[type="number"]'));
       const reqInput  = allInputs.find(i => i !== input);
       const req  = reqInput ? parseInt(reqInput.value) || 0 : 0;
       const diff = rec - req;
       const c    = req<=0?'#475569':rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
-      const lbl  = req<=0?'—':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
+      const lbl  = req<=0?'-':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
       input.style.borderColor = c + '40';
       input.style.color = c;
       /* Update status label */
@@ -1431,7 +1430,7 @@
       /* Log the edit */
       const ts = new Date().toLocaleString('en-GB');
       await fetch(APPS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'logEdit', user: currentUser||'Unknown', branch, asset: '—', field, value, timestamp: ts }) });
+        body: JSON.stringify({ action:'logEdit', user: currentUser||'Unknown', branch, asset: '-', field, value, timestamp: ts }) });
       showSaveToast();
     }
 
@@ -1459,7 +1458,7 @@
         ` : ''}`;
     }
 
-    /* Boot — render existing notes on load */
+    /* Boot - render existing notes on load */
     function initNotesDisplays() {
       document.querySelectorAll('textarea[data-existing]').forEach(el => {
         const note = el.dataset.existing;
