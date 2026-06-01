@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Store Asset Receiving — View Only</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; padding: 1.5rem; }
+
+    /* ── Header ── */
+    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:0.5px solid rgba(255,255,255,0.08); }
+    .header h1 { font-size:22px; font-weight:700; color:#fff; letter-spacing:-0.3px; }
+    .header p  { font-size:12px; color:#f1f5f9; margin-top:3px; font-weight:500; }
+    .live-badge { display:flex; align-items:center; gap:6px; font-size:11px; color:#22d3ee; background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); padding:5px 12px; border-radius:20px; }
+    .live-dot { width:6px; height:6px; border-radius:50%; background:#22d3ee; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .btn { background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); color:#22d3ee; font-size:12px; padding:6px 14px; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.15s; }
+    .btn:hover { background:rgba(34,211,238,0.15); }
+
+    /* ── KPI Cards ── */
+    .kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:1.25rem; }
+    .kpi-card { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.07); border-radius:10px; padding:1rem 1.25rem; text-align:center; }
+    .kpi-label { font-size:11px; color:#f1f5f9; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; font-weight:700; }
+    .kpi-value { font-size:26px; font-weight:700; font-family:'DM Mono',monospace; }
+    .kpi-sub   { font-size:11px; color:#f1f5f9; margin-top:4px; }
+    .cyan  { color:#22d3ee; } .green { color:#4ade80; } .amber { color:#fbbf24; } .red { color:#f87171; } .purple { color:#a78bfa; }
+
+    /* ── Nav bar ── */
+    .nav-bar { display:flex; gap:4px; margin-bottom:1.5rem; background:#1a1f2e; border-radius:10px; padding:6px; border:0.5px solid rgba(255,255,255,0.07); }
+    .nav-btn { flex:1; text-align:center; padding:8px 16px; border-radius:7px; font-size:13px; font-weight:600; cursor:pointer; border:none; background:transparent; color:#64748b; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+    .nav-btn.active { background:#0f1117; color:#f1f5f9; box-shadow:0 1px 4px rgba(0,0,0,0.4); }
+
+    /* ── Section tabs ── */
+    .section-tabs { display:flex; gap:6px; margin-bottom:1.25rem; flex-wrap:wrap; }
+    .section-tab { font-size:11px; padding:5px 14px; border-radius:20px; border:0.5px solid rgba(255,255,255,0.1); background:transparent; color:#94a3b8; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+    .section-tab.active { background:rgba(34,211,238,0.12); border-color:rgba(34,211,238,0.3); color:#22d3ee; }
+
+    /* ── Controls ── */
+    .controls { display:flex; gap:10px; margin-bottom:0.75rem; align-items:center; flex-wrap:wrap; }
+    .controls label { font-size:12px; color:#f1f5f9; font-weight:500; }
+    select { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.12); color:#e2e8f0; font-size:12px; padding:6px 10px; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+
+    /* ── Charts Row ── */
+    .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1.25rem; }
+    .chart-card { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.07); border-radius:10px; padding:1rem 1.25rem; }
+    .chart-card.full { grid-column:1/-1; margin-bottom:1.25rem; }
+    .chart-title { font-size:12px; color:#f1f5f9; margin-bottom:1rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+
+    /* ── Tables ── */
+    .table-card { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.07); border-radius:10px; padding:1rem 1.25rem; margin-bottom:1.25rem; overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th { text-align:center; padding:8px 10px; color:#f1f5f9; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid rgba(255,255,255,0.4); border-right:0.5px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.02); }
+    th:first-child { text-align:left; } th:last-child { border-right:none; }
+    td { padding:8px 10px; color:#f1f5f9; text-align:center; border-bottom:0.5px solid rgba(255,255,255,0.15); border-right:0.5px solid rgba(255,255,255,0.08); }
+    td:first-child { text-align:left; } td:last-child { border-right:none; }
+    tbody tr:nth-child(odd)  td { background:rgba(255,255,255,0.03); }
+    tbody tr:nth-child(even) td { background:rgba(255,255,255,0.07); }
+    tbody tr:hover           td { background:rgba(255,255,255,0.12); }
+
+    /* ── Pills ── */
+    .pill { display:inline-block; font-size:10px; padding:2px 8px; border-radius:10px; font-weight:500; white-space:nowrap; }
+    .pill-received   { background:rgba(74,222,128,0.1);  color:#4ade80; }
+    .pill-not-received { background:rgba(251,191,36,0.1); color:#fbbf24; }
+    .pill-delivered  { background:rgba(251,191,36,0.1);  color:#fbbf24; }
+    .pill-none       { background:rgba(100,116,139,0.1); color:#94a3b8; }
+
+    /* ── Progress bar ── */
+    .progress-bar-wrap { width:100%; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+    .progress-bar-fill { height:100%; border-radius:3px; }
+
+    /* ── Priority colors ── */
+    .p-essential { color:#f87171; font-weight:700; }
+    .p-high      { color:#fb923c; font-weight:600; }
+    .p-medium    { color:#fbbf24; font-weight:500; }
+    .p-low       { color:#4ade80; font-weight:500; }
+
+    /* ── Section tabs ── */
+    .section-tabs { display:flex; gap:6px; margin-bottom:1.25rem; flex-wrap:wrap; }
+    .section-tab { font-size:11px; padding:5px 14px; border-radius:20px; border:0.5px solid rgba(255,255,255,0.1); background:transparent; color:#94a3b8; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+    .section-tab.active { background:rgba(34,211,238,0.12); border-color:rgba(34,211,238,0.3); color:#22d3ee; }
+
+    .branch-link { color:#22d3ee; text-decoration:none; font-weight:700; }
+    .branch-link:hover { text-decoration:underline; }
+
+    .error-banner { background:rgba(248,113,113,0.08); border:0.5px solid rgba(248,113,113,0.2); color:#f87171; font-size:12px; padding:10px 14px; border-radius:8px; margin-bottom:1rem; display:none; }
+    .loading { text-align:center; padding:3rem; color:#64748b; font-size:13px; }
+
+    /* ── Shelves/Fridges qty cells ── */
+    .qty-cell { font-family:'DM Mono',monospace; font-size:11px; }
+    .qty-exact    { color:#4ade80; }
+    .qty-extra    { color:#22d3ee; }
+    .qty-shortage { color:#f87171; }
+    .qty-missing  { color:#fbbf24; }
+
+    @media (max-width:700px) { .kpi-grid { grid-template-columns:repeat(2,1fr); } .charts-row { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+
+  <!-- Nav Bar -->
+  <div class="nav-bar">
+    <button class="nav-btn active" id="nav-dashboard" onclick="switchPage('dashboard')">📊 Dashboard</button>
+    <button class="nav-btn" id="nav-tracker" onclick="switchPage('tracker')">📋 Tracking Page</button>
+  </div>
+
+  <!-- Dashboard Page -->
+  <div id="page-dashboard">
+  <div class="header">
+    <div>
+      <h1>New Store Asset Receiving - View Only</h1>
+      <p id="last-updated">Connecting...</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="live-badge"><div class="live-dot"></div> Live</div>
+
+      <select id="report-branch" style="background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;font-size:12px;padding:6px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;">
+        <option value="">— PDF Report —</option>
+      </select>
+      <button class="btn" style="background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.2);color:#4ade80;" onclick="generateReport()">⬇ Export</button>
+      <button class="btn" onclick="loadAll()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div id="error-banner" class="error-banner"></div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Overall Completion</div><div class="kpi-value cyan" id="kpi-pct">—</div><div class="kpi-sub" id="kpi-pct-sub">all branches</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Assets</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">tracked</div></div>
+    <div class="kpi-card"><div class="kpi-label">Received</div><div class="kpi-value green" id="kpi-received">—</div><div class="kpi-sub" id="kpi-received-sub">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Delivered</div><div class="kpi-value amber" id="kpi-delivered">—</div><div class="kpi-sub" id="kpi-delivered-sub">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Not Received</div><div class="kpi-value red" id="kpi-not-received">—</div><div class="kpi-sub" id="kpi-not-received-sub">—</div></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <label>Branch:</label>
+    <select id="branch-filter" onchange="renderAll()"><option value="ALL">All Branches</option></select>
+    <label>Status:</label>
+    <select id="status-filter" onchange="onStatusFilter()"></select>
+
+  </div>
+
+  <!-- Section Tabs -->
+  <div class="section-tabs" id="section-tabs-wrap"></div>
+
+  <!-- Metrics Section -->
+  <div id="metrics-section" style="margin-bottom:1.25rem;display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+
+      <!-- Top 5 Branches -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">🏆 Top 5 Branches</div>
+        <div id="top-branches"></div>
+      </div>
+
+      <!-- Bottom 5 Branches -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">⚠️ Bottom 5 Branches</div>
+        <div id="bottom-branches"></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+
+      <!-- Critical Alerts: Essential Not Received -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">🔴 Essential Assets Not Received</div>
+        <div id="critical-essential"></div>
+      </div>
+
+      <!-- Delivered Not Signed -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">📋 Delivered — Awaiting Signature</div>
+        <div id="critical-delivered"></div>
+      </div>
+
+      <!-- Assets with Most Issues -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">📦 Assets with Most Issues</div>
+        <div id="critical-assets"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview charts -->
+  <div id="overview-section">
+    <div class="charts-row" id="overview-charts">
+      <div class="chart-card">
+        <div class="chart-title">% Completion by Branch</div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="branchChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Received vs Not Received</div>
+        <div id="donut-legend" style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;flex-wrap:wrap;"></div>
+        <div style="position:relative;width:100%;height:340px;"><canvas id="donutChart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card full" id="rec-bar-card">
+      <div class="chart-title">Received vs Not Received by Branch</div>
+      <div id="rec-bar-wrap" style="position:relative;width:100%;height:400px;"><canvas id="recBarChart"></canvas></div>
+    </div>
+    <div class="table-card" id="overview-table-card">
+      <div class="chart-title" style="margin-bottom:0.75rem;">Branch Breakdown by Section</div>
+      <div style="overflow-x:auto;"><div id="overview-table-wrap"></div></div>
+    </div>
+  </div>
+
+  <!-- Section detail -->
+  <div id="section-detail" style="display:none;">
+    <div class="table-card">
+      <div class="chart-title" id="section-table-title" style="margin-bottom:0.75rem;">Asset Breakdown</div>
+      <div style="overflow-x:auto;"><div id="section-table-wrap"></div></div>
+    </div>
+  </div>
+
+  <!-- Fridges/Shelves qty section -->
+  <div id="qty-section" style="display:none;">
+    <div class="table-card">
+      <div class="chart-title" id="qty-table-title" style="margin-bottom:0.75rem;">Quantities</div>
+      <div style="overflow-x:auto;"><div id="qty-table-wrap"></div></div>
+    </div>
+  </div>
+
+  </div><!-- end page-dashboard -->
+
+  <!-- Tracker Page (embedded) -->
+  <div id="page-tracker" style="display:none;">
+    <div class="header">
+      <div><h1>Asset Tracking — View Only</h1><p id="tracker-updated">Connecting...</p></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="live-badge"><div class="live-dot"></div> Live</div>
+        
+        
+      </div>
+    </div>
+    <div class="controls">
+      <label>Status:</label>
+      <select id="t-status-filter" onchange="renderTracker()">
+        <option value="ALL">All Branches</option>
+        <option value="Receiving" selected>Receiving</option>
+        <option value="Live">Live</option>
+        <option value="Pending">Pending</option>
+      </select>
+      <label>Branch:</label>
+      <select id="t-branch-filter" onchange="renderTracker()"><option value="ALL">All</option></select>
+    </div>
+    <div id="tracker-content"><div class="loading">Select Tracking Page to load data...</div></div>
+  </div>
+
+  <div style="position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
+
+  <script>
+    const APPS_URL = 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
+
+    let checklistData = [];
+    let branchData    = [];
+    let assetList     = [];
+    let qtyData       = {};
+    let dnData        = {};
+    let allBranches   = [];
+    let activeBranches= [];
+    let sections      = [];
+    let charts        = {};
+
+    const IGNORE_BRANCHES = new Set(['Fridge and Shelves Quantities','Hidden Pull','Live Branches','Organized Pull','Receiving Branches','Tab Name','Template','Under-Construction Branches']);
+    const QTY_SECTIONS    = new Set(['Shelves','Fridges']);
+    const QTY_ITEMS_SHELVES = [
+      { label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'   },
+      { label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'  },
+    ];
+    const QTY_ITEMS_FRIDGES = [
+      { label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'   },
+      { label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'   },
+      { label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'  },
+      { label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'  },
+    ];
+    const QTY_ITEMS = [...QTY_ITEMS_SHELVES, ...QTY_ITEMS_FRIDGES];
+
+    /* ── Helpers ── */
+    async function fetchSheet(name) {
+      const res = await fetch(`${APPS_URL}?sheet=${encodeURIComponent(name)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    }
+
+    function getColor(pct) {
+      if (pct >= 80) return '#4ade80';
+      if (pct >= 50) return '#22d3ee';
+      if (pct >  0)  return '#fbbf24';
+      return '#f87171';
+    }
+
+    function statusCounts(rows) {
+      const rec  = rows.filter(r => r['Asset Status'] === 'Received').length;
+      const del  = rows.filter(r => r['Asset Status'] === 'Delivered').length;
+      const nr   = rows.filter(r => r['Asset Status'] === 'Not Received').length;
+      const none = rows.filter(r => !r['Asset Status'] || r['Asset Status'] === 'None').length;
+      const total= rows.filter(r => r['Asset Status'] && r['Asset Status'] !== 'None').length;
+      const pct  = total > 0 ? Math.round(rec / total * 100) : 0;
+      return { rec, del, nr, none, total, pct };
+    }
+
+    /* ── Load all data ── */
+    async function loadAll() {
+      document.getElementById('last-updated').textContent = 'Loading...';
+      document.getElementById('error-banner').style.display = 'none';
+      try {
+        /* Branch Codes */
+        const bc = await fetchSheet('Branch Codes');
+        branchData = (bc.rows||[]).filter(r => r['Branch Code'] && !IGNORE_BRANCHES.has(r['Branch Code'].trim()));
+
+        /* Receiving Checklist */
+        const cl = await fetchSheet('Receiving Checklist');
+        checklistData = (cl.rows||[]).filter(r => r['Branch Code'] && !IGNORE_BRANCHES.has(r['Branch Code'].trim()));
+
+        /* Asset List & Priority */
+        const al = await fetchSheet('Asset List & Priority');
+        assetList = al.rows || [];
+        sections  = [...new Set(assetList.map(a => a['Section']).filter(Boolean))].sort();
+
+        /* Fridge & Shelf Quantities */
+        try {
+          const fq = await fetchSheet('Fridge & Shelf Quantities');
+          qtyData  = {};
+          (fq.rows||[]).forEach(r => {
+            const b = (r['Branch Code']||r['Branch']||'').trim();
+            if (b && !IGNORE_BRANCHES.has(b)) qtyData[b] = r;
+          });
+        } catch(e) { qtyData = {}; }
+
+        /* Receiving Statues (D.N. Folder) */
+        try {
+          const st = await fetchSheet('Receiving Statues');
+          dnData   = {};
+          (st.rows||[]).forEach(r => {
+            const b = (r['Branch Code']||'').trim();
+            if (b) dnData[b] = r['D.N. Folder'] || '';
+          });
+        } catch(e) { dnData = {}; }
+
+        /* Build branch lists */
+        allBranches = branchData.map(r => ({ code: r['Branch Code'].trim(), status: r['Branch Status']||'' }));
+
+        /* Populate filters */
+        populateFilters();
+
+        document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+        renderAll();
+      } catch(e) {
+        document.getElementById('error-banner').textContent = 'Failed to load: ' + e.message;
+        document.getElementById('error-banner').style.display = 'block';
+        document.getElementById('last-updated').textContent = 'Failed';
+      }
+    }
+
+    function populateFilters() {
+      /* Status filter */
+      const statuses = [...new Set(allBranches.map(b => b.status).filter(Boolean))].sort();
+      const statusSel = document.getElementById('status-filter');
+      statusSel.innerHTML = '<option value="ALL">All Branches</option>' + statuses.map(s => `<option value="${s}">${s}</option>`).join('');
+      if (statuses.includes('Receiving')) statusSel.value = 'Receiving';
+
+      /* Section tabs */
+      buildSectionTabs();
+
+      /* Branch filter */
+      updateBranchFilter();
+
+      /* Report branch selector */
+      const reportSel = document.getElementById('report-branch');
+      if (reportSel) reportSel.innerHTML = '<option value="">- Select Branch -</option>' + allBranches.map(b => `<option value="${b.code}">${b.code}</option>`).join('');
+    }
+
+    function onStatusFilter() {
+      updateBranchFilter();
+      renderAll();
+    }
+
+    function updateBranchFilter() {
+      const selStatus = document.getElementById('status-filter').value;
+      activeBranches  = selStatus === 'ALL' ? allBranches : allBranches.filter(b => b.status === selStatus);
+      const branchSel = document.getElementById('branch-filter');
+      const cur       = branchSel.value;
+      branchSel.innerHTML = '<option value="ALL">All Branches</option>' + activeBranches.map(b => `<option value="${b.code}">${b.code}</option>`).join('');
+      if ([...branchSel.options].some(o => o.value === cur)) branchSel.value = cur;
+    }
+
+    /* ── Get filtered data ── */
+    function getFilteredData() {
+      const selBranch = document.getElementById('branch-filter').value;
+      const branches  = selBranch === 'ALL' ? activeBranches.map(b => b.code) : [selBranch];
+      let rows = checklistData.filter(r => branches.includes((r['Branch Code']||'').trim()));
+      if (currentSection !== 'ALL') rows = rows.filter(r => r['Section'] === currentSection);
+      return { rows, branches, selSection: currentSection, selBranch };
+    }
+
+    /* ── Render all ── */
+    function renderAll() {
+      const { rows, branches, selSection, selBranch } = getFilteredData();
+      const isOverview   = currentSection === 'ALL';
+      const isQtySection = QTY_SECTIONS.has(currentSection);
+
+      /* KPIs */
+      const counts = statusCounts(rows);
+      document.getElementById('kpi-pct').textContent          = counts.pct + '%';
+      document.getElementById('kpi-total').textContent        = counts.total.toLocaleString();
+      document.getElementById('kpi-received').textContent     = counts.rec.toLocaleString();
+      document.getElementById('kpi-received-sub').textContent = Math.round(counts.rec/(counts.total||1)*100) + '% of total';
+      document.getElementById('kpi-delivered').textContent    = counts.del.toLocaleString();
+      document.getElementById('kpi-delivered-sub').textContent= Math.round(counts.del/(counts.total||1)*100) + '% of total';
+      document.getElementById('kpi-not-received').textContent = counts.nr.toLocaleString();
+      document.getElementById('kpi-not-received-sub').textContent = Math.round(counts.nr/(counts.total||1)*100) + '% of total';
+
+      /* Show/hide sections */
+      document.getElementById('overview-section').style.display  = isOverview ? 'block' : 'none';
+      document.getElementById('metrics-section').style.display   = isOverview ? 'block' : 'none';
+      document.getElementById('section-detail').style.display   = (!isOverview && !isQtySection) ? 'block' : 'none';
+      document.getElementById('qty-section').style.display      = isQtySection ? 'block' : 'none';
+
+      if (isOverview) renderOverview(rows, branches);
+      else if (isQtySection) renderQtySection(branches, selSection);
+      else renderSectionDetail(rows, branches, selSection);
+    }
+
+    /* ── Metrics ── */
+    function renderMetrics(branches) {
+      /* Branch stats */
+      const branchStats = branches.map(b => {
+        const bRows = checklistData.filter(r => (r['Branch Code']||'').trim() === b);
+        const c = statusCounts(bRows);
+        return { code: b, ...c };
+      }).filter(b => b.total > 0);
+
+      branchStats.sort((a,b) => b.pct - a.pct);
+
+      /* Top 5 */
+      const top5 = branchStats.slice(0, 5);
+      document.getElementById('top-branches').innerHTML = top5.length ? `
+        <table><tbody>${top5.map((b,i) => `<tr>
+          <td style="font-weight:700;color:${i===0?'#fbbf24':i===1?'#94a3b8':i===2?'#fb923c':'#f1f5f9'};">#${i+1}</td>
+          <td style="font-weight:600;">${dnData[b.code]?`<a href="${dnData[b.code]}" target="_blank" class="branch-link">${b.code}</a>`:b.code}</td>
+          <td style="font-family:'DM Mono',monospace;color:${getColor(b.pct)};font-weight:700;">${b.pct}%</td>
+          <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${b.pct}%;background:${getColor(b.pct)};"></div></div></td>
+        </tr>`).join('')}</tbody></table>` : '<p style="color:#64748b;font-size:12px;">No data</p>';
+
+      /* Bottom 5 */
+      const bottom5 = [...branchStats].reverse().slice(0, 5);
+      document.getElementById('bottom-branches').innerHTML = bottom5.length ? `
+        <table><tbody>${bottom5.map((b,i) => `<tr>
+          <td style="font-weight:700;color:#f87171;">#${branchStats.length-i}</td>
+          <td style="font-weight:600;">${dnData[b.code]?`<a href="${dnData[b.code]}" target="_blank" class="branch-link">${b.code}</a>`:b.code}</td>
+          <td style="font-family:'DM Mono',monospace;color:${getColor(b.pct)};font-weight:700;">${b.pct}%</td>
+          <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${b.pct}%;background:${getColor(b.pct)};"></div></div></td>
+        </tr>`).join('')}</tbody></table>` : '<p style="color:#64748b;font-size:12px;">No data</p>';
+
+      /* Critical: Essential assets Not Received */
+      const essential = checklistData.filter(r =>
+        branches.includes((r['Branch Code']||'').trim()) &&
+        r['Priority'] === 'Essential' &&
+        (r['Asset Status'] === 'Not Received' || r['Asset Status'] === 'None')
+      );
+      const essMap = {};
+      essential.forEach(r => { const a=r['Asset']||''; essMap[a]=(essMap[a]||0)+1; });
+      const essSorted = Object.entries(essMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+      document.getElementById('critical-essential').innerHTML = essSorted.length ? `
+        <table><tbody>${essSorted.map(([asset,count]) => `<tr>
+          <td style="font-weight:500;">${asset}</td>
+          <td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(248,113,113,0.1);color:#f87171;font-weight:600;">${count} branch${count>1?'es':''}</span></td>
+        </tr>`).join('')}</tbody></table>` : '<p style="color:#4ade80;font-size:12px;">✓ All essential assets received!</p>';
+
+      /* Critical: Delivered awaiting signature */
+      const delivered = checklistData.filter(r =>
+        branches.includes((r['Branch Code']||'').trim()) &&
+        r['Asset Status'] === 'Delivered'
+      );
+      const delMap = {};
+      delivered.forEach(r => { const b=(r['Branch Code']||'').trim(); delMap[b]=(delMap[b]||0)+1; });
+      const delSorted = Object.entries(delMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+      document.getElementById('critical-delivered').innerHTML = delSorted.length ? `
+        <table><tbody>${delSorted.map(([branch,count]) => `<tr>
+          <td style="font-weight:500;">${dnData[branch]?`<a href="${dnData[branch]}" target="_blank" class="branch-link">${branch}</a>`:branch}</td>
+          <td><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(251,191,36,0.1);color:#fbbf24;font-weight:600;">${count} asset${count>1?'s':''}</span></td>
+        </tr>`).join('')}</tbody></table>` : '<p style="color:#4ade80;font-size:12px;">✓ No pending signatures!</p>';
+
+      /* Assets with most issues (Not Received across branches) */
+      const issueMap = {};
+      checklistData.filter(r =>
+        branches.includes((r['Branch Code']||'').trim()) &&
+        r['Asset Status'] === 'Not Received'
+      ).forEach(r => { const a=r['Asset']||''; issueMap[a]=(issueMap[a]||0)+1; });
+      const issueSorted = Object.entries(issueMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+      document.getElementById('critical-assets').innerHTML = issueSorted.length ? `
+        <table><tbody>${issueSorted.map(([asset,count]) => `<tr>
+          <td style="font-weight:500;">${asset}</td>
+          <td>
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(248,113,113,0.1);color:#f87171;font-weight:600;">${count} branch${count>1?'es':''}</span>
+            <div class="progress-bar-wrap" style="margin-top:3px;"><div class="progress-bar-fill" style="width:${Math.round(count/branches.length*100)}%;background:#f87171;"></div></div>
+          </td>
+        </tr>`).join('')}</tbody></table>` : '<p style="color:#4ade80;font-size:12px;">✓ No issues found!</p>';
+    }
+
+    /* ── Overview ── */
+    function renderOverview(rows, branches) {
+      renderMetrics(branches);
+      /* Branch completion bar chart */
+      const branchStats = branches.map(b => {
+        const bRows = rows.filter(r => (r['Branch Code']||'').trim() === b);
+        const c = statusCounts(bRows);
+        const dnLink = dnData[b] || '';
+        return { code: b, ...c, dnLink };
+      });
+
+      const barH = Math.max(300, branches.length * 32 + 60);
+      document.getElementById('branchChart').parentElement.style.height = barH + 'px';
+      if (charts.branch) charts.branch.destroy();
+      charts.branch = new Chart(document.getElementById('branchChart'), {
+        type: 'bar',
+        data: {
+          labels: branchStats.map(b => b.code),
+          datasets: [{ label:'% Complete', data: branchStats.map(b => b.pct), backgroundColor: branchStats.map(b => getColor(b.pct)), borderRadius:4, borderSkipped:false }]
+        },
+        options: {
+          indexAxis:'y', responsive:true, maintainAspectRatio:false,
+          plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+ctx.raw+'%'}} },
+          scales: {
+            x: { max:100, ticks:{color:'#475569',font:{size:11},callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.04)'}, border:{display:false} },
+            y: { ticks:{color:'#f1f5f9',font:{size:10}}, grid:{display:false}, border:{display:false} }
+          }
+        }
+      });
+
+      /* Donut */
+      const total = rows.filter(r => r['Asset Status'] && r['Asset Status'] !== 'None').length || 1;
+      const rec   = rows.filter(r => r['Asset Status'] === 'Received').length;
+      const del   = rows.filter(r => r['Asset Status'] === 'Delivered').length;
+      const nr    = rows.filter(r => r['Asset Status'] === 'Not Received').length;
+      document.getElementById('donut-legend').innerHTML = `
+        <span style="display:flex;align-items:center;gap:4px;color:#f1f5f9;"><span style="width:10px;height:10px;border-radius:2px;background:#4ade80;display:inline-block;"></span>Received ${rec}</span>
+        <span style="display:flex;align-items:center;gap:4px;color:#f1f5f9;"><span style="width:10px;height:10px;border-radius:2px;background:#fbbf24;display:inline-block;"></span>Delivered ${del}</span>
+        <span style="display:flex;align-items:center;gap:4px;color:#f1f5f9;"><span style="width:10px;height:10px;border-radius:2px;background:#f87171;display:inline-block;"></span>Not Received ${nr}</span>`;
+      if (charts.donut) charts.donut.destroy();
+      charts.donut = new Chart(document.getElementById('donutChart'), {
+        type:'doughnut',
+        data: { labels:['Received','Delivered','Not Received'], datasets:[{ data:[rec,del,nr], backgroundColor:['#4ade80','#fbbf24','#f87171'], borderWidth:0, hoverOffset:4 }] },
+        options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{display:false} } }
+      });
+
+      /* Received vs Not Received stacked bar */
+      const recBarH = Math.max(300, branches.length * 32 + 60);
+      document.getElementById('rec-bar-wrap').style.height = recBarH + 'px';
+      if (charts.recBar) charts.recBar.destroy();
+      charts.recBar = new Chart(document.getElementById('recBarChart'), {
+        type:'bar',
+        data: {
+          labels: branchStats.map(b => b.code),
+          datasets: [
+            { label:'Received',     data:branchStats.map(b=>b.rec), backgroundColor:'#4ade80', borderSkipped:false },
+            { label:'Delivered',    data:branchStats.map(b=>b.del), backgroundColor:'#fbbf24', borderSkipped:false },
+            { label:'Not Received', data:branchStats.map(b=>b.nr),  backgroundColor:'#f87171', borderSkipped:false },
+          ]
+        },
+        options: {
+          indexAxis:'y', responsive:true, maintainAspectRatio:false,
+          plugins: { legend:{ display:true, position:'top', labels:{color:'#f1f5f9',font:{size:11},boxWidth:12} } },
+          scales: {
+            x: { stacked:true, ticks:{color:'#475569',font:{size:11}}, grid:{color:'rgba(255,255,255,0.04)'}, border:{display:false} },
+            y: { stacked:true, ticks:{color:'#f1f5f9',font:{size:10}}, grid:{display:false}, border:{display:false} }
+          }
+        }
+      });
+
+      /* Overview table: branch × section */
+      const availSections = sections.filter(s => !QTY_SECTIONS.has(s));
+      let html = `<table><thead><tr>
+        <th style="min-width:120px;border-right:2px solid rgba(255,255,255,0.5);">Branch</th>
+        ${availSections.map(s=>`<th style="min-width:90px;">${s}</th>`).join('')}
+        <th style="min-width:90px;text-align:center;border-left:2px solid rgba(255,255,255,0.5);">Overall %</th>
+        <th style="min-width:120px;text-align:center;">Progress</th>
+      </tr></thead><tbody>`;
+
+      branchStats.forEach(b => {
+        const link = b.dnLink ? `<a href="${b.dnLink}" target="_blank" class="branch-link">${b.code}</a>` : b.code;
+        html += `<tr><td style="border-right:2px solid rgba(255,255,255,0.5);">${link}</td>`;
+        availSections.forEach(s => {
+          const sRows = checklistData.filter(r => (r['Branch Code']||'').trim()===b.code && r['Section']===s);
+          const sc    = statusCounts(sRows);
+          html += `<td>
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:${getColor(sc.pct)};">${sc.total>0?sc.pct+'%':'-'}</span>
+            ${sc.total>0?`<div class="progress-bar-wrap" style="margin-top:4px;"><div class="progress-bar-fill" style="width:${sc.pct}%;background:${getColor(sc.pct)};"></div></div>`:''}
+          </td>`;
+        });
+        html += `<td style="font-family:'DM Mono',monospace;font-weight:600;color:${getColor(b.pct)};text-align:center;border-left:2px solid rgba(255,255,255,0.5);">${b.pct}%</td>
+          <td><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${b.pct}%;background:${getColor(b.pct)};"></div></div></td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('overview-table-wrap').innerHTML = html;
+    }
+
+    /* ── Section detail (asset × branch) ── */
+    function renderSectionDetail(rows, branches, section) {
+      document.getElementById('section-table-title').textContent = `${section} - Asset Breakdown`;
+
+      /* Asset × Branch table */
+      const assets = assetList.filter(a => a['Section'] === section);
+      let thtml = `<table><thead><tr>
+        <th style="min-width:160px;text-align:left;border-right:2px solid rgba(255,255,255,0.5);">Asset</th>
+        <th style="min-width:120px;text-align:center;border-right:2px solid rgba(255,255,255,0.5);">% Completion</th>
+        ${branches.map(b => {
+          const link = dnData[b] ? `<a href="${dnData[b]}" target="_blank" class="branch-link">${b}</a>` : b;
+          return `<th style="min-width:110px;">${link}</th>`;
+        }).join('')}
+      </tr></thead><tbody>`;
+
+      assets.forEach(asset => {
+        const aName = asset['Assets'] || asset['Asset'] || '';
+        let rec=0, total=0;
+        const cells = branches.map(b => {
+          const row = rows.find(r => (r['Branch Code']||'').trim()===b && r['Asset']===aName);
+          const st  = row ? (row['Asset Status']||'None') : 'None';
+          if (st !== 'None') total++;
+          if (st === 'Received') rec++;
+          const pillClass = { Received:'pill-received', Delivered:'pill-delivered', 'Not Received':'pill-not-received', None:'pill-none' }[st] || 'pill-none';
+          return `<td><span class="pill ${pillClass}">${st}</span></td>`;
+        });
+        const pct = total > 0 ? Math.round(rec/total*100) : 0;
+        thtml += `<tr>
+          <td style="font-weight:500;border-right:2px solid rgba(255,255,255,0.5);">${aName}</td>
+          <td style="text-align:center;border-right:2px solid rgba(255,255,255,0.5);">
+            <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${getColor(pct)};">${total>0?pct+'%':'-'}</span>
+            ${total>0?`<div class="progress-bar-wrap" style="margin-top:4px;"><div class="progress-bar-fill" style="width:${pct}%;background:${getColor(pct)};"></div></div>`:''}
+          </td>
+          ${cells.join('')}
+        </tr>`;
+      });
+      thtml += '</tbody></table>';
+      document.getElementById('section-table-wrap').innerHTML = thtml;
+    }
+
+    /* ── Qty section (Shelves/Fridges) ── */
+    function renderQtySection(branches, section) {
+      document.getElementById('qty-table-title').textContent = `${section} - Quantities`;
+
+      const qtyCell = (rec, req) => {
+        if (!req || req <= 0) return `<td style="text-align:center;color:#475569;">-</td>`;
+        const diff = rec - req;
+        const pct  = Math.round(rec/req*100);
+        const c    = rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
+        const label= rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
+        return `<td style="text-align:center;">
+          <span style="font-family:'DM Mono',monospace;font-size:11px;color:${c};">
+            ${rec}<span style="font-size:9px;color:#64748b;"> Rec</span>
+            <span style="color:#475569;"> / </span>
+            ${req}<span style="font-size:9px;color:#64748b;"> Req</span>
+          </span>
+          <br><span style="font-size:10px;color:${c};">${label}</span>
+          <div class="progress-bar-wrap" style="margin-top:3px;"><div class="progress-bar-fill" style="width:${Math.min(pct,100)}%;background:${c};"></div></div>
+        </td>`;
+      };
+
+      /* Also get Received/Not Received status from checklist for Coldroom etc */
+      const sectionAssets = assetList.filter(a => a['Section'] === section);
+      const statusAssets  = sectionAssets.filter(a => {
+        const n = a['Assets']||a['Asset']||'';
+        return !QTY_ITEMS.some(q => q.label.toLowerCase() === n.toLowerCase());
+      });
+
+      let html = `<table><thead><tr>
+        <th style="min-width:90px;text-align:left;border-right:2px solid rgba(255,255,255,0.5);">Item</th>
+        ${branches.map(b => {
+          const link = dnData[b] ? `<a href="${dnData[b]}" target="_blank" class="branch-link">${b}</a>` : b;
+          return `<th style="min-width:140px;">${link}</th>`;
+        }).join('')}
+      </tr></thead><tbody>`;
+
+      /* Status assets - only show for Shelves section (Coldroom etc), skip for Fridges */
+      const SKIP_STATUS_ASSETS = new Set(['Heavy Rack','Heavyrack']);
+      const filteredStatusAssets = section === 'Fridges'
+        ? [] /* Fridges: qty only */
+        : statusAssets.filter(a => !SKIP_STATUS_ASSETS.has(a['Assets']||a['Asset']||'')); /* Shelves: skip Heavy Rack */
+      filteredStatusAssets.forEach(asset => {
+        const aName = asset['Assets']||asset['Asset']||'';
+        html += `<tr><td style="font-weight:500;border-right:2px solid rgba(255,255,255,0.5);">${aName}</td>`;
+        branches.forEach(b => {
+          const row = checklistData.find(r => (r['Branch Code']||'').trim()===b && r['Asset']===aName);
+          const st  = row ? (row['Asset Status']||'None') : 'None';
+          const pc  = { Received:'pill-received', Delivered:'pill-delivered','Not Received':'pill-not-received',None:'pill-none' }[st]||'pill-none';
+          html += `<td><span class="pill ${pc}">${st}</span></td>`;
+        });
+        html += '</tr>';
+      });
+
+      /* Qty items - use section-specific list */
+      const sectionQtyItems = section === 'Shelves' ? QTY_ITEMS_SHELVES : QTY_ITEMS_FRIDGES;
+      sectionQtyItems.forEach(item => {
+        html += `<tr><td style="font-weight:500;border-right:2px solid rgba(255,255,255,0.5);">${item.label}</td>`;
+        branches.forEach(b => {
+          const q   = qtyData[b] || {};
+          const req = parseInt(q[item.req]||0)||0;
+          const rec = parseInt(q[item.rec]||0)||0;
+          html += qtyCell(rec, req);
+        });
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('qty-table-wrap').innerHTML = html;
+    }
+
+    /* ── PDF Report ── */
+    function generateReport() {
+      const reportEl = document.getElementById('report-branch');
+      const branch = reportEl ? reportEl.value : '';
+      if (!branch) { alert('Please select a branch.'); return; }
+
+      const { jsPDF } = window.jspdf;
+      const doc   = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const today = new Date().toLocaleDateString('en-GB');
+
+      const CLR = {
+        bg:[255,255,255], card:[240,242,247], text:[15,23,42],
+        accent:[14,116,144], green:[22,163,74], amber:[180,120,0],
+        red:[185,28,28], cyan:[14,116,144], grey:[100,116,139],
+        purple:[109,40,217], rowOdd:[248,250,252], rowEven:[255,255,255],
+        border:[203,213,225],
+      };
+
+      const assets   = checklistData.filter(r => (r['Branch Code']||'').trim() === branch);
+      const fq       = qtyData[branch] || {};
+      const dnFolder = dnData[branch] || '';
+      const counts   = statusCounts(assets);
+
+      function drawHeader() {
+        doc.setFillColor(...CLR.card); doc.rect(0,0,pageW,18,'F');
+        doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.text);
+        doc.text('Asset Receiving Report', 10, 11);
+        doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.accent);
+        doc.text(branch, pageW-10, 7, {align:'right'});
+        doc.setTextColor(...CLR.grey); doc.text(today, pageW-10, 13, {align:'right'});
+        doc.setDrawColor(...CLR.accent); doc.setLineWidth(0.5); doc.line(0,18,pageW,18);
+      }
+
+      function drawFooter(pg, total) {
+        doc.setFillColor(...CLR.card); doc.rect(0,pageH-8,pageW,8,'F');
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.grey);
+        doc.text('Asset Receiving Report - '+branch, 10, pageH-3);
+        doc.text(`Page ${pg} of ${total}`, pageW/2, pageH-3, {align:'center'});
+        doc.text(today, pageW-10, pageH-3, {align:'right'});
+      }
+
+      drawHeader();
+      let y = 22;
+
+      /* KPI Cards */
+      const cards = [
+        {label:'Total Assets', value:counts.total, color:CLR.text},
+        {label:'Received',     value:counts.rec,   color:CLR.green},
+        {label:'Delivered',    value:counts.del,   color:CLR.amber},
+        {label:'Not Received', value:counts.nr,    color:CLR.red},
+        {label:'Completion',   value:counts.pct+'%', color:counts.pct>=80?CLR.green:counts.pct>=50?CLR.cyan:CLR.amber},
+      ];
+      const cw = (pageW-20)/cards.length;
+      cards.forEach((c,i) => {
+        const x = 10+i*cw;
+        doc.setFillColor(...CLR.card); doc.roundedRect(x,y,cw-3,18,2,2,'F');
+        doc.setDrawColor(...CLR.border); doc.setLineWidth(0.2); doc.roundedRect(x,y,cw-3,18,2,2,'S');
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.grey);
+        doc.text(c.label.toUpperCase(), x+(cw-3)/2, y+5, {align:'center'});
+        doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(...c.color);
+        doc.text(String(c.value), x+(cw-3)/2, y+13, {align:'center'});
+      });
+      y += 22;
+
+      /* Donut chart */
+      const cx=pageW/2, cy=y+18, r=14;
+      function drawArc(x,y,radius,startDeg,endDeg,color) {
+        const steps=Math.max(2,Math.round(Math.abs(endDeg-startDeg)/3));
+        const pts=[];
+        for(let i=0;i<=steps;i++){const a=(startDeg+(endDeg-startDeg)*i/steps)*Math.PI/180;pts.push([x+radius*Math.cos(a-Math.PI/2),y+radius*Math.sin(a-Math.PI/2)]);}
+        pts.unshift([x,y]); pts.push([x,y]);
+        doc.setFillColor(...color);
+        doc.lines(pts.slice(1).map((p,i)=>[p[0]-pts[i][0],p[1]-pts[i][1]]),pts[0][0],pts[0][1],[1,1],'F');
+      }
+      const total2 = counts.total||1;
+      let angle=0;
+      if(counts.rec>0){drawArc(cx,cy,r,angle,angle+counts.rec/total2*360,CLR.green);angle+=counts.rec/total2*360;}
+      if(counts.del>0){drawArc(cx,cy,r,angle,angle+counts.del/total2*360,CLR.amber);angle+=counts.del/total2*360;}
+      if(counts.nr>0) drawArc(cx,cy,r,angle,360,CLR.red);
+      doc.setFillColor(255,255,255); doc.circle(cx,cy,r*0.55,'F');
+      doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...(counts.pct>=80?CLR.green:counts.pct>=50?CLR.cyan:CLR.amber));
+      doc.text(counts.pct+'%', cx, cy+3, {align:'center'});
+
+      /* Legend */
+      [[CLR.green,'Received ('+counts.rec+')'],[CLR.amber,'Delivered ('+counts.del+')'],[CLR.red,'Not Received ('+counts.nr+')']].forEach((item,i) => {
+        doc.setFillColor(...item[0]); doc.rect(pageW-55, y+i*7, 6, 4,'F');
+        doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.text);
+        doc.text(item[1], pageW-47, y+i*7+3.5);
+      });
+      y = cy+r+8;
+
+      /* Section breakdown */
+      doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.text);
+      doc.text('Section Breakdown', 10, y); y+=4;
+      const secBreakdown = sections.map(s => {
+        const sRows = assets.filter(r => r['Section']===s);
+        const sc = statusCounts(sRows);
+        return [s, sc.total, sc.rec, sc.del, sc.nr, sc.pct+'%'];
+      });
+      doc.autoTable({
+        startY:y, head:[['Section','Total','Received','Delivered','Not Received','%']],
+        body:secBreakdown, theme:'plain',
+        styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},
+        headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},
+        alternateRowStyles:{fillColor:CLR.rowOdd},
+        columnStyles:{0:{cellWidth:50},1:{cellWidth:18},2:{cellWidth:22},3:{cellWidth:22},4:{cellWidth:28},5:{cellWidth:18}},
+        margin:{left:10,right:10}, tableWidth:'wrap',
+        tableLineColor:CLR.border, tableLineWidth:0.2,
+      });
+      y = doc.lastAutoTable.finalY+6;
+
+      /* All assets table per section */
+      sections.forEach(s => {
+        const sAssets = assets.filter(r => r['Section']===s);
+        if (sAssets.length===0) return;
+        if (y > pageH-50) { doc.addPage(); drawHeader(); y=22; }
+        doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.text);
+        doc.text(s, 10, y); y+=4;
+        doc.autoTable({
+          startY:y,
+          head:[['Asset','Priority','Status']],
+          body:sAssets.map(r=>[r['Asset']||'', r['Priority']||'', r['Asset Status']||'None']),
+          theme:'plain',
+          styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},
+          headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},
+          alternateRowStyles:{fillColor:CLR.rowOdd},
+          columnStyles:{0:{cellWidth:70},1:{cellWidth:25},2:{cellWidth:35}},
+          margin:{left:10,right:10}, tableWidth:'wrap',
+          tableLineColor:CLR.border, tableLineWidth:0.2,
+          didParseCell:d=>{
+            if(d.column.index===1&&d.section==='body'){
+              const pc={Essential:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];
+              if(pc){d.cell.styles.textColor=pc;d.cell.styles.fontStyle='bold';}
+            }
+            if(d.column.index===2&&d.section==='body'){
+              const sc={Received:CLR.green,Delivered:CLR.amber,'Not Received':CLR.red}[d.cell.raw];
+              if(sc){d.cell.styles.textColor=sc;d.cell.styles.fontStyle='bold';}
+            }
+          }
+        });
+        y = doc.lastAutoTable.finalY+6;
+      });
+
+      /* Qty table */
+      const qtyRows = QTY_ITEMS.map(item=>{
+        const req=parseInt(fq[item.req]||0)||0;
+        const rec=parseInt(fq[item.rec]||0)||0;
+        if(req<=0) return null;
+        const diff=rec-req;
+        return [item.label,req,rec,diff>0?'+'+diff+' Extra':diff<0?diff+' Shortage':'✓ Exact'];
+      }).filter(Boolean);
+      if(qtyRows.length>0){
+        if(y>pageH-50){doc.addPage();drawHeader();y=22;}
+        doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);
+        doc.text('Fridges & Shelves Quantities',10,y);y+=4;
+        doc.autoTable({
+          startY:y,head:[['Item','Requested','Received','Status']],body:qtyRows,theme:'plain',
+          styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},
+          headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},
+          alternateRowStyles:{fillColor:CLR.rowOdd},
+          columnStyles:{0:{cellWidth:40},1:{cellWidth:25},2:{cellWidth:25},3:{cellWidth:40}},
+          margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,
+          didParseCell:d=>{
+            if(d.column.index===3&&d.section==='body'){
+              const v=String(d.cell.raw);
+              if(v.includes('Extra')){d.cell.styles.textColor=CLR.cyan;d.cell.styles.fontStyle='bold';}
+              else if(v.includes('Shortage')){d.cell.styles.textColor=CLR.red;d.cell.styles.fontStyle='bold';}
+              else{d.cell.styles.textColor=CLR.green;d.cell.styles.fontStyle='bold';}
+            }
+          }
+        });
+      }
+
+      /* Footers */
+      const pages = doc.getNumberOfPages();
+      for(let i=1;i<=pages;i++){doc.setPage(i);drawFooter(i,pages);}
+      doc.save(`Report_${branch}_${today.replace(/\//g,'-')}.pdf`);
+    }
+
+    /* ── Section Tabs ── */
+    let currentSection = 'ALL';
+    function buildSectionTabs() {
+      const wrap = document.getElementById('section-tabs-wrap');
+      if (!wrap) return;
+      const tabs = [{ val:'ALL', label:'Overview' }, ...sections.map(s => ({ val:s, label:s }))];
+      wrap.innerHTML = tabs.map(t =>
+        `<button class="section-tab ${t.val===currentSection?'active':''}" onclick="selectSection('${t.val}')">${t.label}</button>`
+      ).join('');
+    }
+
+    function selectSection(sec) {
+      currentSection = sec;
+      buildSectionTabs();
+      renderAll();
+    }
+
+    /* ── Page Switching ── */
+    let trackerLoaded = false;
+    function switchPage(page) {
+      document.getElementById('page-dashboard').style.display = page==='dashboard' ? 'block' : 'none';
+      document.getElementById('page-tracker').style.display   = page==='tracker'   ? 'block' : 'none';
+      document.getElementById('nav-dashboard').classList.toggle('active', page==='dashboard');
+      document.getElementById('nav-tracker').classList.toggle('active', page==='tracker');
+      if (page==='tracker' && !trackerLoaded) { trackerLoaded=true; loadTracker(); }
+    }
+
+    /* ── Tracker Page Logic ── */
+    let trackerData   = [];
+    let trackerStatus = {};
+    let trackerBranches = [];
+
+    async function loadTracker() {
+      document.getElementById('tracker-updated').textContent = 'Loading...';
+      try {
+        const cl = await fetchSheet('Receiving Checklist');
+        trackerData = cl.rows || [];
+
+        const st = await fetchSheet('Receiving Statues');
+        trackerStatus = {};
+        (st.rows||[]).forEach(r => { const b=(r['Branch Code']||'').trim(); if(b) trackerStatus[b]=r; });
+
+        const seen = new Set();
+        trackerBranches = [];
+        trackerData.forEach(r => {
+          const b=(r['Branch Code']||'').trim(), bs=(r['Branch Status']||'').trim();
+          if(b&&!seen.has(b)){seen.add(b);trackerBranches.push({code:b,status:bs});}
+        });
+
+        const tBranchSel = document.getElementById('t-branch-filter');
+        const cur = tBranchSel.value;
+        tBranchSel.innerHTML = '<option value="ALL">All</option>' + trackerBranches.map(b=>`<option value="${b.code}">${b.code}</option>`).join('');
+        if([...tBranchSel.options].some(o=>o.value===cur)) tBranchSel.value=cur;
+
+        document.getElementById('tracker-updated').textContent = 'Last updated: '+new Date().toLocaleTimeString();
+        renderTracker();
+      } catch(e) {
+        document.getElementById('tracker-updated').textContent = 'Failed: '+e.message;
+      }
+    }
+
+    function renderTracker() {
+      const selStatus = document.getElementById('t-status-filter').value;
+      const selBranch = document.getElementById('t-branch-filter').value;
+      let branches = trackerBranches;
+      if (selStatus!=='ALL') branches = branches.filter(b=>b.status===selStatus);
+      if (selBranch!=='ALL') branches = branches.filter(b=>b.code===selBranch);
+      const container = document.getElementById('tracker-content');
+      container.innerHTML = '';
+      if (branches.length===0) { container.innerHTML='<div class="loading">No branches found.</div>'; return; }
+      branches.forEach(b => container.appendChild(buildTrackerCard(b)));
+    }
+
+    function buildTrackerCard(branch) {
+      const allAssets = trackerData.filter(r=>(r['Branch Code']||'').trim()===branch.code);
+      const rec  = allAssets.filter(a=>a['Asset Status']==='Received').length;
+      const del  = allAssets.filter(a=>a['Asset Status']==='Delivered').length;
+      const nr   = allAssets.filter(a=>a['Asset Status']==='Not Received').length;
+      const total= allAssets.filter(a=>a['Asset Status']&&a['Asset Status']!=='None').length||1;
+      const pct  = Math.round(rec/total*100);
+      const pctColor = getColor(pct);
+      const st   = trackerStatus[branch.code]||{};
+      const folder = st['D.N. Folder']||'';
+      const tagCls = {Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24'}[branch.status]||'#94a3b8';
+      const cardId = 'tc_'+branch.code.replace(/[^a-zA-Z0-9]/g,'_');
+
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.07);border-radius:10px;margin-bottom:1.25rem;overflow:hidden;';
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1.25rem;background:rgba(255,255,255,0.03);border-bottom:0.5px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.ci').style.transform=b.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'">
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;flex-wrap:wrap;">
+            ${folder?`<a href="${folder}" target="_blank" class="branch-link">${branch.code}</a>`:`<span style="color:#f1f5f9;">${branch.code}</span>`}
+            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${tagCls}18;color:${tagCls};font-weight:600;">${branch.status}</span>
+            <span class="pill pill-received">${rec} Received</span>
+            ${del>0?`<span class="pill pill-delivered">${del} Delivered</span>`:''}
+            <span class="pill pill-not-received">${nr} Not Received</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${pctColor};">${pct}%</span>
+            <span class="ci" style="color:#64748b;font-size:12px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
+          </div>
+        </div>
+        <div style="display:none;">
+          <div style="padding:0.5rem 1.25rem;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:11px;color:#64748b;font-weight:500;">D.N. Folder:</span>
+            ${folder?`<a href="${folder}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">${folder}</a>`:
+            `-`}
+            <button onclick="generateBranchReport('${branch.code}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">⬇ PDF</button>
+          </div>
+          <div style="display:flex;gap:6px;padding:0.6rem 1.25rem;border-bottom:0.5px solid rgba(255,255,255,0.05);flex-wrap:wrap;align-items:center;" id="${cardId}_filterbar">
+            <span style="font-size:11px;color:#64748b;">Show:</span>
+            <button onclick="filterTrackerRows('${cardId}','ALL',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.12);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
+            <button onclick="filterTrackerRows('${cardId}','Received',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Received</button>
+            <button onclick="filterTrackerRows('${cardId}','Delivered',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Delivered</button>
+            <button onclick="filterTrackerRows('${cardId}','Not Received',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Not Received</button>
+            <button onclick="filterTrackerRows('${cardId}','None',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+          </div>
+          <div style="overflow-x:auto;padding:0 0 0.5rem;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead><tr>
+                <th style="min-width:160px;text-align:left;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);border-right:2px solid rgba(255,255,255,0.5);">Asset</th>
+                <th style="min-width:80px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Priority</th>
+                <th style="min-width:140px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Status</th>
+                <th style="min-width:160px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">D.N. Not Signed</th>
+                <th style="min-width:160px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">D.N. Signed</th>
+                <th style="min-width:180px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Notes</th>
+              </tr></thead>
+              <tbody id="${cardId}_tbody"></tbody>
+            </table>
+          </div>
+        </div>`;
+
+      const tbody = card.getElementsByTagName('tbody')[0];
+      if (!tbody) { console.error('tbody not found for', branch.code); return card; }
+      allAssets.forEach((row, i) => {
+        const asset=row['Asset']||'', pri=row['Priority']||'', assetSt=row['Asset Status']||'None';
+        const dnNS=row['D.N. Not Signed']||'', dnS=row['D.N. Signed']||'', note=row['Notes']||'';
+        const pClass={Essential:'p-essential',High:'p-high',Medium:'p-medium',Low:'p-low'}[pri]||'';
+        const stCls={None:'none-val','Not Received':'not-received',Delivered:'delivered',Received:'received'}[assetSt]||'';
+        const key=branch.code+'||'+asset;
+        const safeKey=(branch.code+'__'+asset).replace(/[^a-zA-Z0-9]/g,'_');
+        const bg=i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
+        const tr=document.createElement('tr');
+        tr.style.background=bg;
+        tr.dataset.status = assetSt;
+        const pillColor = {Received:'#4ade80',Delivered:'#fbbf24','Not Received':'#f87171',None:'#94a3b8'}[assetSt]||'#94a3b8';
+        const pillBg    = {Received:'rgba(74,222,128,0.1)',Delivered:'rgba(251,191,36,0.1)','Not Received':'rgba(248,113,113,0.1)',None:'rgba(100,116,139,0.1)'}[assetSt]||'rgba(100,116,139,0.1)';
+        tr.innerHTML=`
+          <td style="padding:8px 10px;font-weight:500;border-right:2px solid rgba(255,255,255,0.5);border-bottom:0.5px solid rgba(255,255,255,0.1);">${asset}</td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span class="${pClass}">${pri||'-'}</span></td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+            <span style="display:inline-block;font-size:10px;padding:3px 10px;border-radius:10px;font-weight:600;background:${pillBg};color:${pillColor};">${assetSt||'None'}</span>
+          </td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+            ${dnNS?`<a href="${dnNS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View D.N.</a>`:'<span style="color:#475569;font-size:11px;">-</span>'}
+          </td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+            ${dnS?`<a href="${dnS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View Signed</a>`:'<span style="color:#475569;font-size:11px;">-</span>'}
+          </td>
+          <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;font-size:11px;">${note||'-'}</td>`;
+        tbody.appendChild(tr);
+      });
+      /* ── Qty section ── */
+      const fqBranch = qtyData[branch.code] || {};
+      const hasQty   = Object.values(fqBranch).some(v => v && v !== branch.code);
+      const qtyWrap  = document.createElement('div');
+      qtyWrap.style.cssText = 'border-top:0.5px solid rgba(255,255,255,0.07);';
+      qtyWrap.innerHTML = `
+        <div onclick="const w=this.nextElementSibling;w.style.display=w.style.display==='none'?'block':'none';this.querySelector('.qi').style.transform=w.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'"
+          style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1.25rem;cursor:pointer;background:rgba(255,255,255,0.02);">
+          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">Fridges & Shelves Quantities</span>
+          <span class="qi" style="color:#64748b;font-size:11px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
+        </div>
+        <div style="display:none;padding:0 1.25rem 0.75rem;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead><tr>
+              <th style="text-align:left;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:140px;">Item</th>
+              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:90px;">Requested</th>
+              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:110px;">Received</th>
+              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:110px;">Status</th>
+            </tr></thead>
+            <tbody id="${cardId}_qty"></tbody>
+          </table>
+        </div>`;
+
+      const qtyTbody = qtyWrap.querySelector('tbody');
+      const QTY_ITEMS_T = [
+        {label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'},
+        {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
+        {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+        {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
+        {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+      ];
+      QTY_ITEMS_T.forEach((item,i) => {
+        const req = parseInt(fqBranch[item.req]||0)||0;
+        const rec = parseInt(fqBranch[item.rec]||0)||0;
+        const diff= rec-req;
+        const c   = req<=0?'#475569':rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
+        const lbl = req<=0?'-':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
+        const bg  = i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
+        const tr  = document.createElement('tr');
+        tr.style.background = bg;
+        tr.innerHTML = `
+          <td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,0.1);">${item.label}</td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);font-family:'DM Mono',monospace;font-size:11px;">${req>0?req:'-'}</td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+            ${req>0?`<span style="font-family:'DM Mono',monospace;font-size:11px;color:${c};">${rec}/${req}</span>
+            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>`:'-'}
+          </td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+            <span style="font-size:11px;color:${c};font-weight:600;">${lbl}</span>
+          </td>`;
+        qtyTbody.appendChild(tr);
+      });
+      card.appendChild(qtyWrap);
+
+      return card;
+    }
+
+    function filterTrackerRows(cardId, filter, btn) {
+      const filterBar = document.getElementById(cardId + '_filterbar');
+      if (filterBar) filterBar.querySelectorAll('button').forEach(b => {
+        b.style.background = 'transparent'; b.style.color = '#94a3b8'; b.style.borderColor = 'rgba(255,255,255,0.1)';
+      });
+      btn.style.background = 'rgba(34,211,238,0.12)'; btn.style.color = '#22d3ee'; btn.style.borderColor = 'rgba(34,211,238,0.3)';
+      const tbody = document.getElementById(cardId + '_tbody');
+      const tbl = document.getElementById(cardId + '_tbody');
+      if (!tbl) return;
+      tbl.querySelectorAll('tr').forEach(tr => {
+        tr.style.display = (filter === 'ALL' || st === filter) ? '' : 'none';
+      });
+    }
+
+
+
+
+    function showSaveToast(msg) {
+      const t=document.getElementById('save-toast');
+      t.textContent=msg||'✓ Saved';t.style.opacity='1';
+      clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity='0',2500);
+    }
+
+    function generateBranchReport(branch) {
+      /* Use existing generateReport logic with specific branch */
+      const rb = document.getElementById('report-branch'); if (rb) rb.value = branch;
+      generateReport();
+    }
+
+    /* ── Boot ── */
+    loadAll();
+    setInterval(loadAll, 5*60*1000);
+  </script>
+</body>
+</html>
