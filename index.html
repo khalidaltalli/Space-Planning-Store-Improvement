@@ -1055,6 +1055,7 @@
       if (branches.length===0) { container.innerHTML='<div class="loading">No branches found.</div>'; return; }
       branches.forEach(b => container.appendChild(buildTrackerCard(b)));
       renderTaskList(branches.map(b => b.code));
+      applyMode();
     }
 
     function buildTrackerCard(branch) {
@@ -1589,21 +1590,61 @@
     }
 
     /* ── Light/Dark Mode ── */
-    function toggleMode() {
-      const body = document.body;
-      const btn  = document.getElementById('mode-btn');
-      const isLight = body.classList.toggle('light');
-      btn.textContent = isLight ? '🌙' : '☀️';
-      localStorage.setItem('tracker_mode', isLight ? 'light' : 'dark');
-    }
-    /* Restore saved mode */
-    if (localStorage.getItem('tracker_mode') === 'light') {
-      document.body.classList.add('light');
-      window.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('mode-btn');
-        if (btn) btn.textContent = '☀️';
+    let isLight = localStorage.getItem('tracker_mode') === 'light';
+
+    function applyMode() {
+      const DARK = {
+        bg:'#1a1f2e', bg2:'#0f1117', text:'#f1f5f9', text2:'#e2e8f0',
+        border:'rgba(255,255,255,0.07)', border2:'rgba(255,255,255,0.1)',
+        rowOdd:'rgba(255,255,255,0.02)', rowEven:'rgba(255,255,255,0.05)',
+        hdr:'rgba(255,255,255,0.03)'
+      };
+      const LIGHT = {
+        bg:'#ffffff', bg2:'#f8fafc', text:'#1e293b', text2:'#334155',
+        border:'rgba(0,0,0,0.08)', border2:'rgba(0,0,0,0.1)',
+        rowOdd:'rgba(0,0,0,0.01)', rowEven:'rgba(0,0,0,0.03)',
+        hdr:'rgba(0,0,0,0.02)'
+      };
+      const T = isLight ? LIGHT : DARK;
+      document.body.style.background = isLight ? '#f1f5f9' : '#0f1117';
+      document.body.style.color = T.text;
+
+      /* Update all branch cards */
+      document.querySelectorAll('#tracker-content > div').forEach(card => {
+        card.style.background = T.bg;
+        card.style.borderColor = T.border;
+        const hdr = card.querySelector('div[onclick]');
+        if (hdr) { hdr.style.background = T.hdr; hdr.style.borderColor = T.border; }
+        card.querySelectorAll('td').forEach(td => td.style.color = T.text2);
+        card.querySelectorAll('th').forEach(th => th.style.color = T.text);
+        card.querySelectorAll('tr:nth-child(odd) td').forEach(td => td.style.background = T.rowOdd);
+        card.querySelectorAll('tr:nth-child(even) td').forEach(td => td.style.background = T.rowEven);
+        card.querySelectorAll('input[type="number"]').forEach(inp => {
+          inp.style.background = T.bg2; inp.style.color = T.text2;
+        });
+        card.querySelectorAll('textarea').forEach(ta => {
+          ta.style.background = T.bg2; ta.style.color = T.text2;
+        });
       });
+
+      /* Update task list */
+      document.querySelectorAll('.table-card').forEach(c => {
+        c.style.background = T.bg; c.style.borderColor = T.border;
+        c.querySelectorAll('td,th').forEach(el => el.style.color = T.text);
+      });
+
+      const btn = document.getElementById('mode-btn');
+      if (btn) btn.textContent = isLight ? '☀️' : '🌙';
     }
+
+    function toggleMode() {
+      isLight = !isLight;
+      localStorage.setItem('tracker_mode', isLight ? 'light' : 'dark');
+      applyMode();
+    }
+
+    /* Apply on load */
+    window.addEventListener('DOMContentLoaded', applyMode);
 
     /* ── Boot ── */
     loadAll();
