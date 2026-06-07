@@ -1149,8 +1149,8 @@
         tr.innerHTML = `
           <td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,0.1);">${item.label}</td>
           <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
             <span style="font-family:'DM Mono',monospace;font-size:11px;color:${c};">
+              <input type="number" min="0" value="${req||''}" placeholder="0" id="req_${safeId}"
                 style="width:55px;background:#0f1117;border:0.5px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
               <span style="font-size:9px;color:#64748b;"> Req - </span>
               <input type="number" min="0" value="${rec||''}" placeholder="0" id="rec_${safeId}"
@@ -1159,8 +1159,8 @@
               <button onclick="saveQtyRow('${branch.code}','${item.req}','${item.rec}','req_${safeId}','rec_${safeId}','${cardId}')"
                 style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:4px;">Save</button>
             </span>
-            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>`:'-'}
             <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>
+          </td>
           <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
             <span style="font-size:11px;color:${c};font-weight:600;">${lbl}</span>
           </td>`;
