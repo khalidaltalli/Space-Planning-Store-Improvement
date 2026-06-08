@@ -1410,6 +1410,19 @@
       /* Section order */
       const SECTION_ORDER = ['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
 
+      const QTY_ASSETS = {
+        'Freebolt':       {req:'Freebolt Req',   rec:'Freebolt Rec'},
+        'Heavyrack':      {req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        'Heavy Rack':     {req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        '1 Door Chiller': {req:'1D Fridge Req',   rec:'1D Fridge Rec'},
+        '2 Door Chiller': {req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+        '3 Door Chiller': {req:'3D Fridge Req',   rec:'3D Fridge Rec'},
+        '1 Door Freezer': {req:'1D Freezer Req',  rec:'1D Freezer Rec'},
+        '2 Door Freezer': {req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+        '3 Door Freezer': {req:'3D Freezer Req',  rec:'3D Freezer Rec'},
+      };
+      const fq = qtyData[branch] || {};
+
       function drawSectionTable(title, rows, color) {
         if (rows.length === 0) return;
         if (y > pageH-50) { doc.addPage(); drawHeader(); y=22; }
@@ -1423,21 +1436,35 @@
           return (si===-1?99:si) - (sj===-1?99:sj) || (a['Asset']||'').localeCompare(b['Asset']||'');
         });
 
+        /* Build table body — add qty row for Fridges/Shelves assets */
+        const tableBody = rows.map(r => {
+          const aName = r['Asset']||'';
+          const qtyKey = QTY_ASSETS[aName];
+          const qtyStr = qtyKey
+            ? `Req: ${parseInt(fq[qtyKey.req]||0)||0} / Rec: ${parseInt(fq[qtyKey.rec]||0)||0}`
+            : '';
+          return [r['Section']||'', aName, r['Priority']||'', qtyStr];
+        });
+
         doc.autoTable({
           startY: y,
-          head: [['Section','Asset','Priority']],
-          body: rows.map(r => [r['Section']||'', r['Asset']||'', r['Priority']||'']),
+          head: [['Section','Asset','Priority','Qty Req / Rec']],
+          body: tableBody,
           theme: 'plain',
           styles: {fontSize:8, textColor:CLR.text, fillColor:CLR.bg, cellPadding:2.5},
           headStyles: {fillColor:CLR.card, textColor:CLR.accent, fontStyle:'bold', fontSize:8},
           alternateRowStyles: {fillColor:CLR.rowOdd},
-          columnStyles: {0:{cellWidth:45},1:{cellWidth:70},2:{cellWidth:25}},
+          columnStyles: {0:{cellWidth:40},1:{cellWidth:65},2:{cellWidth:22},3:{cellWidth:38}},
           margin: {left:10,right:10}, tableWidth:'wrap',
           tableLineColor:CLR.border, tableLineWidth:0.2,
           didParseCell: d => {
             if (d.column.index===2 && d.section==='body') {
               const pc={Essential:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];
               if(pc){d.cell.styles.textColor=pc;d.cell.styles.fontStyle='bold';}
+            }
+            if (d.column.index===3 && d.section==='body' && d.cell.raw) {
+              d.cell.styles.textColor = CLR.accent;
+              d.cell.styles.fontStyle = 'bold';
             }
           }
         });
