@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>New Store Asset Receiving</title>
+  <title>New Store Asset Receiving - View Only</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -64,9 +64,9 @@
 
     /* ── Pills ── */
     .pill { display:inline-block; font-size:10px; padding:2px 8px; border-radius:10px; font-weight:500; white-space:nowrap; }
-    .pill-received   { background:rgba(74,222,128,0.1);  color:#4ade80; }
-    .pill-not-received { background:rgba(251,191,36,0.1); color:#fbbf24; }
-    .pill-delivered  { background:rgba(251,191,36,0.1);  color:#fbbf24; }
+    .pill-received     { background:rgba(74,222,128,0.1);  color:#4ade80; }
+    .pill-not-received { background:rgba(248,113,113,0.1); color:#f87171; }
+    .pill-delivered    { background:rgba(251,191,36,0.1);  color:#fbbf24; }
     .pill-none       { background:rgba(100,116,139,0.1); color:#94a3b8; }
 
     /* ── Progress bar ── */
@@ -86,6 +86,13 @@
 
     .branch-link { color:#22d3ee; text-decoration:none; font-weight:700; }
     .branch-link:hover { text-decoration:underline; }
+    .edit-khalid  { outline:1.5px solid #a78bfa !important; background:rgba(167,139,250,0.08) !important; }
+    .edit-azhar   { outline:1.5px solid #34d399 !important; background:rgba(52,211,153,0.08) !important; }
+    .edit-eissa   { outline:1.5px solid #fb923c !important; background:rgba(251,146,60,0.08) !important; }
+    .user-badge   { font-size:9px; padding:1px 6px; border-radius:8px; font-weight:600; margin-left:4px; }
+    .badge-khalid { background:rgba(167,139,250,0.15); color:#a78bfa; }
+    .badge-azhar  { background:rgba(52,211,153,0.15);  color:#34d399; }
+    .badge-eissa  { background:rgba(251,146,60,0.15);  color:#fb923c; }
 
     .error-banner { background:rgba(248,113,113,0.08); border:0.5px solid rgba(248,113,113,0.2); color:#f87171; font-size:12px; padding:10px 14px; border-radius:8px; margin-bottom:1rem; display:none; }
     .loading { text-align:center; padding:3rem; color:#64748b; font-size:13px; }
@@ -102,146 +109,26 @@
 </head>
 <body>
 
-  <!-- Logo -->
-  <div style="text-align:center;padding:1rem 0 0.5rem;border-bottom:0.5px solid rgba(255,255,255,0.06);margin-bottom:1rem;">
-    <img src="logo.png" style="height:80px;object-fit:contain;" alt="Space Planning & Store Improvement" />
-  </div>
 
-  <!-- Nav Bar -->
-  <div class="nav-bar">
-    <button class="nav-btn active" id="nav-dashboard" onclick="switchPage('dashboard')">📊 Dashboard</button>
-    <button class="nav-btn" id="nav-tracker" onclick="switchPage('tracker')">📋 Tracking Page</button>
-  </div>
 
-  <!-- Dashboard Page -->
-  <div id="page-dashboard">
-  <div class="header">
-    <div>
-      <h1>New Store Asset Receiving</h1>
-      <p id="last-updated">Connecting...</p>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <div class="live-badge"><div class="live-dot"></div> Live</div>
 
-      <select id="report-branch" style="background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;font-size:12px;padding:6px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;">
-        <option value="">— PDF Report —</option>
-      </select>
-      <button class="btn" style="background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.2);color:#4ade80;" onclick="generateReport()">⬇ Export</button>
-      <button class="btn" onclick="loadAll()">↻ Refresh</button>
-    </div>
-  </div>
-
-  <div id="error-banner" class="error-banner"></div>
-
-  <!-- KPI Cards -->
-  <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Overall Completion</div><div class="kpi-value cyan" id="kpi-pct">—</div><div class="kpi-sub" id="kpi-pct-sub">all branches</div></div>
-    <div class="kpi-card"><div class="kpi-label">Total Assets</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">tracked</div></div>
-    <div class="kpi-card"><div class="kpi-label">Received</div><div class="kpi-value green" id="kpi-received">—</div><div class="kpi-sub" id="kpi-received-sub">—</div></div>
-    <div class="kpi-card"><div class="kpi-label">Delivered</div><div class="kpi-value amber" id="kpi-delivered">—</div><div class="kpi-sub" id="kpi-delivered-sub">—</div></div>
-    <div class="kpi-card"><div class="kpi-label">Not Received</div><div class="kpi-value red" id="kpi-not-received">—</div><div class="kpi-sub" id="kpi-not-received-sub">—</div></div>
-  </div>
-
-  <!-- Controls -->
-  <div class="controls">
-    <label>Branch:</label>
-    <select id="branch-filter" onchange="renderAll()"><option value="ALL">All Branches</option></select>
-    <label>Status:</label>
-    <select id="status-filter" onchange="onStatusFilter()"></select>
-
-  </div>
-
-  <!-- Section Tabs -->
-  <div class="section-tabs" id="section-tabs-wrap"></div>
-
-  <!-- Metrics Section -->
-  <div id="metrics-section" style="margin-bottom:1.25rem;display:none;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-
-      <!-- Top 5 Branches -->
-      <div class="table-card" style="margin-bottom:0;">
-        <div class="chart-title" style="margin-bottom:0.75rem;">🏆 Top 5 Branches</div>
-        <div id="top-branches"></div>
-      </div>
-
-      <!-- Bottom 5 Branches -->
-      <div class="table-card" style="margin-bottom:0;">
-        <div class="chart-title" style="margin-bottom:0.75rem;">⚠️ Bottom 5 Branches</div>
-        <div id="bottom-branches"></div>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-
-      <!-- Critical Alerts: Essential Not Received -->
-      <div class="table-card" style="margin-bottom:0;">
-        <div class="chart-title" style="margin-bottom:0.75rem;">🔴 Essential Assets Not Received</div>
-        <div id="critical-essential"></div>
-      </div>
-
-      <!-- Delivered Not Signed -->
-      <div class="table-card" style="margin-bottom:0;">
-        <div class="chart-title" style="margin-bottom:0.75rem;">📋 Delivered — Awaiting Signature</div>
-        <div id="critical-delivered"></div>
-      </div>
-
-      <!-- Assets with Most Issues -->
-      <div class="table-card" style="margin-bottom:0;">
-        <div class="chart-title" style="margin-bottom:0.75rem;">📦 Assets with Most Issues</div>
-        <div id="critical-assets"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Overview charts -->
-  <div id="overview-section">
-    <div class="charts-row" id="overview-charts">
-      <div class="chart-card">
-        <div class="chart-title">% Completion by Branch</div>
-        <div style="position:relative;width:100%;height:400px;"><canvas id="branchChart"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Received vs Not Received</div>
-        <div id="donut-legend" style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;flex-wrap:wrap;"></div>
-        <div style="position:relative;width:100%;height:340px;"><canvas id="donutChart"></canvas></div>
-      </div>
-    </div>
-    <div class="chart-card full" id="rec-bar-card">
-      <div class="chart-title">Received vs Not Received by Branch</div>
-      <div id="rec-bar-wrap" style="position:relative;width:100%;height:400px;"><canvas id="recBarChart"></canvas></div>
-    </div>
-    <div class="table-card" id="overview-table-card">
-      <div class="chart-title" style="margin-bottom:0.75rem;">Branch Breakdown by Section</div>
-      <div style="overflow-x:auto;"><div id="overview-table-wrap"></div></div>
-    </div>
-  </div>
-
-  <!-- Section detail -->
-  <div id="section-detail" style="display:none;">
-    <div class="table-card">
-      <div class="chart-title" id="section-table-title" style="margin-bottom:0.75rem;">Asset Breakdown</div>
-      <div style="overflow-x:auto;"><div id="section-table-wrap"></div></div>
-    </div>
-  </div>
-
-  <!-- Fridges/Shelves qty section -->
-  <div id="qty-section" style="display:none;">
-    <div class="table-card">
-      <div class="chart-title" id="qty-table-title" style="margin-bottom:0.75rem;">Quantities</div>
-      <div style="overflow-x:auto;"><div id="qty-table-wrap"></div></div>
-    </div>
-  </div>
-
-  </div><!-- end page-dashboard -->
 
   <!-- Tracker Page (embedded) -->
-  <div id="page-tracker" style="display:none;">
-    <div class="header">
-      <div><h1>Asset Tracking</h1><p id="tracker-updated">Connecting...</p></div>
-      <div style="display:flex;gap:8px;align-items:center;">
+  <div id="page-tracker">
+    <div class="header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;">
+      <div style="display:flex;align-items:center;">
+        <img src="logo.png" style="height:60px;object-fit:contain;" alt="Logo" />
+      </div>
+      <div style="text-align:center;">
+        <h1 style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.3px;">New Store Asset Receiving - View Only</h1>
+        <p id="tracker-updated" style="font-size:12px;color:#f1f5f9;margin-top:3px;">Connecting...</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;">
         <div class="live-badge"><div class="live-dot"></div> Live</div>
+        <span id="user-badge" style="display:none;" style="display:none;font-size:11px;padding:4px 10px;border-radius:10px;" class="user-badge"></span>
         
         
+<button class="btn" onclick="loadTracker()">↻ Refresh</button>
       </div>
     </div>
     <div class="controls">
@@ -255,13 +142,41 @@
       <label>Branch:</label>
       <select id="t-branch-filter" onchange="renderTracker()"><option value="ALL">All</option></select>
     </div>
+    <!-- Task List -->
+    <div id="task-list" style="display:none;margin-bottom:1.25rem;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+
+        <!-- Table 1: Branch Status -->
+        <div class="table-card" style="margin-bottom:0;">
+          <div class="chart-title" style="margin-bottom:0.75rem;">🏪 Branch Status</div>
+          <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-branch-table"></div></div>
+        </div>
+
+        <!-- Table 2: Delivered Assets -->
+        <div class="table-card" style="margin-bottom:0;">
+          <div class="chart-title" style="margin-bottom:0.75rem;">📋 Delivered — Awaiting Signature</div>
+          <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-delivered-table"></div></div>
+        </div>
+
+        <!-- Table 3: Shortages -->
+        <div class="table-card" style="margin-bottom:0;">
+          <div class="chart-title" style="margin-bottom:0.75rem;">⚠️ Qty Shortages</div>
+          <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-shortage-table"></div></div>
+        </div>
+
+      </div>
+    </div>
+
     <div id="tracker-content"><div class="loading">Select Tracking Page to load data...</div></div>
   </div>
 
-  <div style="position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
+
+  <div style="position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast" style="display:none;">✓ Saved</div>
 
   <script>
     const APPS_URL = 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
+
+    
 
     let checklistData = [];
     let branchData    = [];
@@ -315,8 +230,10 @@
 
     /* ── Load all data ── */
     async function loadAll() {
-      document.getElementById('last-updated').textContent = 'Loading...';
-      document.getElementById('error-banner').style.display = 'none';
+      const lastUpdEl = document.getElementById('last-updated');
+      const errBanner = document.getElementById('error-banner');
+      if (lastUpdEl) lastUpdEl.textContent = 'Loading...';
+      if (errBanner) errBanner.style.display = 'none';
       try {
         /* Branch Codes */
         const bc = await fetchSheet('Branch Codes');
@@ -357,12 +274,11 @@
         /* Populate filters */
         populateFilters();
 
-        document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+        if (lastUpdEl) lastUpdEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
         renderAll();
       } catch(e) {
-        document.getElementById('error-banner').textContent = 'Failed to load: ' + e.message;
-        document.getElementById('error-banner').style.display = 'block';
-        document.getElementById('last-updated').textContent = 'Failed';
+        if (errBanner) { errBanner.textContent = 'Failed to load: ' + e.message; errBanner.style.display = 'block'; }
+        if (lastUpdEl) lastUpdEl.textContent = 'Failed';
       }
     }
 
@@ -381,7 +297,7 @@
 
       /* Report branch selector */
       const reportSel = document.getElementById('report-branch');
-      if (reportSel) reportSel.innerHTML = '<option value="">- Select Branch -</option>' + allBranches.map(b => `<option value="${b.code}">${b.code}</option>`).join('');
+      reportSel.innerHTML = '<option value="">- Select Branch -</option>' + allBranches.map(b => `<option value="${b.code}">${b.code}</option>`).join('');
     }
 
     function onStatusFilter() {
@@ -721,9 +637,7 @@
     }
 
     /* ── PDF Report ── */
-    function generateReport() {
-      const reportEl = document.getElementById('report-branch');
-      const branch = reportEl ? reportEl.value : '';
+    function _generateReportForBranch(branch) {
       if (!branch) { alert('Please select a branch.'); return; }
 
       const { jsPDF } = window.jspdf;
@@ -740,9 +654,9 @@
         border:[203,213,225],
       };
 
-      const assets   = checklistData.filter(r => (r['Branch Code']||'').trim() === branch);
+      const assets   = (typeof checklistData !== 'undefined' && checklistData.length ? checklistData : trackerData).filter(r => (r['Branch Code']||'').trim() === branch);
       const fq       = qtyData[branch] || {};
-      const dnFolder = dnData[branch] || '';
+      const dnFolder = (trackerStatus[branch] || {})['D.N. Folder'] || (dnData[branch] || '');
       const counts   = statusCounts(assets);
 
       function drawHeader() {
@@ -920,13 +834,7 @@
 
     /* ── Page Switching ── */
     let trackerLoaded = false;
-    function switchPage(page) {
-      document.getElementById('page-dashboard').style.display = page==='dashboard' ? 'block' : 'none';
-      document.getElementById('page-tracker').style.display   = page==='tracker'   ? 'block' : 'none';
-      document.getElementById('nav-dashboard').classList.toggle('active', page==='dashboard');
-      document.getElementById('nav-tracker').classList.toggle('active', page==='tracker');
-      if (page==='tracker' && !trackerLoaded) { trackerLoaded=true; loadTracker(); }
-    }
+
 
     /* ── Tracker Page Logic ── */
     let trackerData   = [];
@@ -943,13 +851,24 @@
         trackerStatus = {};
         (st.rows||[]).forEach(r => { const b=(r['Branch Code']||'').trim(); if(b) trackerStatus[b]=r; });
 
+        /* Load qty data */
+        try {
+          const fq = await fetchSheet('Fridge & Shelf Quantities');
+          qtyData  = {};
+          (fq.rows||[]).forEach(r => {
+            const b = (r['Branch Code']||r['Branch']||'').trim();
+            if (b) qtyData[b] = r;
+          });
+        } catch(e) { qtyData = {}; }
+
         const seen = new Set();
         trackerBranches = [];
         trackerData.forEach(r => {
           const b=(r['Branch Code']||'').trim(), bs=(r['Branch Status']||'').trim();
           if(b&&!seen.has(b)){seen.add(b);trackerBranches.push({code:b,status:bs});}
+          if(b&&!seen.has(b)){seen.add(b);trackerBranches.push({code:b,status:bs});}
         });
-
+        trackerBranches.sort((a,b) => a.code.localeCompare(b.code));
         const tBranchSel = document.getElementById('t-branch-filter');
         const cur = tBranchSel.value;
         tBranchSel.innerHTML = '<option value="ALL">All</option>' + trackerBranches.map(b=>`<option value="${b.code}">${b.code}</option>`).join('');
@@ -972,6 +891,7 @@
       container.innerHTML = '';
       if (branches.length===0) { container.innerHTML='<div class="loading">No branches found.</div>'; return; }
       branches.forEach(b => container.appendChild(buildTrackerCard(b)));
+      renderTaskList(branches.map(b => b.code));
     }
 
     function buildTrackerCard(branch) {
@@ -987,15 +907,33 @@
       const tagCls = {Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24'}[branch.status]||'#94a3b8';
       const cardId = 'tc_'+branch.code.replace(/[^a-zA-Z0-9]/g,'_');
 
+      /* ── Section & Group definitions ── */
+      const SECTION_ORDER = ['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
+      const SHARED_GROUPS = {
+        'Shelves':           ['Freebolt','Heavyrack','Heavy Rack'],
+        'Fridges':           ['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'],
+        'CCTV+AccessPoints': ['CCTV','Access Points'],
+        'OfficeFurniture':   ['Office Chair','Office Desk']
+      };
+      const assetToGroup = {};
+      Object.entries(SHARED_GROUPS).forEach(([grp, assets]) => assets.forEach(a => assetToGroup[a] = grp));
+
       const card = document.createElement('div');
       card.style.cssText = 'background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.07);border-radius:10px;margin-bottom:1.25rem;overflow:hidden;';
+      card.dataset.branch = branch.code;
+
       card.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1.25rem;background:rgba(255,255,255,0.03);border-bottom:0.5px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.ci').style.transform=b.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'">
           <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;flex-wrap:wrap;">
-            ${folder?`<a href="${folder}" target="_blank" class="branch-link">${branch.code}</a>`:`<span style="color:#f1f5f9;">${branch.code}</span>`}
-            <span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${tagCls}18;color:${tagCls};font-weight:600;">${branch.status}</span>
+            <span style="color:#ffffff;font-weight:700;">${branch.code}</span>
+            <select onchange="updateBranchStatus('${branch.code}',this)"
+              style="font-size:10px;padding:2px 8px;border-radius:10px;background:${tagCls}18;color:${tagCls};font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;outline:none;">
+              <option value="Receiving" ${branch.status==='Receiving'?'selected':''}>Receiving</option>
+              <option value="Live"      ${branch.status==='Live'     ?'selected':''}>Live</option>
+              <option value="Pending"   ${branch.status==='Pending'  ?'selected':''}>Pending</option>
+            </select>
             <span class="pill pill-received">${rec} Received</span>
-            ${del>0?`<span class="pill pill-delivered">${del} Delivered</span>`:''}
+            ${del>0?`<span class="pill" style="background:rgba(251,191,36,0.1);color:#fbbf24;">${del} Delivered</span>`:''}
             <span class="pill pill-not-received">${nr} Not Received</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
@@ -1006,9 +944,10 @@
         <div style="display:none;">
           <div style="padding:0.5rem 1.25rem;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <span style="font-size:11px;color:#64748b;font-weight:500;">D.N. Folder:</span>
-            ${folder?`<a href="${folder}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">${folder}</a>`:
-            `-`}
-            <button onclick="generateBranchReport('${branch.code}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">⬇ PDF</button>
+            ${folder?`<a href="${folder}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;text-decoration:none;">🔗 D.N. Folder</a>`:
+            `—`}
+            <button onclick="generateBranchReport('${branch.code}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">⬇ Report PDF</button>
+            <button onclick="generateMissingPDF('${branch.code}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:4px;">⬇ Missing PDF</button>
           </div>
           <div style="display:flex;gap:6px;padding:0.6rem 1.25rem;border-bottom:0.5px solid rgba(255,255,255,0.05);flex-wrap:wrap;align-items:center;" id="${cardId}_filterbar">
             <span style="font-size:11px;color:#64748b;">Show:</span>
@@ -1018,14 +957,13 @@
             <button onclick="filterTrackerRows('${cardId}','Not Received',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Not Received</button>
             <button onclick="filterTrackerRows('${cardId}','None',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
           </div>
-          <div style="overflow-x:auto;padding:0 0 0.5rem;">
+          <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:12px;">
               <thead><tr>
                 <th style="min-width:160px;text-align:left;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);border-right:2px solid rgba(255,255,255,0.5);">Asset</th>
                 <th style="min-width:80px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Priority</th>
                 <th style="min-width:140px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Status</th>
-                <th style="min-width:160px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">D.N. Not Signed</th>
-                <th style="min-width:160px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">D.N. Signed</th>
+                <th style="min-width:160px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">D.N.</th>
                 <th style="min-width:180px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Notes</th>
               </tr></thead>
               <tbody id="${cardId}_tbody"></tbody>
@@ -1035,37 +973,100 @@
 
       const tbody = card.getElementsByTagName('tbody')[0];
       if (!tbody) { console.error('tbody not found for', branch.code); return card; }
-      allAssets.forEach((row, i) => {
-        const asset=row['Asset']||'', pri=row['Priority']||'', assetSt=row['Asset Status']||'None';
-        const dnNS=row['D.N. Not Signed']||'', dnS=row['D.N. Signed']||'', note=row['Notes']||'';
-        const pClass={Essential:'p-essential',High:'p-high',Medium:'p-medium',Low:'p-low'}[pri]||'';
-        const stCls={None:'none-val','Not Received':'not-received',Delivered:'delivered',Received:'received'}[assetSt]||'';
-        const key=branch.code+'||'+asset;
-        const safeKey=(branch.code+'__'+asset).replace(/[^a-zA-Z0-9]/g,'_');
-        const bg=i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
-        const tr=document.createElement('tr');
-        tr.style.background=bg;
-        tr.dataset.status = assetSt;
-        const pillColor = {Received:'#4ade80',Delivered:'#fbbf24','Not Received':'#f87171',None:'#94a3b8'}[assetSt]||'#94a3b8';
-        const pillBg    = {Received:'rgba(74,222,128,0.1)',Delivered:'rgba(251,191,36,0.1)','Not Received':'rgba(248,113,113,0.1)',None:'rgba(100,116,139,0.1)'}[assetSt]||'rgba(100,116,139,0.1)';
-        tr.innerHTML=`
-          <td style="padding:8px 10px;font-weight:500;border-right:2px solid rgba(255,255,255,0.5);border-bottom:0.5px solid rgba(255,255,255,0.1);">${asset}</td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span class="${pClass}">${pri||'-'}</span></td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            <span style="display:inline-block;font-size:10px;padding:3px 10px;border-radius:10px;font-weight:600;background:${pillBg};color:${pillColor};">${assetSt||'None'}</span>
-          </td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            ${dnNS?`<a href="${dnNS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View D.N.</a>`:'<span style="color:#475569;font-size:11px;">-</span>'}
-          </td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            ${dnS?`<a href="${dnS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View Signed</a>`:'<span style="color:#475569;font-size:11px;">-</span>'}
-          </td>
-          <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;font-size:11px;">${note||'-'}</td>`;
-        tbody.appendChild(tr);
+
+      /* ── Group assets by section then by shared group ── */
+      const bySection = {};
+      allAssets.forEach(row => {
+        const sec = row['Section'] || 'Other';
+        if (!bySection[sec]) bySection[sec] = [];
+        bySection[sec].push(row);
       });
+
+      /* Process sections in order */
+      const orderedSections = [...SECTION_ORDER, ...Object.keys(bySection).filter(s => !SECTION_ORDER.includes(s))];
+
+      orderedSections.forEach(sec => {
+        if (!bySection[sec]) return;
+        const secAssets = bySection[sec];
+
+        /* Add section header row */
+        const secTr = document.createElement('tr');
+        secTr.innerHTML = `<td colspan="6" style="padding:5px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;background:rgba(255,255,255,0.04);border-bottom:0.5px solid rgba(255,255,255,0.08);">${sec}</td>`;
+        tbody.appendChild(secTr);
+
+        /* Group assets within section */
+        const groups = {};
+        const groupOrder = [];
+        secAssets.forEach(row => {
+          const grp = assetToGroup[row['Asset']] || ('__ind__' + row['Asset']);
+          if (!groups[grp]) { groups[grp] = []; groupOrder.push(grp); }
+          groups[grp].push(row);
+        });
+
+        /* Remove duplicates in groupOrder */
+        const seen = new Set();
+        const uniqueGroupOrder = groupOrder.filter(g => { if(seen.has(g)) return false; seen.add(g); return true; });
+
+        uniqueGroupOrder.forEach(grp => {
+          const rows   = groups[grp];
+          const isShared = !grp.startsWith('__ind__');
+          let rowIndex = 0;
+
+          rows.forEach((row, idx) => {
+            const asset      = row['Asset'] || '';
+            const pri        = row['Priority'] || '';
+            const assetSt    = row['Asset Status'] || 'None';
+            const dnNS       = row['D.N. Not Signed'] || '';
+            const dnS        = row['D.N. Signed'] || '';
+            const note       = row['Notes'] || '';
+            const key        = branch.code + '||' + asset;
+            const safeKey    = (branch.code + '__' + asset).replace(/[^a-zA-Z0-9]/g, '_');
+            const pClass     = {Essential:'p-essential',High:'p-high',Medium:'p-medium',Low:'p-low'}[pri]||'';
+            const stCls      = {None:'none-val','Not Received':'not-received',Delivered:'delivered',Received:'received'}[assetSt]||'';
+            const stColor    = {Received:'rgba(74,222,128,0.4)',Delivered:'rgba(251,191,36,0.4)','Not Received':'rgba(248,113,113,0.4)',None:'rgba(100,116,139,0.3)'}[assetSt]||'rgba(100,116,139,0.3)';
+            const stTextColor= {Received:'#4ade80',Delivered:'#fbbf24','Not Received':'#f87171',None:'#94a3b8'}[assetSt]||'#94a3b8';
+            const bg = idx%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
+
+            /* For shared groups: only show D.N. cell on first row, span the rest */
+            const showDN = !isShared || idx === 0;
+            const dnRowspan = isShared ? rows.length : 1;
+
+            const tr = document.createElement('tr');
+            tr.dataset.status = assetSt;
+            tr.style.background = bg;
+
+            let dnCell = '';
+            if (showDN) {
+              let dnHtml;
+              if (dnS) {
+                dnHtml = `<a href="${dnS}" target="_blank" style="color:#4ade80;font-size:11px;text-decoration:none;">✓ Signed D.N.</a>`;
+              } else if (dnNS) {
+                dnHtml = `<a href="${dnNS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View D.N.</a>`;
+              } else {
+                dnHtml = `<span style="color:#475569;font-size:11px;">No D.N.</span>`;
+              }
+              dnCell = `<td rowspan="${dnRowspan}" style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;">${dnHtml}</td>`;
+            }
+            tr.innerHTML = `
+              <td style="padding:8px 10px;font-weight:500;border-right:2px solid rgba(255,255,255,0.5);border-bottom:0.5px solid rgba(255,255,255,0.1);">${asset}</td>
+              <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span class="${pClass}">${pri||'—'}</span></td>
+              <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+                <span class="pill ${{None:'pill-none','Not Received':'pill-not-received',Delivered:'pill-delivered',Received:'pill-received'}[assetSt]||'pill-none'}">${assetSt||'None'}</span>
+              </td>
+              ${dnCell}
+              <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+              <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+                <span style="font-size:11px;color:#94a3b8;">${note||'—'}</span>
+              </td>`;
+
+            tbody.appendChild(tr);
+            if (note) { const ta=tr.querySelector('textarea[data-existing]'); if(ta) renderNotesDisplay(ta.parentElement, note); }
+          });
+        });
+      });
+
       /* ── Qty section ── */
       const fqBranch = qtyData[branch.code] || {};
-      const hasQty   = Object.values(fqBranch).some(v => v && v !== branch.code);
       const qtyWrap  = document.createElement('div');
       qtyWrap.style.cssText = 'border-top:0.5px solid rgba(255,255,255,0.07);';
       qtyWrap.innerHTML = `
@@ -1092,8 +1093,10 @@
         {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
         {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
         {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+        {label:'3D Fridge',  req:'3D Fridge Req',   rec:'3D Fridge Rec'},
         {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
         {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+        {label:'3D Freezer', req:'3D Freezer Req',  rec:'3D Freezer Rec'},
       ];
       QTY_ITEMS_T.forEach((item,i) => {
         const req = parseInt(fqBranch[item.req]||0)||0;
@@ -1102,14 +1105,22 @@
         const c   = req<=0?'#475569':rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
         const lbl = req<=0?'-':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
         const bg  = i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
+        const safeId = (branch.code+'_'+item.label).replace(/[^a-zA-Z0-9]/g,'_');
         const tr  = document.createElement('tr');
         tr.style.background = bg;
         tr.innerHTML = `
           <td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,0.1);">${item.label}</td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);font-family:'DM Mono',monospace;font-size:11px;">${req>0?req:'-'}</td>
           <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            ${req>0?`<span style="font-family:'DM Mono',monospace;font-size:11px;color:${c};">${rec}/${req}</span>
-            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>`:'-'}
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:${c};">
+              <input readonly type="number" min="0" value="${req||''}" placeholder="0" 
+                style="width:55px;background:#0f1117;border:0.5px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
+              <span style="font-size:9px;color:#64748b;"> Req - </span>
+              <input readonly type="number" min="0" value="${rec||''}" placeholder="0" 
+                style="width:55px;background:#0f1117;border:0.5px solid ${c}40;color:${c};font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
+              <span style="font-size:9px;color:#64748b;"> Rec</span>
+              
+            </span>
+            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>
           </td>
           <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
             <span style="font-size:11px;color:${c};font-weight:600;">${lbl}</span>
@@ -1120,39 +1131,506 @@
 
       return card;
     }
+    async function saveTrackerField(el, key, field) {
+      const [branch,asset] = key.split('||');
+      let value = el.value !== undefined ? el.value : el.textContent;
 
-    function filterTrackerRows(cardId, filter, btn) {
-      const filterBar = document.getElementById(cardId + '_filterbar');
-      if (filterBar) filterBar.querySelectorAll('button').forEach(b => {
-        b.style.background = 'transparent'; b.style.color = '#94a3b8'; b.style.borderColor = 'rgba(255,255,255,0.1)';
+      if (field === 'Asset Status') {
+        const colors     = { Received:'rgba(74,222,128,0.4)', Delivered:'rgba(251,191,36,0.4)', 'Not Received':'rgba(248,113,113,0.4)', None:'rgba(100,116,139,0.3)' };
+        const textColors = { Received:'#4ade80', Delivered:'#fbbf24', 'Not Received':'#f87171', None:'#94a3b8' };
+        el.style.borderColor = colors[value] || colors.None;
+        el.style.color       = textColors[value] || textColors.None;
+        el.closest('tr').dataset.status = value;
+      }
+
+      /* Highlight cell with user color */
+      if (currentUser) {
+        const cell = el.closest ? el.closest('td') : null;
+        if (cell) {
+          cell.classList.remove('edit-khalid','edit-azhar','edit-eissa');
+          cell.classList.add('edit-' + currentUser.toLowerCase());
+          /* Add user badge tooltip */
+          cell.title = 'Last edited by ' + currentUser;
+        }
+      }
+
+      /* Log the edit */
+      const ts = new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'logEdit', user: currentUser||'Unknown', branch, asset, field, value, timestamp: ts })
       });
-      btn.style.background = 'rgba(34,211,238,0.12)'; btn.style.color = '#22d3ee'; btn.style.borderColor = 'rgba(34,211,238,0.3)';
-      const tbody = document.getElementById(cardId + '_tbody');
-      const tbl = document.getElementById(cardId + '_tbody');
-      if (!tbl) return;
-      tbl.querySelectorAll('tr').forEach(tr => {
-        tr.style.display = (filter === 'ALL' || st === filter) ? '' : 'none';
-      });
+
+      if (field === 'Notes' && value.trim()) {
+        const ts        = new Date().toLocaleString('en-GB');
+        const existing  = el.dataset.existing || '';
+        const newEntry  = `[${ts}] ${value.trim()}`;
+        value           = existing ? existing + ' | ' + newEntry : newEntry;
+        el.dataset.existing = value;
+        el.value        = '';
+        el.placeholder  = 'Add another note...';
+        renderNotesDisplay(el.parentElement, value);
+      }
+
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateChecklist',branch,asset,field,value})});
+      showSaveToast();
     }
 
+    function showDNInput(cellId, key, field, label) {
+      const cell = document.getElementById(cellId);
+      if (!cell) return;
+      cell.innerHTML = `<div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+        <input style="background:#0f1117;border:0.5px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:10px;padding:3px 6px;border-radius:4px;font-family:'DM Sans',sans-serif;width:130px;" placeholder="Paste link..." id="inp_${cellId}" />
+        <button onclick="saveDNLink('${cellId}','${key}','${field}','${label}')" style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
+      </div>`;
+      document.getElementById('inp_'+cellId)?.focus();
+    }
+    async function saveDNLink(cellId, key, field, label) {
+      const [branch,asset] = key.split('||');
+      const inp = document.getElementById('inp_'+cellId);
+      const value = inp?inp.value.trim():'';
+      if(!value) return;
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateChecklist',branch,asset,field,value})});
+      /* Log the edit */
+      const ts = new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch,asset,field,value,timestamp:ts})
+      });
+      inp.parentElement.innerHTML = `<a href="${value}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">${label}</a>`;
+      showSaveToast();
+    }
 
+    function addFolder(branch, cardId) {
+      /* Find the folder row by cardId and replace button with input */
+      const btn = document.querySelector(`[onclick*="addFolder('${branch}','${cardId}')"]`) || event.target;
+      const row = btn.closest('div[style*="padding:0.5rem"]') || btn.parentElement;
+      /* Hide the + Add Folder button */
+      btn.style.display = 'none';
+      /* Create input inline */
+      const wrap = document.createElement('span');
+      wrap.style.cssText = 'display:inline-flex;align-items:center;gap:4px;';
+      wrap.innerHTML = `<input id="fi_${cardId}" style="background:#0f1117;border:0.5px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:11px;padding:3px 8px;border-radius:4px;font-family:'DM Sans',sans-serif;width:220px;" placeholder="Paste Google Drive folder link..." />
+        <button onclick="saveFolder2('${branch}','fi_${cardId}','${cardId}')" style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>`;
+      btn.parentElement.appendChild(wrap);
+      document.getElementById('fi_'+cardId)?.focus();
+    }
+    async function saveFolder2(branch, inputId, cardId) {
+      const val = (document.getElementById(inputId)?.value||'').trim();
+      if(!val) return;
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateStatus',branch,field:'D.N. Folder',value:val})});
+      if(!trackerStatus[branch]) trackerStatus[branch]={};
+      trackerStatus[branch]['D.N. Folder']=val;
+      /* Log the edit */
+      const ts = new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch,asset:'-',field:'D.N. Folder',value:val,timestamp:ts})
+      });
+      /* Update UI - replace input with link */
+      const inp = document.getElementById(inputId);
+      if (inp) {
+        const wrap = inp.parentElement;
+        wrap.outerHTML = `<a href="${val}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;text-decoration:none;">🔗 D.N. Folder</a>`;
+      }
+      showSaveToast();
+    }
 
+    function openAddBranch()  { document.getElementById('add-branch-modal').style.display='flex'; }
+    function closeAddBranch() { document.getElementById('add-branch-modal').style.display='none'; document.getElementById('new-branch-code').value=''; }
 
+    async function submitAddBranch() {
+      const code=document.getElementById('new-branch-code').value.trim().toUpperCase();
+      const status=document.getElementById('new-branch-status').value;
+      if(!code){alert('Please enter a branch code.');return;}
+      const codeRegex = /^[A-Z]{3}-[A-Z]{3}\d{3}$/;
+      if (!codeRegex.test(code)) {
+        alert('Invalid branch code format.\nRequired: ABC-ABC001\nExample: JED-SHZ001');
+        return;
+      }
+      const btn=document.getElementById('add-branch-btn');
+      btn.textContent='Adding...';btn.disabled=true;
+      try {
+        await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'addBranch',branchCode:code,branchStatus:status})});
+        /* Wait a moment for sheet to update then reload */
+        await new Promise(r => setTimeout(r, 2000));
+        closeAddBranch();
+        showSaveToast('Branch added! Refreshing...');
+        await Promise.all([loadAll(),loadTracker()]);
+      } catch(e) {
+        alert('Error adding branch: ' + e.message);
+      } finally {
+        btn.textContent='Add Branch';btn.disabled=false;
+      }
+    }
+
+    let toastTimer;
     function showSaveToast(msg) {
       const t=document.getElementById('save-toast');
       t.textContent=msg||'✓ Saved';t.style.opacity='1';
       clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity='0',2500);
     }
 
-    function generateBranchReport(branch) {
-      /* Use existing generateReport logic with specific branch */
-      const rb = document.getElementById('report-branch'); if (rb) rb.value = branch;
-      generateReport();
+    /* ── Missing PDF (Delivered + Not Received only) ── */
+    function generateMissingPDF(branch) {
+      const { jsPDF } = window.jspdf;
+      const doc   = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const today = new Date().toLocaleDateString('en-GB');
+
+      const CLR = {
+        bg:[255,255,255], card:[240,242,247], text:[15,23,42],
+        accent:[14,116,144], green:[22,163,74], amber:[180,120,0],
+        red:[185,28,28], grey:[100,116,139],
+        rowOdd:[248,250,252], rowEven:[255,255,255], border:[203,213,225],
+      };
+
+      const assets    = (typeof trackerData !== 'undefined' ? trackerData : []).filter(r => (r['Branch Code']||'').trim() === branch);
+      const delivered = assets.filter(a => a['Asset Status'] === 'Delivered');
+      const notRec    = assets.filter(a => a['Asset Status'] === 'Not Received');
+      const total     = delivered.length + notRec.length;
+
+      function drawHeader() {
+        doc.setFillColor(...CLR.card); doc.rect(0,0,pageW,18,'F');
+        doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.text);
+        doc.text('Missing Assets Report', 10, 11);
+        doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.accent);
+        doc.text(branch, pageW-10, 7, {align:'right'});
+        doc.setTextColor(...CLR.grey); doc.text(today, pageW-10, 13, {align:'right'});
+        doc.setDrawColor(...CLR.accent); doc.setLineWidth(0.5); doc.line(0,18,pageW,18);
+      }
+
+      function drawFooter(pg, total) {
+        doc.setFillColor(...CLR.card); doc.rect(0,pageH-8,pageW,8,'F');
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.grey);
+        doc.text('Missing Assets — '+branch, 10, pageH-3);
+        doc.text(`Page ${pg} of ${total}`, pageW/2, pageH-3, {align:'center'});
+        doc.text(today, pageW-10, pageH-3, {align:'right'});
+      }
+
+      drawHeader();
+      let y = 22;
+
+      /* KPI cards */
+      const cards = [
+        {label:'Delivered',    value:delivered.length, color:CLR.amber},
+        {label:'Not Received', value:notRec.length,    color:CLR.red},
+        {label:'Total Missing',value:total,             color:CLR.accent},
+      ];
+      const cw = (pageW-20)/cards.length;
+      cards.forEach((c,i) => {
+        const x = 10+i*cw;
+        doc.setFillColor(...CLR.card); doc.roundedRect(x,y,cw-3,18,2,2,'F');
+        doc.setDrawColor(...CLR.border); doc.setLineWidth(0.2); doc.roundedRect(x,y,cw-3,18,2,2,'S');
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.grey);
+        doc.text(c.label.toUpperCase(), x+(cw-3)/2, y+5, {align:'center'});
+        doc.setFontSize(16); doc.setFont('helvetica','bold'); doc.setTextColor(...c.color);
+        doc.text(String(c.value), x+(cw-3)/2, y+13, {align:'center'});
+      });
+      y += 22;
+
+      /* Section order */
+      const SECTION_ORDER = ['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
+
+      const QTY_ASSETS = {
+        'Freebolt':       {req:'Freebolt Req',   rec:'Freebolt Rec'},
+        'Heavyrack':      {req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        'Heavy Rack':     {req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        '1 Door Chiller': {req:'1D Fridge Req',   rec:'1D Fridge Rec'},
+        '2 Door Chiller': {req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+        '3 Door Chiller': {req:'3D Fridge Req',   rec:'3D Fridge Rec'},
+        '1 Door Freezer': {req:'1D Freezer Req',  rec:'1D Freezer Rec'},
+        '2 Door Freezer': {req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+        '3 Door Freezer': {req:'3D Freezer Req',  rec:'3D Freezer Rec'},
+      };
+      const fq = qtyData[branch] || {};
+
+      function drawSectionTable(title, rows, color) {
+        if (rows.length === 0) return;
+        if (y > pageH-50) { doc.addPage(); drawHeader(); y=22; }
+        doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(...color);
+        doc.text(title + ' (' + rows.length + ')', 10, y); y+=4;
+
+        /* Sort by section */
+        rows.sort((a,b) => {
+          const si = SECTION_ORDER.indexOf(a['Section']||'');
+          const sj = SECTION_ORDER.indexOf(b['Section']||'');
+          return (si===-1?99:si) - (sj===-1?99:sj) || (a['Asset']||'').localeCompare(b['Asset']||'');
+        });
+
+        /* Build table body — add qty row for Fridges/Shelves assets */
+        const tableBody = rows.map(r => {
+          const aName = r['Asset']||'';
+          const qtyKey = QTY_ASSETS[aName];
+          const qtyStr = qtyKey
+            ? `Req: ${parseInt(fq[qtyKey.req]||0)||0} / Rec: ${parseInt(fq[qtyKey.rec]||0)||0}`
+            : '';
+          return [r['Section']||'', aName, r['Priority']||'', qtyStr];
+        });
+
+        doc.autoTable({
+          startY: y,
+          head: [['Section','Asset','Priority','Qty Req / Rec']],
+          body: tableBody,
+          theme: 'plain',
+          styles: {fontSize:8, textColor:CLR.text, fillColor:CLR.bg, cellPadding:2.5},
+          headStyles: {fillColor:CLR.card, textColor:CLR.accent, fontStyle:'bold', fontSize:8},
+          alternateRowStyles: {fillColor:CLR.rowOdd},
+          columnStyles: {0:{cellWidth:40},1:{cellWidth:65},2:{cellWidth:22},3:{cellWidth:38}},
+          margin: {left:10,right:10}, tableWidth:'wrap',
+          tableLineColor:CLR.border, tableLineWidth:0.2,
+          didParseCell: d => {
+            if (d.column.index===2 && d.section==='body') {
+              const pc={Essential:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];
+              if(pc){d.cell.styles.textColor=pc;d.cell.styles.fontStyle='bold';}
+            }
+            if (d.column.index===3 && d.section==='body' && d.cell.raw) {
+              d.cell.styles.textColor = CLR.accent;
+              d.cell.styles.fontStyle = 'bold';
+            }
+          }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      drawSectionTable('Delivered — Awaiting Signature', delivered, CLR.amber);
+      drawSectionTable('Not Received', notRec, CLR.red);
+
+      if (total === 0) {
+        doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.green);
+        doc.text('✓ All assets received!', pageW/2, y+10, {align:'center'});
+      }
+
+      const pages = doc.getNumberOfPages();
+      for(let i=1;i<=pages;i++){doc.setPage(i);drawFooter(i,pages);}
+      doc.save(`Missing_${branch}_${today.replace(/\//g,'-')}.pdf`);
     }
 
+    function generateBranchReport(branch) {
+      /* Call generateReport directly with branch override */
+      _generateReportForBranch(branch);
+    }
+
+    function generateReport() {
+      const el = document.getElementById('report-branch');
+      if (!el || !el.value) { alert('Please select a branch.'); return; }
+      _generateReportForBranch(el.value);
+    }
+
+    /* ── Scroll to Branch ── */
+    function scrollToBranch(branchCode) {
+      const cardId = 'tc_' + branchCode.replace(/[^a-zA-Z0-9]/g, '_');
+      const card   = document.getElementById(cardId) ? document.getElementById(cardId).closest('.branch-card-wrap') : null;
+      /* Find the branch card by searching for the branch code text */
+      const allCards = document.querySelectorAll('[data-branch]');
+      let target = null;
+      allCards.forEach(c => { if (c.dataset.branch === branchCode) target = c; });
+      if (!target) {
+        /* Try finding by card header text */
+        document.querySelectorAll('#tracker-content > div').forEach(c => {
+          if (c.innerHTML.includes(branchCode)) target = c;
+        });
+      }
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        /* Expand if collapsed */
+        const body = target.querySelector('div[style*="display:none"]');
+        if (body) body.style.display = 'block';
+        /* Highlight briefly */
+        target.style.outline = '2px solid #22d3ee';
+        setTimeout(() => target.style.outline = '', 2000);
+      }
+    }
+
+    /* ── Update Branch Status ── */
+    async function updateBranchStatus(branchCode, sel) {
+      const newStatus = sel.value;
+      const tagColors = { Receiving:'#22d3ee', Live:'#4ade80', Pending:'#fbbf24' };
+      const c = tagColors[newStatus] || '#94a3b8';
+      sel.style.background = c + '18';
+      sel.style.color = c;
+      /* Update local data */
+      trackerBranches = trackerBranches.map(b => b.code === branchCode ? {...b, status: newStatus} : b);
+      /* Save to sheet */
+      await fetch(APPS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'updateBranchStatus', branch: branchCode, status: newStatus }) });
+      /* Log */
+      const ts = new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'logEdit', user: currentUser||'Unknown', branch: branchCode, asset: '-', field: 'Branch Status', value: newStatus, timestamp: ts }) });
+      showSaveToast('Branch status updated to ' + newStatus);
+    }
+
+    /* ── Task List ── */
+    function renderTaskList(branchCodes) {
+      const taskList = document.getElementById('task-list');
+      if (!taskList) return;
+      taskList.style.display = 'block';
+
+      /* Table 1: Branch Status - Received% + Not Received count */
+      const branchRows = branchCodes.map(b => {
+        const assets    = trackerData.filter(r => (r['Branch Code']||'').trim() === b);
+        const received  = assets.filter(a => a['Asset Status'] === 'Received').length;
+        const delivered = assets.filter(a => a['Asset Status'] === 'Delivered').length;
+        const nr        = assets.filter(a => a['Asset Status'] === 'Not Received' || a['Asset Status'] === 'Delivered').length;
+        const total     = assets.filter(a => a['Asset Status'] && a['Asset Status'] !== 'None').length || 1;
+        const pct       = Math.round((received) / total * 100);
+        const color     = pct >= 80 ? '#4ade80' : pct >= 50 ? '#22d3ee' : '#fbbf24';
+        return { b, received, delivered, nr, total, pct, color };
+      }).sort((a,b) => a.pct - b.pct);
+
+      const branchFolder = b => (trackerStatus[b] || {})['D.N. Folder'] || '';
+      document.getElementById('task-branch-table').innerHTML = `
+        <table><thead><tr>
+          <th style="text-align:left;min-width:110px;">Branch</th>
+          <th style="min-width:90px;">Not Received</th>
+          <th style="min-width:110px;">Progress</th>
+        </tr></thead><tbody>
+        ${branchRows.map(r => `<tr>
+          <td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.b}');return false;" style="color:#22d3ee;text-decoration:none;">${r.b}</a></td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;color:#f87171;font-weight:700;">${r.nr}</td>
+          <td style="text-align:center;">
+            <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${r.color};">${r.pct}%</span>
+            <div class="progress-bar-wrap" style="margin-top:3px;"><div class="progress-bar-fill" style="width:${r.pct}%;background:${r.color};"></div></div>
+          </td>
+        </tr>`).join('')}
+        </tbody></table>`;
+
+      /* Table 2: Delivered assets awaiting signature */
+      const deliveredRows = [];
+      branchCodes.forEach(b => {
+        trackerData.filter(r => (r['Branch Code']||'').trim()===b && r['Asset Status']==='Delivered')
+          .forEach(r => deliveredRows.push({ branch: b, asset: r['Asset']||'', dnNS: r['D.N. Not Signed']||'' }));
+      });
+      document.getElementById('task-delivered-table').innerHTML = deliveredRows.length ? `
+        <table><thead><tr>
+          <th style="text-align:left;min-width:110px;">Branch</th>
+          <th style="text-align:left;min-width:140px;">Asset</th>
+        </tr></thead><tbody>
+        ${deliveredRows.map(r => `<tr>
+          <td style="font-weight:600;">${r.dnNS ? `<a href="${r.dnNS}" target="_blank" style="color:#22d3ee;text-decoration:none;">${r.branch}</a>` : `<span style="color:#f1f5f9;">${r.branch}</span>`}</td>
+          <td><span class="pill pill-delivered">${r.asset}</span></td>
+        </tr>`).join('')}
+        </tbody></table>` :
+        '<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No pending signatures!</p>';
+
+      /* Table 3: Qty Shortages */
+      const QTY_ITEMS_ALL = [
+        {label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'},
+        {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
+        {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+        {label:'3D Fridge',  req:'3D Fridge Req',   rec:'3D Fridge Rec'},
+        {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
+        {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+        {label:'3D Freezer', req:'3D Freezer Req',  rec:'3D Freezer Rec'},
+      ];
+      const shortageRows = [];
+      branchCodes.forEach(b => {
+        const fq = qtyData[b] || {};
+        QTY_ITEMS_ALL.forEach(item => {
+          const req  = parseInt(fq[item.req]||0)||0;
+          const rec  = parseInt(fq[item.rec]||0)||0;
+          const diff = rec - req;
+          if (req > 0 && diff < 0) shortageRows.push({ branch: b, item: item.label, req, rec, diff });
+        });
+      });
+      document.getElementById('task-shortage-table').innerHTML = shortageRows.length ? `
+        <table><thead><tr>
+          <th style="text-align:left;min-width:100px;">Branch</th>
+          <th style="text-align:left;min-width:90px;">Item</th>
+          <th style="min-width:110px;">Req / Rec</th>
+          <th style="min-width:70px;">Short</th>
+        </tr></thead><tbody>
+        ${shortageRows.map(r => `<tr>
+          <td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.branch}');return false;" style="color:#22d3ee;text-decoration:none;">${r.branch}</a></td>
+          <td>${r.item}</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;">${r.req} / ${r.rec}</td>
+          <td style="text-align:center;"><span style="color:#f87171;font-weight:700;font-family:'DM Mono',monospace;">${r.diff}</span></td>
+        </tr>`).join('')}
+        </tbody></table>` :
+        '<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No shortages!</p>';
+    }
+
+    /* ── Save Qty Row (button click) ── */
+    async function saveQtyRow(branch, reqField, recField, reqId, recId, cardId) {
+      const reqInput = document.getElementById(reqId);
+      const recInput = document.getElementById(recId);
+      const reqVal   = reqInput ? reqInput.value.trim() : '';
+      const recVal   = recInput ? recInput.value.trim() : '';
+      if (reqVal) await saveQtyField(branch, reqField, reqInput, cardId);
+      if (recVal) await saveQtyField(branch, recField, recInput, cardId);
+    }
+
+    /* ── Save Qty Field ── */
+    async function saveQtyField(branch, field, input, cardId) {
+      const value = input.value.trim();
+      if (!value) return;
+      const rec  = parseInt(value) || 0;
+      /* Get req from sibling input in same row */
+      const allInputs = Array.from(input.closest('tr').querySelectorAll('input[type="number"]'));
+      const reqInput  = allInputs.find(i => i !== input);
+      const req  = reqInput ? parseInt(reqInput.value) || 0 : 0;
+      const diff = rec - req;
+      const c    = req<=0?'#475569':rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
+      const lbl  = req<=0?'-':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
+      input.style.borderColor = c + '40';
+      input.style.color = c;
+      /* Update status label */
+      const statusSpan = input.closest('tr').querySelector('td:last-child span');
+      if (statusSpan) { statusSpan.textContent = lbl; statusSpan.style.color = c; }
+      /* Update progress bar */
+      const bar = input.closest('td').querySelector('div div');
+      if (bar && req > 0) bar.style.width = Math.min(rec/req*100, 100) + '%';
+      /* Save to sheet */
+      if (!qtyData[branch]) qtyData[branch] = {};
+      qtyData[branch][field] = value;
+      await fetch(APPS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'updateFridgeQty', branch, field, value }) });
+      /* Log the edit */
+      const ts = new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'logEdit', user: currentUser||'Unknown', branch, asset: '-', field, value, timestamp: ts }) });
+      showSaveToast();
+    }
+
+    /* ── Notes Display ── */
+    function renderNotesDisplay(container, notesStr) {
+      let wrap = container.querySelector('.notes-display-wrap');
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.className = 'notes-display-wrap';
+        wrap.style.marginTop = '4px';
+        container.appendChild(wrap);
+      }
+      const entries = notesStr.split(' | ').filter(Boolean);
+      if (entries.length === 0) { wrap.innerHTML = ''; return; }
+      const first = entries[0];
+      const rest  = entries.slice(1);
+      wrap.innerHTML = `
+        <div style="font-size:10px;color:#94a3b8;line-height:1.5;">${first}</div>
+        ${rest.length > 0 ? `
+          <div id="notes-extra-${Math.random().toString(36).slice(2)}" style="display:none;">
+            ${rest.map(n => `<div style="font-size:10px;color:#94a3b8;line-height:1.5;margin-top:2px;">${n}</div>`).join('')}
+          </div>
+          <button onclick="const d=this.previousElementSibling;const hidden=d.style.display==='none';d.style.display=hidden?'block':'none';this.textContent=hidden?'▲ Less':'▼ '+(${rest.length})+' more'" 
+            style="font-size:9px;color:#475569;background:none;border:none;cursor:pointer;padding:2px 0;font-family:'DM Sans',sans-serif;">▼ ${rest.length} more</button>
+        ` : ''}`;
+    }
+
+    /* Boot - render existing notes on load */
+    function initNotesDisplays() {
+      document.querySelectorAll('textarea[data-existing]').forEach(el => {
+        const note = el.dataset.existing;
+        if (note) renderNotesDisplay(el.parentElement, note);
+      });
+    }
+
+    
+
     /* ── Boot ── */
+    currentUser = 'Viewer';
     loadAll();
-    setInterval(loadAll, 5*60*1000);
+    loadTracker();
+    setInterval(() => { loadAll(); loadTracker(); }, 5*60*1000);
   </script>
 </body>
 </html>
