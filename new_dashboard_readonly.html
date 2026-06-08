@@ -479,6 +479,7 @@
           const b=(r['Branch Code']||'').trim(), bs=(r['Branch Status']||'').trim();
           if(b&&!seen.has(b)){seen.add(b);trackerBranches.push({code:b,status:bs});}
         });
+        trackerBranches.sort((a,b)=>a.code.localeCompare(b.code));
         const tBranchSel=document.getElementById('t-branch-filter');
         const cur=tBranchSel.value;
         tBranchSel.innerHTML='<option value="ALL">All</option>'+trackerBranches.map(b=>`<option value="${b.code}">${b.code}</option>`).join('');
