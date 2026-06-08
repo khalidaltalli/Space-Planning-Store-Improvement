@@ -114,6 +114,135 @@
 
 
   <!-- Tracker Page (embedded) -->
+  <!-- Nav Bar -->
+  <div class="nav-bar">
+    <button class="nav-btn active" id="nav-dashboard" onclick="switchPage('dashboard')">📊 Dashboard</button>
+    <button class="nav-btn" id="nav-tracker" onclick="switchPage('tracker')">📋 Tracking Page</button>
+  </div>
+
+
+
+  <!-- Dashboard Page -->
+  <div id="page-dashboard">
+  <div class="header">
+    <div>
+      <h1>New Store Asset Receiving</h1>
+      <p id="last-updated">Connecting...</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="live-badge"><div class="live-dot"></div> Live</div>
+
+      <select id="report-branch" style="background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;font-size:12px;padding:6px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;">
+        <option value="">— PDF Report —</option>
+      </select>
+      <button class="btn" style="background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.2);color:#4ade80;" onclick="generateReport()">⬇ Export</button>
+      <button class="btn" onclick="loadAll()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div id="error-banner" class="error-banner"></div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Overall Completion</div><div class="kpi-value cyan" id="kpi-pct">—</div><div class="kpi-sub" id="kpi-pct-sub">all branches</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Assets</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">tracked</div></div>
+    <div class="kpi-card"><div class="kpi-label">Received</div><div class="kpi-value green" id="kpi-received">—</div><div class="kpi-sub" id="kpi-received-sub">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Delivered</div><div class="kpi-value amber" id="kpi-delivered">—</div><div class="kpi-sub" id="kpi-delivered-sub">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Not Received</div><div class="kpi-value red" id="kpi-not-received">—</div><div class="kpi-sub" id="kpi-not-received-sub">—</div></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <label>Branch:</label>
+    <select id="branch-filter" onchange="renderAll()"><option value="ALL">All Branches</option></select>
+    <label>Status:</label>
+    <select id="status-filter" onchange="onStatusFilter()"></select>
+
+  </div>
+
+  <!-- Section Tabs -->
+  <div class="section-tabs" id="section-tabs-wrap"></div>
+
+  <!-- Metrics Section -->
+  <div id="metrics-section" style="margin-bottom:1.25rem;display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+
+      <!-- Top 5 Branches -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">🏆 Top 5 Branches</div>
+        <div id="top-branches"></div>
+      </div>
+
+      <!-- Bottom 5 Branches -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">⚠️ Bottom 5 Branches</div>
+        <div id="bottom-branches"></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+
+      <!-- Critical Alerts: Essential Not Received -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">🔴 Essential Assets Not Received</div>
+        <div id="critical-essential"></div>
+      </div>
+
+      <!-- Delivered Not Signed -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">📋 Delivered — Awaiting Signature</div>
+        <div id="critical-delivered"></div>
+      </div>
+
+      <!-- Assets with Most Issues -->
+      <div class="table-card" style="margin-bottom:0;">
+        <div class="chart-title" style="margin-bottom:0.75rem;">📦 Assets with Most Issues</div>
+        <div id="critical-assets"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overview charts -->
+  <div id="overview-section">
+    <div class="charts-row" id="overview-charts">
+      <div class="chart-card">
+        <div class="chart-title">% Completion by Branch</div>
+        <div style="position:relative;width:100%;height:400px;"><canvas id="branchChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Received vs Not Received</div>
+        <div id="donut-legend" style="display:flex;gap:12px;margin-bottom:8px;font-size:11px;flex-wrap:wrap;"></div>
+        <div style="position:relative;width:100%;height:340px;"><canvas id="donutChart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card full" id="rec-bar-card">
+      <div class="chart-title">Received vs Not Received by Branch</div>
+      <div id="rec-bar-wrap" style="position:relative;width:100%;height:400px;"><canvas id="recBarChart"></canvas></div>
+    </div>
+    <div class="table-card" id="overview-table-card">
+      <div class="chart-title" style="margin-bottom:0.75rem;">Branch Breakdown by Section</div>
+      <div style="overflow-x:auto;"><div id="overview-table-wrap"></div></div>
+    </div>
+  </div>
+
+  <!-- Section detail -->
+  <div id="section-detail" style="display:none;">
+    <div class="table-card">
+      <div class="chart-title" id="section-table-title" style="margin-bottom:0.75rem;">Asset Breakdown</div>
+      <div style="overflow-x:auto;"><div id="section-table-wrap"></div></div>
+    </div>
+  </div>
+
+  <!-- Fridges/Shelves qty section -->
+  <div id="qty-section" style="display:none;">
+    <div class="table-card">
+      <div class="chart-title" id="qty-table-title" style="margin-bottom:0.75rem;">Quantities</div>
+      <div style="overflow-x:auto;"><div id="qty-table-wrap"></div></div>
+    </div>
+  </div>
+
+  </div><!-- end page-dashboard -->
+
   <div id="page-tracker">
     <div class="header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;">
       <div style="display:flex;align-items:center;">
@@ -1626,10 +1755,20 @@
 
     
 
+    /* ── Page Switching ── */
+    let trackerLoaded = false;
+    function switchPage(page) {
+      document.getElementById('page-dashboard').style.display = page==='dashboard' ? 'block' : 'none';
+      document.getElementById('page-tracker').style.display   = page==='tracker'   ? 'block' : 'none';
+      document.getElementById('nav-dashboard').classList.toggle('active', page==='dashboard');
+      document.getElementById('nav-tracker').classList.toggle('active', page==='tracker');
+      if (page==='tracker' && !trackerLoaded) { trackerLoaded=true; loadTracker(); }
+    }
+
+
     /* ── Boot ── */
     currentUser = 'Viewer';
     loadAll();
-    loadTracker();
     setInterval(() => { loadAll(); loadTracker(); }, 5*60*1000);
   </script>
 </body>
