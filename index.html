@@ -994,7 +994,7 @@
       const SECTION_ORDER = ['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
       const SHARED_GROUPS = {
         'Shelves':           ['Freebolt','Heavyrack','Heavy Rack'],
-        'Fridges':           ['1 Door Chiller','2 Door Chiller','1 Door Freezer','2 Door Freezer','Coldroom','1 Door Chiller','2 Door Chiller'],
+        'Fridges':           ['1 Door Chiller','2 Door Chiller','1 Door Freezer','2 Door Freezer'],
         'CCTV+AccessPoints': ['CCTV','Access Points'],
         'OfficeFurniture':   ['Office Chair','Office Desk']
       };
@@ -1265,12 +1265,15 @@
     }
 
     function showDNInput(cellId, key, field, label) {
-      const td = document.getElementById(cellId)?.parentElement || event.target.parentElement;
-      td.innerHTML = `<input style="background:#0f1117;border:0.5px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:10px;padding:3px 6px;border-radius:4px;font-family:'DM Sans',sans-serif;width:140px;" placeholder="Paste link..." id="inp_${cellId}" />
-        <button onclick="saveDNLink('${cellId}','${key}','${field}','${label}')" style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>`;
+    function showDNInput(cellId, key, field, label) {
+      const cell = document.getElementById(cellId);
+      if (!cell) return;
+      cell.innerHTML = `<div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+        <input style="background:#0f1117;border:0.5px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:10px;padding:3px 6px;border-radius:4px;font-family:'DM Sans',sans-serif;width:130px;" placeholder="Paste link..." id="inp_${cellId}" />
+        <button onclick="saveDNLink('${cellId}','${key}','${field}','${label}')" style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
+      </div>`;
       document.getElementById('inp_'+cellId)?.focus();
     }
-
     async function saveDNLink(cellId, key, field, label) {
       const [branch,asset] = key.split('||');
       const inp = document.getElementById('inp_'+cellId);
