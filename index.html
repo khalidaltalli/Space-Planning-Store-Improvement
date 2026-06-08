@@ -1,1 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Store Asset Receiving</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; padding: 1.5rem; }
+    .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:0.5px solid rgba(255,255,255,0.08); }
+    .header h1 { font-size:22px; font-weight:700; color:#fff; letter-spacing:-0.3px; }
+    .header p  { font-size:12px; color:#f1f5f9; margin-top:3px; font-weight:500; }
+    .live-badge { display:flex; align-items:center; gap:6px; font-size:11px; color:#22d3ee; background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); padding:5px 12px; border-radius:20px; }
+    .live-dot { width:6px; height:6px; border-radius:50%; background:#22d3ee; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .btn { background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); color:#22d3ee; font-size:12px; padding:6px 14px; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.15s; }
+    .btn:hover { background:rgba(34,211,238,0.15); }
+    .nav-bar { display:flex; gap:4px; margin-bottom:1.5rem; background:#1a1f2e; border-radius:10px; padding:6px; border:0.5px solid rgba(255,255,255,0.07); }
+    .nav-btn { flex:1; text-align:center; padding:8px 16px; border-radius:7px; font-size:13px; font-weight:600; cursor:pointer; border:none; background:transparent; color:#64748b; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+    .nav-btn.active { background:#0f1117; color:#f1f5f9; box-shadow:0 1px 4px rgba(0,0,0,0.4); }
+    .controls { display:flex; gap:10px; margin-bottom:0.75rem; align-items:center; flex-wrap:wrap; }
+    .controls label { font-size:12px; color:#f1f5f9; font-weight:500; }
+    select { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.12); color:#e2e8f0; font-size:12px; padding:6px 10px; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+    .table-card { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.07); border-radius:10px; padding:1rem 1.25rem; margin-bottom:1.25rem; overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th { text-align:center; padding:8px 10px; color:#f1f5f9; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid rgba(255,255,255,0.4); border-right:0.5px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.02); }
+    th:first-child { text-align:left; } th:last-child { border-right:none; }
+    td { padding:8px 10px; color:#f1f5f9; text-align:center; border-bottom:0.5px solid rgba(255,255,255,0.15); border-right:0.5px solid rgba(255,255,255,0.08); }
+    td:first-child { text-align:left; } td:last-child { border-right:none; }
+    tbody tr:nth-child(odd)  td { background:rgba(255,255,255,0.03); }
+    tbody tr:nth-child(even) td { background:rgba(255,255,255,0.07); }
+    tbody tr:hover           td { background:rgba(255,255,255,0.12); }
+    .pill { display:inline-block; font-size:10px; padding:2px 8px; border-radius:10px; font-weight:500; white-space:nowrap; }
+    .pill-received     { background:rgba(74,222,128,0.1);  color:#4ade80; }
+    .pill-not-received { background:rgba(248,113,113,0.1); color:#f87171; }
+    .pill-delivered    { background:rgba(251,191,36,0.1);  color:#fbbf24; }
+    .pill-none         { background:rgba(100,116,139,0.1); color:#94a3b8; }
+    .progress-bar-wrap { width:100%; height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+    .progress-bar-fill { height:100%; border-radius:3px; }
+    .p-essential { color:#f87171; font-weight:700; }
+    .p-high      { color:#fb923c; font-weight:600; }
+    .p-medium    { color:#fbbf24; font-weight:500; }
+    .p-low       { color:#4ade80; font-weight:500; }
+    .branch-link { color:#22d3ee; text-decoration:none; font-weight:700; }
+    .branch-link:hover { text-decoration:underline; }
+    .edit-khalid { outline:1.5px solid #a78bfa !important; background:rgba(167,139,250,0.08) !important; }
+    .edit-azhar  { outline:1.5px solid #34d399 !important; background:rgba(52,211,153,0.08) !important; }
+    .edit-eissa  { outline:1.5px solid #fb923c !important; background:rgba(251,146,60,0.08) !important; }
+    .user-badge   { font-size:9px; padding:1px 6px; border-radius:8px; font-weight:600; margin-left:4px; }
+    .badge-khalid { background:rgba(167,139,250,0.15); color:#a78bfa; }
+    .badge-azhar  { background:rgba(52,211,153,0.15);  color:#34d399; }
+    .badge-eissa  { background:rgba(251,146,60,0.15);  color:#fb923c; }
+    .loading { text-align:center; padding:3rem; color:#64748b; font-size:13px; }
+    .chart-title { font-size:12px; color:#f1f5f9; margin-bottom:1rem; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+  </style>
+</head>
+<body>
 
+  <!-- Login Modal -->
+  <div id="login-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:999;">
+    <div style="background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:2rem 1.75rem;width:320px;text-align:center;">
+      <div style="width:52px;height:52px;border-radius:50%;background:rgba(34,211,238,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;"><span style="font-size:22px;">👤</span></div>
+      <h2 style="font-size:18px;font-weight:700;color:#f1f5f9;margin:0 0 4px;">Welcome</h2>
+      <p style="font-size:12px;color:#64748b;margin:0 0 1.5rem;">Asset Tracking — Space Planning & Store Improvement</p>
+      <div style="margin-bottom:1rem;text-align:left;">
+        <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:6px;">Who are you?</label>
+        <select id="login-name" style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:13px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;">
+          <option value="">Select your name...</option>
+          <option value="Khalid">Khalid</option>
+          <option value="Azhar">Azhar</option>
+          <option value="Eissa">Eissa</option>
+        </select>
+      </div>
+      <div style="margin-bottom:1.25rem;text-align:left;">
+        <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:6px;">PIN</label>
+        <input type="password" id="login-pin" maxlength="4" placeholder="4-digit PIN"
+          style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:13px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;"
+          onkeydown="if(event.key==='Enter') submitLogin()" />
+        <p id="login-error" style="color:#f87171;font-size:11px;margin:6px 0 0;display:none;">Incorrect PIN. Try again.</p>
+      </div>
+      <button onclick="submitLogin()" style="width:100%;padding:10px;border-radius:6px;background:rgba(34,211,238,0.1);border:0.5px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Enter</button>
+      <p style="font-size:10px;color:#475569;margin:12px 0 0;">All edits will be logged with your name</p>
+    </div>
+  </div>
+
+  <div id="page-tracker">
+    <div class="header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;">
+      <div style="display:flex;align-items:center;">
+        <img src="logo.png" style="height:60px;object-fit:contain;" alt="Logo" />
+      </div>
+      <div style="text-align:center;">
+        <h1 style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.3px;">New Store Asset Receiving</h1>
+        <p id="tracker-updated" style="font-size:12px;color:#f1f5f9;margin-top:3px;">Connecting...</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;">
+        <div class="live-badge"><div class="live-dot"></div> Live</div>
+        <span id="user-badge" style="display:none;font-size:11px;padding:4px 10px;border-radius:10px;" class="user-badge"></span>
+        <button class="btn" style="background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;font-size:11px;" onclick="sessionStorage.removeItem('tracker_user');location.reload()">Sign Out</button>
+        <button class="btn" style="background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;" onclick="openAddBranch()">+ Add Branch</button>
+        <button class="btn" onclick="loadTracker()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label>Status:</label>
+      <select id="t-status-filter" onchange="renderTracker()">
+        <option value="ALL">All Branches</option>
+        <option value="Receiving" selected>Receiving</option>
+        <option value="Live">Live</option>
+        <option value="Pending">Pending</option>
+      </select>
+      <label>Branch:</label>
+      <select id="t-branch-filter" onchange="renderTracker()"><option value="ALL">All</option></select>
+    </div>
+
+    <!-- Task List -->
+    <div id="task-list" style="display:none;margin-bottom:1.25rem;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div class="table-card" style="margin-bottom:0;"><div class="chart-title" style="margin-bottom:0.75rem;">🏪 Branch Status</div><div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-branch-table"></div></div></div>
+        <div class="table-card" style="margin-bottom:0;"><div class="chart-title" style="margin-bottom:0.75rem;">📋 Delivered — Awaiting Signature</div><div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-delivered-table"></div></div></div>
+        <div class="table-card" style="margin-bottom:0;"><div class="chart-title" style="margin-bottom:0.75rem;">⚠️ Qty Shortages</div><div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-shortage-table"></div></div></div>
+      </div>
+    </div>
+
+    <div id="tracker-content"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- Add Branch Modal -->
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100;" id="add-branch-modal">
+    <div style="background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:1.5rem;width:360px;">
+      <h3 style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:1rem;">Add New Branch</h3>
+      <div style="margin-bottom:0.75rem;"><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">Branch Code</label>
+        <input style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:12px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;" id="new-branch-code" placeholder="e.g. JED-SHZ001" /></div>
+      <div style="margin-bottom:0.75rem;"><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">Branch Status</label>
+        <select style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:12px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;" id="new-branch-status">
+          <option value="Receiving">Receiving</option>
+          <option value="Live">Live</option>
+          <option value="Pending">Pending</option>
+        </select></div>
+      <div style="display:flex;gap:8px;margin-top:1rem;justify-content:flex-end;">
+        <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="closeAddBranch()">Cancel</button>
+        <button class="btn" style="background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.2);color:#4ade80;" id="add-branch-btn" onclick="submitAddBranch()">Add Branch</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
+
+  <script>
+    const APPS_URL = 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
+
+    /* ── User Session ── */
+    const PINS = { Khalid:'6969', Azhar:'0000', Eissa:'1234' };
+    let currentUser = sessionStorage.getItem('tracker_user') || '';
+
+    function submitLogin() {
+      const name=document.getElementById('login-name').value;
+      const pin=document.getElementById('login-pin').value;
+      if(!name){alert('Please select your name.');return;}
+      if(pin!==PINS[name]){document.getElementById('login-error').style.display='block';document.getElementById('login-pin').value='';return;}
+      currentUser=name;
+      sessionStorage.setItem('tracker_user',name);
+      document.getElementById('login-overlay').style.display='none';
+      const badge=document.getElementById('user-badge');
+      if(badge){badge.textContent=name;badge.className='user-badge badge-'+name.toLowerCase();badge.style.display='inline-block';}
+      loadTracker();
+    }
+
+    window.addEventListener('DOMContentLoaded',()=>{
+      if(currentUser&&PINS[currentUser]){
+        document.getElementById('login-overlay').style.display='none';
+        const badge=document.getElementById('user-badge');
+        if(badge){badge.textContent=currentUser;badge.className='user-badge badge-'+currentUser.toLowerCase();badge.style.display='inline-block';}
+        loadTracker();
+      }
+    });
+
+    let qtyData       = {};
+    let sections      = [];
+    const IGNORE_BRANCHES = new Set(['Fridge and Shelves Quantities','Hidden Pull','Live Branches','Organized Pull','Receiving Branches','Tab Name','Template','Under-Construction Branches']);
+    const QTY_ITEMS = [
+      {label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'},
+      {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+      {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
+      {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+      {label:'3D Fridge',  req:'3D Fridge Req',   rec:'3D Fridge Rec'},
+      {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
+      {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+      {label:'3D Freezer', req:'3D Freezer Req',  rec:'3D Freezer Rec'},
+    ];
+
+    async function fetchSheet(name) {
+      const res=await fetch(`${APPS_URL}?sheet=${encodeURIComponent(name)}`);
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    }
+
+    function getColor(pct){if(pct>=80)return'#4ade80';if(pct>=50)return'#22d3ee';if(pct>0)return'#fbbf24';return'#f87171';}
+
+    /* ── Tracker ── */
+    let trackerData     = [];
+    let trackerStatus   = {};
+    let trackerBranches = [];
+
+    async function loadTracker() {
+      document.getElementById('tracker-updated').textContent='Loading...';
+      try {
+        const cl=await fetchSheet('Receiving Checklist');
+        trackerData=cl.rows||[];
+        const st=await fetchSheet('Receiving Statues');
+        trackerStatus={};
+        (st.rows||[]).forEach(r=>{const b=(r['Branch Code']||'').trim();if(b)trackerStatus[b]=r;});
+        try {
+          const fq=await fetchSheet('Fridge & Shelf Quantities');
+          qtyData={};
+          (fq.rows||[]).forEach(r=>{const b=(r['Branch Code']||r['Branch']||'').trim();if(b)qtyData[b]=r;});
+        } catch(e){qtyData={};}
+        /* FIX: removed duplicate push */
+        const seen=new Set();
+        trackerBranches=[];
+        trackerData.forEach(r=>{
+          const b=(r['Branch Code']||'').trim(),bs=(r['Branch Status']||'').trim();
+          if(b&&!seen.has(b)){seen.add(b);trackerBranches.push({code:b,status:bs});}
+        });
+        trackerBranches.sort((a,b)=>a.code.localeCompare(b.code));
+        const tBranchSel=document.getElementById('t-branch-filter');
+        const cur=tBranchSel.value;
+        tBranchSel.innerHTML='<option value="ALL">All</option>'+trackerBranches.map(b=>`<option value="${b.code}">${b.code}</option>`).join('');
+        if([...tBranchSel.options].some(o=>o.value===cur))tBranchSel.value=cur;
+        document.getElementById('tracker-updated').textContent='Last updated: '+new Date().toLocaleTimeString();
+        renderTracker();
+      } catch(e){
+        document.getElementById('tracker-updated').textContent='Failed: '+e.message;
+      }
+    }
+
+    function renderTracker() {
+      const selStatus=document.getElementById('t-status-filter').value;
+      const selBranch=document.getElementById('t-branch-filter').value;
+      let branches=trackerBranches;
+      if(selStatus!=='ALL') branches=branches.filter(b=>b.status===selStatus);
+      if(selBranch!=='ALL') branches=branches.filter(b=>b.code===selBranch);
+      const container=document.getElementById('tracker-content');
+      container.innerHTML='';
+      if(branches.length===0){container.innerHTML='<div class="loading">No branches found.</div>';return;}
+      branches.forEach(b=>container.appendChild(buildTrackerCard(b)));
+      renderTaskList(branches.map(b=>b.code));
+    }
+
+    function buildTrackerCard(branch) {
+      const allAssets=trackerData.filter(r=>(r['Branch Code']||'').trim()===branch.code);
+      const rec  =allAssets.filter(a=>a['Asset Status']==='Received').length;
+      const del  =allAssets.filter(a=>a['Asset Status']==='Delivered').length;
+      const nr   =allAssets.filter(a=>a['Asset Status']==='Not Received').length;
+      const total=allAssets.filter(a=>a['Asset Status']&&a['Asset Status']!=='None').length||1;
+      const pct  =Math.round(rec/total*100);
+      const pctColor=getColor(pct);
+      const st   =trackerStatus[branch.code]||{};
+      const folder=st['D.N. Folder']||'';
+      const tagCls={Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24'}[branch.status]||'#94a3b8';
+      const cardId='tc_'+branch.code.replace(/[^a-zA-Z0-9]/g,'_');
+      const SECTION_ORDER=['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
+      const SHARED_GROUPS={'Shelves':['Freebolt','Heavyrack','Heavy Rack'],'Fridges':['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'],'CCTV+AccessPoints':['CCTV','Access Points'],'OfficeFurniture':['Office Chair','Office Desk']};
+      const assetToGroup={};
+      Object.entries(SHARED_GROUPS).forEach(([grp,assets])=>assets.forEach(a=>assetToGroup[a]=grp));
+
+      const card=document.createElement('div');
+      card.style.cssText='background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.07);border-radius:10px;margin-bottom:1.25rem;overflow:hidden;';
+      card.dataset.branch=branch.code;
+      card.innerHTML=`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1.25rem;background:rgba(255,255,255,0.03);border-bottom:0.5px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.ci').style.transform=b.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'">
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;flex-wrap:wrap;">
+            <span style="color:#ffffff;font-weight:700;">${branch.code}</span>
+            <select onchange="updateBranchStatus('${branch.code}',this)" style="font-size:10px;padding:2px 8px;border-radius:10px;background:${tagCls}18;color:${tagCls};font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;outline:none;">
+              <option value="Receiving" ${branch.status==='Receiving'?'selected':''}>Receiving</option>
+              <option value="Live"      ${branch.status==='Live'     ?'selected':''}>Live</option>
+              <option value="Pending"   ${branch.status==='Pending'  ?'selected':''}>Pending</option>
+            </select>
+            <span class="pill pill-received">${rec} Received</span>
+            ${del>0?`<span class="pill" style="background:rgba(251,191,36,0.1);color:#fbbf24;">${del} Delivered</span>`:''}
+            <span class="pill pill-not-received">${nr} Not Received</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${pctColor};">${pct}%</span>
+            <span class="ci" style="color:#64748b;font-size:12px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
+          </div>
+        </div>
+        <div style="display:none;">
+          <div style="padding:0.5rem 1.25rem;border-bottom:0.5px solid rgba(255,255,255,0.05);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:11px;color:#64748b;font-weight:500;">D.N. Folder:</span>
+            ${folder
+              ?`<a href="${folder}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;text-decoration:none;">🔗 D.N. Folder</a>`
+              :`<button onclick="addFolder('${branch.code}','${cardId}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add Folder</button>`}
+            <button onclick="generateBranchReport('${branch.code}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">⬇ Report PDF</button>
+            <button onclick="generateMissingPDF('${branch.code}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:4px;">⬇ Missing PDF</button>
+          </div>
+          <div style="display:flex;gap:6px;padding:0.6rem 1.25rem;border-bottom:0.5px solid rgba(255,255,255,0.05);flex-wrap:wrap;align-items:center;" id="${cardId}_filterbar">
+            <span style="font-size:11px;color:#64748b;">Show:</span>
+            <button onclick="filterTrackerRows('${cardId}','ALL',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.12);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
+            <button onclick="filterTrackerRows('${cardId}','Received',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Received</button>
+            <button onclick="filterTrackerRows('${cardId}','Delivered',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Delivered</button>
+            <button onclick="filterTrackerRows('${cardId}','Not Received',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Not Received</button>
+            <button onclick="filterTrackerRows('${cardId}','None',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead><tr>
+                <th style="min-width:160px;text-align:left;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);border-right:2px solid rgba(255,255,255,0.5);">Asset</th>
+                <th style="min-width:80px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Priority</th>
+                <th style="min-width:140px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Status</th>
+                <th style="min-width:160px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">D.N. Not Signed</th>
+                <th style="min-width:160px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">D.N. Signed</th>
+                <th style="min-width:180px;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);">Notes</th>
+              </tr></thead>
+              <tbody id="${cardId}_tbody"></tbody>
+            </table>
+          </div>
+        </div>`;
+
+      const tbody=card.getElementsByTagName('tbody')[0];
+      if(!tbody) return card;
+
+      const bySection={};
+      allAssets.forEach(row=>{const sec=row['Section']||'Other';if(!bySection[sec])bySection[sec]=[];bySection[sec].push(row);});
+      const orderedSections=[...SECTION_ORDER,...Object.keys(bySection).filter(s=>!SECTION_ORDER.includes(s))];
+
+      orderedSections.forEach(sec=>{
+        if(!bySection[sec]) return;
+        const secTr=document.createElement('tr');
+        secTr.innerHTML=`<td colspan="6" style="padding:5px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;background:rgba(255,255,255,0.04);border-bottom:0.5px solid rgba(255,255,255,0.08);">${sec}</td>`;
+        tbody.appendChild(secTr);
+        const groups={},groupOrder=[];
+        bySection[sec].forEach(row=>{const grp=assetToGroup[row['Asset']]||('__ind__'+row['Asset']);if(!groups[grp]){groups[grp]=[];groupOrder.push(grp);}groups[grp].push(row);});
+        const seen=new Set();
+        groupOrder.filter(g=>{if(seen.has(g))return false;seen.add(g);return true;}).forEach(grp=>{
+          const rows=groups[grp];
+          const isShared=!grp.startsWith('__ind__');
+          rows.forEach((row,idx)=>{
+            const asset=row['Asset']||'',pri=row['Priority']||'',assetSt=row['Asset Status']||'None';
+            const dnNS=row['D.N. Not Signed']||'',dnS=row['D.N. Signed']||'',note=row['Notes']||'';
+            const key=branch.code+'||'+asset;
+            const safeKey=(branch.code+'__'+asset).replace(/[^a-zA-Z0-9]/g,'_');
+            const pClass={Essential:'p-essential',High:'p-high',Medium:'p-medium',Low:'p-low'}[pri]||'';
+            const stColor={Received:'rgba(74,222,128,0.4)',Delivered:'rgba(251,191,36,0.4)','Not Received':'rgba(248,113,113,0.4)',None:'rgba(100,116,139,0.3)'}[assetSt]||'rgba(100,116,139,0.3)';
+            const stTextColor={Received:'#4ade80',Delivered:'#fbbf24','Not Received':'#f87171',None:'#94a3b8'}[assetSt]||'#94a3b8';
+            const bg=idx%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
+            const showDN=!isShared||idx===0;
+            const dnRowspan=isShared?rows.length:1;
+            let dnCell='';
+            if(showDN){
+              const dnNSHtml=dnNS?`<div class="dn-cell"><a href="${dnNS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View D.N.</a><button onclick="showDNInput('dnns_${safeKey}','${key}','D.N. Not Signed','View D.N.')" style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif;">✎</button></div>`:`<div class="dn-cell"><button onclick="showDNInput('dnns_${safeKey}','${key}','D.N. Not Signed','View D.N.')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button></div>`;
+              const dnSHtml=dnS?`<div class="dn-cell"><a href="${dnS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View Signed</a><button onclick="showDNInput('dnss_${safeKey}','${key}','D.N. Signed','View Signed')" style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif;">✎</button></div>`:`<div class="dn-cell"><button onclick="showDNInput('dnss_${safeKey}','${key}','D.N. Signed','View Signed')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button></div>`;
+              dnCell=`<td rowspan="${dnRowspan}" style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;" id="dnns_${safeKey}">${dnNSHtml}</td><td rowspan="${dnRowspan}" style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;" id="dnss_${safeKey}">${dnSHtml}</td>`;
+            }
+            const tr=document.createElement('tr');
+            tr.dataset.status=assetSt;
+            tr.style.background=bg;
+            tr.innerHTML=`
+              <td style="padding:8px 10px;font-weight:500;border-right:2px solid rgba(255,255,255,0.5);border-bottom:0.5px solid rgba(255,255,255,0.1);">${asset}</td>
+              <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span class="${pClass}">${pri||'—'}</span></td>
+              <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+                <select onchange="saveTrackerField(this,'${key}','Asset Status')" style="background:#0f1117;border:0.5px solid ${stColor};color:${stTextColor};font-size:11px;padding:3px 6px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;">
+                  <option value="None"         ${assetSt==='None'        ?'selected':''}>None</option>
+                  <option value="Not Received" ${assetSt==='Not Received'?'selected':''}>Not Received</option>
+                  <option value="Delivered"    ${assetSt==='Delivered'   ?'selected':''}>Delivered</option>
+                  <option value="Received"     ${assetSt==='Received'    ?'selected':''}>Received</option>
+                </select>
+              </td>
+              ${dnCell}
+              <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+                <textarea onblur="saveTrackerField(this,'${key}','Notes')" data-existing="${note.replace(/"/g,'&quot;')}"
+                  style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:10px;padding:4px 6px;border-radius:4px;font-family:'DM Sans',sans-serif;width:100%;min-height:32px;resize:vertical;" placeholder="Add a note..."></textarea>
+              </td>`;
+            tbody.appendChild(tr);
+            if(note){const ta=tr.querySelector('textarea[data-existing]');if(ta)renderNotesDisplay(ta.parentElement,note);}
+          });
+        });
+      });
+
+      /* Qty section */
+      const fqBranch=qtyData[branch.code]||{};
+      const qtyWrap=document.createElement('div');
+      qtyWrap.style.cssText='border-top:0.5px solid rgba(255,255,255,0.07);';
+      qtyWrap.innerHTML=`
+        <div onclick="const w=this.nextElementSibling;w.style.display=w.style.display==='none'?'block':'none';this.querySelector('.qi').style.transform=w.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1.25rem;cursor:pointer;background:rgba(255,255,255,0.02);">
+          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">Fridges & Shelves Quantities</span>
+          <span class="qi" style="color:#64748b;font-size:11px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
+        </div>
+        <div style="display:none;padding:0 1.25rem 0.75rem;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead><tr>
+              <th style="text-align:left;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:140px;">Item</th>
+              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:200px;">Req / Rec</th>
+              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:110px;">Status</th>
+            </tr></thead>
+            <tbody id="${cardId}_qty"></tbody>
+          </table>
+        </div>`;
+      const qtyTbody=qtyWrap.querySelector('tbody');
+      QTY_ITEMS.forEach((item,i)=>{
+        const req=parseInt(fqBranch[item.req]||0)||0,rec2=parseInt(fqBranch[item.rec]||0)||0,diff=rec2-req;
+        const c=req<=0?'#475569':rec2===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
+        const lbl=req<=0?'-':rec2===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
+        const safeId=(branch.code+'_'+item.label).replace(/[^a-zA-Z0-9]/g,'_');
+        const tr=document.createElement('tr');
+        tr.style.background=i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
+        tr.innerHTML=`
+          <td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,0.1);">${item.label}</td>
+          <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:${c};">
+              <input type="number" min="0" value="${req||''}" placeholder="0" id="req_${safeId}" style="width:55px;background:#0f1117;border:0.5px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
+              <span style="font-size:9px;color:#64748b;"> Req — </span>
+              <input type="number" min="0" value="${rec2||''}" placeholder="0" id="rec_${safeId}" style="width:55px;background:#0f1117;border:0.5px solid ${c}40;color:${c};font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
+              <span style="font-size:9px;color:#64748b;"> Rec</span>
+              <button onclick="saveQtyRow('${branch.code}','${item.req}','${item.rec}','req_${safeId}','rec_${safeId}','${cardId}')" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:4px;">Save</button>
+            </span>
+            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec2/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>
+          </td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span style="font-size:11px;color:${c};font-weight:600;">${lbl}</span></td>`;
+        qtyTbody.appendChild(tr);
+      });
+      card.appendChild(qtyWrap);
+      return card;
+    }
+
+    /* ── FIX: filterTrackerRows — use tr.dataset.status not undefined 'st' ── */
+    function filterTrackerRows(cardId, filter, btn) {
+      const filterBar=document.getElementById(cardId+'_filterbar');
+      if(filterBar) filterBar.querySelectorAll('button').forEach(b=>{b.style.background='transparent';b.style.color='#94a3b8';b.style.borderColor='rgba(255,255,255,0.1)';});
+      btn.style.background='rgba(34,211,238,0.12)';btn.style.color='#22d3ee';btn.style.borderColor='rgba(34,211,238,0.3)';
+      const tbl=document.getElementById(cardId+'_tbody');
+      if(!tbl) return;
+      tbl.querySelectorAll('tr[data-status]').forEach(tr=>{
+        tr.style.display=(filter==='ALL'||tr.dataset.status===filter)?'':'none';
+      });
+    }
+
+    async function saveTrackerField(el, key, field) {
+      const [branch,asset]=key.split('||');
+      let value=el.value!==undefined?el.value:el.textContent;
+      if(field==='Asset Status'){
+        const colors={Received:'rgba(74,222,128,0.4)',Delivered:'rgba(251,191,36,0.4)','Not Received':'rgba(248,113,113,0.4)',None:'rgba(100,116,139,0.3)'};
+        const textColors={Received:'#4ade80',Delivered:'#fbbf24','Not Received':'#f87171',None:'#94a3b8'};
+        el.style.borderColor=colors[value]||colors.None;
+        el.style.color=textColors[value]||textColors.None;
+        el.closest('tr').dataset.status=value;
+      }
+      if(currentUser){const cell=el.closest?el.closest('td'):null;if(cell){cell.classList.remove('edit-khalid','edit-azhar','edit-eissa');cell.classList.add('edit-'+currentUser.toLowerCase());cell.title='Last edited by '+currentUser;}}
+      const ts=new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch,asset,field,value,timestamp:ts})});
+      if(field==='Notes'&&value.trim()){
+        const ts2=new Date().toLocaleString('en-GB');
+        const existing=el.dataset.existing||'';
+        const newEntry=`[${ts2}] ${value.trim()}`;
+        value=existing?existing+' | '+newEntry:newEntry;
+        el.dataset.existing=value;el.value='';el.placeholder='Add another note...';
+        renderNotesDisplay(el.parentElement,value);
+      }
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateChecklist',branch,asset,field,value})});
+      showSaveToast();
+    }
+
+    function showDNInput(cellId,key,field,label){
+      const cell=document.getElementById(cellId);if(!cell)return;
+      cell.innerHTML=`<div style="display:flex;align-items:center;gap:4px;justify-content:center;"><input style="background:#0f1117;border:0.5px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:10px;padding:3px 6px;border-radius:4px;font-family:'DM Sans',sans-serif;width:130px;" placeholder="Paste link..." id="inp_${cellId}" /><button onclick="saveDNLink('${cellId}','${key}','${field}','${label}')" style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button></div>`;
+      document.getElementById('inp_'+cellId)?.focus();
+    }
+
+    async function saveDNLink(cellId,key,field,label){
+      const [branch,asset]=key.split('||');
+      const inp=document.getElementById('inp_'+cellId);
+      const value=inp?inp.value.trim():'';if(!value)return;
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateChecklist',branch,asset,field,value})});
+      const ts=new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch,asset,field,value,timestamp:ts})});
+      inp.parentElement.innerHTML=`<a href="${value}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">${label}</a>`;
+      showSaveToast();
+    }
+
+    function addFolder(branch,cardId){
+      const btn=document.querySelector(`[onclick*="addFolder('${branch}','${cardId}')"]`)||event.target;
+      btn.style.display='none';
+      const wrap=document.createElement('span');
+      wrap.style.cssText='display:inline-flex;align-items:center;gap:4px;';
+      wrap.innerHTML=`<input id="fi_${cardId}" style="background:#0f1117;border:0.5px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:11px;padding:3px 8px;border-radius:4px;font-family:'DM Sans',sans-serif;width:220px;" placeholder="Paste Google Drive folder link..." /><button onclick="saveFolder2('${branch}','fi_${cardId}','${cardId}')" style="font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>`;
+      btn.parentElement.appendChild(wrap);
+      document.getElementById('fi_'+cardId)?.focus();
+    }
+
+    async function saveFolder2(branch,inputId,cardId){
+      const val=(document.getElementById(inputId)?.value||'').trim();if(!val)return;
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateStatus',branch,field:'D.N. Folder',value:val})});
+      if(!trackerStatus[branch])trackerStatus[branch]={};
+      trackerStatus[branch]['D.N. Folder']=val;
+      const ts=new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch,asset:'-',field:'D.N. Folder',value:val,timestamp:ts})});
+      const inp=document.getElementById(inputId);
+      if(inp){const wrap=inp.parentElement;wrap.outerHTML=`<a href="${val}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;text-decoration:none;">🔗 D.N. Folder</a>`;}
+      showSaveToast();
+    }
+
+    function openAddBranch(){document.getElementById('add-branch-modal').style.display='flex';}
+    function closeAddBranch(){document.getElementById('add-branch-modal').style.display='none';document.getElementById('new-branch-code').value='';}
+
+    async function submitAddBranch(){
+      const code=document.getElementById('new-branch-code').value.trim().toUpperCase();
+      const status=document.getElementById('new-branch-status').value;
+      if(!code){alert('Please enter a branch code.');return;}
+      const codeRegex=/^[A-Z]{3}-[A-Z]{3}\d{3}$/;
+      if(!codeRegex.test(code)){alert('Invalid branch code format.\nRequired: ABC-ABC001\nExample: JED-SHZ001');return;}
+      const btn=document.getElementById('add-branch-btn');
+      btn.textContent='Adding...';btn.disabled=true;
+      try{
+        await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'addBranch',branchCode:code,branchStatus:status})});
+        await new Promise(r=>setTimeout(r,2000));
+        closeAddBranch();showSaveToast('Branch added! Refreshing...');
+        await loadTracker();
+      }catch(e){alert('Error adding branch: '+e.message);}
+      finally{btn.textContent='Add Branch';btn.disabled=false;}
+    }
+
+    async function updateBranchStatus(branchCode,sel){
+      const newStatus=sel.value;
+      const tagColors={Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24'};
+      const c=tagColors[newStatus]||'#94a3b8';
+      sel.style.background=c+'18';sel.style.color=c;
+      trackerBranches=trackerBranches.map(b=>b.code===branchCode?{...b,status:newStatus}:b);
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateBranchStatus',branch:branchCode,status:newStatus})});
+      const ts=new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch:branchCode,asset:'-',field:'Branch Status',value:newStatus,timestamp:ts})});
+      showSaveToast('Branch status updated to '+newStatus);
+    }
+
+    function scrollToBranch(branchCode){
+      const allCards=document.querySelectorAll('[data-branch]');
+      let target=null;
+      allCards.forEach(c=>{if(c.dataset.branch===branchCode)target=c;});
+      if(!target) document.querySelectorAll('#tracker-content > div').forEach(c=>{if(c.innerHTML.includes(branchCode))target=c;});
+      if(target){target.scrollIntoView({behavior:'smooth',block:'start'});const body=target.querySelector('div[style*="display:none"]');if(body)body.style.display='block';target.style.outline='2px solid #22d3ee';setTimeout(()=>target.style.outline='',2000);}
+    }
+
+    function renderTaskList(branchCodes){
+      const taskList=document.getElementById('task-list');
+      if(!taskList)return;
+      taskList.style.display='block';
+      const branchRows=branchCodes.map(b=>{
+        const assets=trackerData.filter(r=>(r['Branch Code']||'').trim()===b);
+        const received=assets.filter(a=>a['Asset Status']==='Received').length;
+        const nr=assets.filter(a=>a['Asset Status']==='Not Received'||a['Asset Status']==='Delivered').length;
+        const total=assets.filter(a=>a['Asset Status']&&a['Asset Status']!=='None').length||1;
+        const pct=Math.round(received/total*100);
+        const color=pct>=80?'#4ade80':pct>=50?'#22d3ee':'#fbbf24';
+        return{b,nr,pct,color};
+      }).sort((a,b)=>a.pct-b.pct);
+      document.getElementById('task-branch-table').innerHTML=`<table><thead><tr><th style="text-align:left;min-width:110px;">Branch</th><th style="min-width:90px;">Not Received</th><th style="min-width:110px;">Progress</th></tr></thead><tbody>${branchRows.map(r=>`<tr><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.b}');return false;" style="color:#22d3ee;text-decoration:none;">${r.b}</a></td><td style="text-align:center;font-family:'DM Mono',monospace;color:#f87171;font-weight:700;">${r.nr}</td><td style="text-align:center;"><span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${r.color};">${r.pct}%</span><div class="progress-bar-wrap" style="margin-top:3px;"><div class="progress-bar-fill" style="width:${r.pct}%;background:${r.color};"></div></div></td></tr>`).join('')}</tbody></table>`;
+      const deliveredRows=[];
+      branchCodes.forEach(b=>{trackerData.filter(r=>(r['Branch Code']||'').trim()===b&&r['Asset Status']==='Delivered').forEach(r=>deliveredRows.push({branch:b,asset:r['Asset']||'',dnNS:r['D.N. Not Signed']||''}));});
+      document.getElementById('task-delivered-table').innerHTML=deliveredRows.length?`<table><thead><tr><th style="text-align:left;min-width:110px;">Branch</th><th style="text-align:left;min-width:140px;">Asset</th></tr></thead><tbody>${deliveredRows.map(r=>`<tr><td style="font-weight:600;">${r.dnNS?`<a href="${r.dnNS}" target="_blank" style="color:#22d3ee;text-decoration:none;">${r.branch}</a>`:`<span style="color:#f1f5f9;">${r.branch}</span>`}</td><td><span class="pill pill-delivered">${r.asset}</span></td></tr>`).join('')}</tbody></table>`:'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No pending signatures!</p>';
+      const shortageRows=[];
+      branchCodes.forEach(b=>{const fq=qtyData[b]||{};QTY_ITEMS.forEach(item=>{const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;if(req>0&&diff<0)shortageRows.push({branch:b,item:item.label,req,rec,diff});});});
+      document.getElementById('task-shortage-table').innerHTML=shortageRows.length?`<table><thead><tr><th style="text-align:left;min-width:100px;">Branch</th><th style="text-align:left;min-width:90px;">Item</th><th style="min-width:110px;">Req / Rec</th><th style="min-width:70px;">Short</th></tr></thead><tbody>${shortageRows.map(r=>`<tr><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.branch}');return false;" style="color:#22d3ee;text-decoration:none;">${r.branch}</a></td><td>${r.item}</td><td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;">${r.req} / ${r.rec}</td><td style="text-align:center;"><span style="color:#f87171;font-weight:700;font-family:'DM Mono',monospace;">${r.diff}</span></td></tr>`).join('')}</tbody></table>`:'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No shortages!</p>';
+    }
+
+    async function saveQtyRow(branch,reqField,recField,reqId,recId,cardId){
+      const reqInput=document.getElementById(reqId),recInput=document.getElementById(recId);
+      if(reqInput?.value.trim()) await saveQtyField(branch,reqField,reqInput,cardId);
+      if(recInput?.value.trim()) await saveQtyField(branch,recField,recInput,cardId);
+    }
+
+    async function saveQtyField(branch,field,input,cardId){
+      const value=input.value.trim();if(!value)return;
+      const rec=parseInt(value)||0;
+      const allInputs=Array.from(input.closest('tr').querySelectorAll('input[type="number"]'));
+      const reqInput=allInputs.find(i=>i!==input);
+      const req=reqInput?parseInt(reqInput.value)||0:0;
+      const diff=rec-req;
+      const c=req<=0?'#475569':rec===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
+      const lbl=req<=0?'-':rec===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
+      input.style.borderColor=c+'40';input.style.color=c;
+      const statusSpan=input.closest('tr').querySelector('td:last-child span');
+      if(statusSpan){statusSpan.textContent=lbl;statusSpan.style.color=c;}
+      const bar=input.closest('td').querySelector('div div');
+      if(bar&&req>0)bar.style.width=Math.min(rec/req*100,100)+'%';
+      if(!qtyData[branch])qtyData[branch]={};
+      qtyData[branch][field]=value;
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateFridgeQty',branch,field,value})});
+      const ts=new Date().toLocaleString('en-GB');
+      await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch,asset:'-',field,value,timestamp:ts})});
+      showSaveToast();
+    }
+
+    function renderNotesDisplay(container,notesStr){
+      let wrap=container.querySelector('.notes-display-wrap');
+      if(!wrap){wrap=document.createElement('div');wrap.className='notes-display-wrap';wrap.style.marginTop='4px';container.appendChild(wrap);}
+      const entries=notesStr.split(' | ').filter(Boolean);
+      if(entries.length===0){wrap.innerHTML='';return;}
+      const first=entries[0],rest=entries.slice(1);
+      const extraId='notes-extra-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
+      wrap.innerHTML=`<div style="font-size:10px;color:#94a3b8;line-height:1.5;">${first}</div>${rest.length>0?`<div id="${extraId}" style="display:none;">${rest.map(n=>`<div style="font-size:10px;color:#94a3b8;line-height:1.5;margin-top:2px;">${n}</div>`).join('')}</div><button onclick="const d=document.getElementById('${extraId}');const h=d.style.display==='none';d.style.display=h?'block':'none';this.textContent=h?'▲ Less':'▼ '+${rest.length}+' more'" style="font-size:9px;color:#475569;background:none;border:none;cursor:pointer;padding:2px 0;font-family:'DM Sans',sans-serif;">▼ ${rest.length} more</button>`:''}`;
+    }
+
+    /* ── PDF: Missing ── */
+    function generateMissingPDF(branch){
+      const{jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+      const today=new Date().toLocaleDateString('en-GB');
+      const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225]};
+      const assets=trackerData.filter(r=>(r['Branch Code']||'').trim()===branch);
+      const delivered=assets.filter(a=>a['Asset Status']==='Delivered');
+      const notRec=assets.filter(a=>a['Asset Status']==='Not Received');
+      const total=delivered.length+notRec.length;
+      function dH(){doc.setFillColor(...CLR.card);doc.rect(0,0,pageW,18,'F');doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Missing Assets Report',10,11);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.accent);doc.text(branch,pageW-10,7,{align:'right'});doc.setTextColor(...CLR.grey);doc.text(today,pageW-10,13,{align:'right'});doc.setDrawColor(...CLR.accent);doc.setLineWidth(0.5);doc.line(0,18,pageW,18);}
+      function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text('Missing Assets — '+branch,10,pageH-3);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
+      dH();let y=22;
+      const cards=[{label:'Delivered',value:delivered.length,color:CLR.amber},{label:'Not Received',value:notRec.length,color:CLR.red},{label:'Total Missing',value:total,color:CLR.accent}];
+      const cw=(pageW-20)/cards.length;
+      cards.forEach((c,i)=>{const x=10+i*cw;doc.setFillColor(...CLR.card);doc.roundedRect(x,y,cw-3,18,2,2,'F');doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.roundedRect(x,y,cw-3,18,2,2,'S');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(c.label.toUpperCase(),x+(cw-3)/2,y+5,{align:'center'});doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(...c.color);doc.text(String(c.value),x+(cw-3)/2,y+13,{align:'center'});});
+      y+=22;
+      const SECTION_ORDER=['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
+      const QTY_ASSETS={'Freebolt':{req:'Freebolt Req',rec:'Freebolt Rec'},'Heavy Rack':{req:'Heavy Rack Req',rec:'Heavy Rack Rec'},'1 Door Chiller':{req:'1D Fridge Req',rec:'1D Fridge Rec'},'2 Door Chiller':{req:'2D Fridge Req',rec:'2D Fridge Rec'},'1 Door Freezer':{req:'1D Freezer Req',rec:'1D Freezer Rec'},'2 Door Freezer':{req:'2D Freezer Req',rec:'2D Freezer Rec'}};
+      const fq=qtyData[branch]||{};
+      function drawST(title,rows,color){
+        if(!rows.length)return;if(y>pageH-50){doc.addPage();dH();y=22;}
+        doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...color);doc.text(title+' ('+rows.length+')',10,y);y+=4;
+        rows.sort((a,b)=>{const si=SECTION_ORDER.indexOf(a['Section']||''),sj=SECTION_ORDER.indexOf(b['Section']||'');return(si===-1?99:si)-(sj===-1?99:sj)||(a['Asset']||'').localeCompare(b['Asset']||'');});
+        doc.autoTable({startY:y,head:[['Section','Asset','Priority','Qty']],body:rows.map(r=>{const qk=QTY_ASSETS[r['Asset']||''];return[r['Section']||'',r['Asset']||'',r['Priority']||'',qk?`Req:${parseInt(fq[qk.req]||0)||0}/Rec:${parseInt(fq[qk.rec]||0)||0}`:''];}),theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:40},1:{cellWidth:65},2:{cellWidth:22},3:{cellWidth:38}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.column.index===2&&d.section==='body'){const pc={Essential:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];if(pc){d.cell.styles.textColor=pc;d.cell.styles.fontStyle='bold';}}}});
+        y=doc.lastAutoTable.finalY+8;
+      }
+      drawST('Delivered — Awaiting Signature',delivered,CLR.amber);
+      drawST('Not Received',notRec,CLR.red);
+      if(total===0){doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.green);doc.text('✓ All assets received!',pageW/2,y+10,{align:'center'});}
+      const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+      doc.save(`Missing_${branch}_${today.replace(/\//g,'-')}.pdf`);
+    }
+
+    function generateBranchReport(branch){_generateReportForBranch(branch);}
+
+    function _generateReportForBranch(branch){
+      if(!branch){alert('Please select a branch.');return;}
+      const{jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+      const today=new Date().toLocaleDateString('en-GB');
+      const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],cyan:[14,116,144],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225]};
+      const assets=trackerData.filter(r=>(r['Branch Code']||'').trim()===branch);
+      const fq=qtyData[branch]||{};
+      const counts={rec:assets.filter(r=>r['Asset Status']==='Received').length,del:assets.filter(r=>r['Asset Status']==='Delivered').length,nr:assets.filter(r=>r['Asset Status']==='Not Received').length,total:assets.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length};
+      counts.pct=counts.total>0?Math.round(counts.rec/counts.total*100):0;
+      function dH(){doc.setFillColor(...CLR.card);doc.rect(0,0,pageW,18,'F');doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Asset Receiving Report',10,11);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.accent);doc.text(branch,pageW-10,7,{align:'right'});doc.setTextColor(...CLR.grey);doc.text(today,pageW-10,13,{align:'right'});doc.setDrawColor(...CLR.accent);doc.setLineWidth(0.5);doc.line(0,18,pageW,18);}
+      function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text('Asset Receiving Report - '+branch,10,pageH-3);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
+      dH();let y=22;
+      const kCards=[{label:'Total',value:counts.total,color:CLR.text},{label:'Received',value:counts.rec,color:CLR.green},{label:'Delivered',value:counts.del,color:CLR.amber},{label:'Not Received',value:counts.nr,color:CLR.red},{label:'Completion',value:counts.pct+'%',color:counts.pct>=80?CLR.green:counts.pct>=50?CLR.cyan:CLR.amber}];
+      const cw=(pageW-20)/kCards.length;
+      kCards.forEach((c,i)=>{const x=10+i*cw;doc.setFillColor(...CLR.card);doc.roundedRect(x,y,cw-3,18,2,2,'F');doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.roundedRect(x,y,cw-3,18,2,2,'S');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(c.label.toUpperCase(),x+(cw-3)/2,y+5,{align:'center'});doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...c.color);doc.text(String(c.value),x+(cw-3)/2,y+13,{align:'center'});});
+      y+=22;
+      /* Get unique sections from this branch's assets */
+      const branchSections=[...new Set(assets.map(r=>r['Section']).filter(Boolean))];
+      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Section Breakdown',10,y);y+=4;
+      doc.autoTable({startY:y,head:[['Section','Total','Received','Delivered','Not Received','%']],body:branchSections.map(s=>{const sRows=assets.filter(r=>r['Section']===s);const t=sRows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length;const rc=sRows.filter(r=>r['Asset Status']==='Received').length;const dl=sRows.filter(r=>r['Asset Status']==='Delivered').length;const nr=sRows.filter(r=>r['Asset Status']==='Not Received').length;return[s,t,rc,dl,nr,t>0?Math.round(rc/t*100)+'%':'0%'];}),theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:50},1:{cellWidth:18},2:{cellWidth:22},3:{cellWidth:22},4:{cellWidth:28},5:{cellWidth:18}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2});
+      y=doc.lastAutoTable.finalY+6;
+      branchSections.forEach(s=>{const sAssets=assets.filter(r=>r['Section']===s);if(!sAssets.length)return;if(y>pageH-50){doc.addPage();dH();y=22;}doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text(s,10,y);y+=4;doc.autoTable({startY:y,head:[['Asset','Priority','Status']],body:sAssets.map(r=>[r['Asset']||'',r['Priority']||'',r['Asset Status']||'None']),theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:70},1:{cellWidth:25},2:{cellWidth:35}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.column.index===1&&d.section==='body'){const pc={Essential:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];if(pc){d.cell.styles.textColor=pc;d.cell.styles.fontStyle='bold';}}if(d.column.index===2&&d.section==='body'){const sc={Received:CLR.green,Delivered:CLR.amber,'Not Received':CLR.red}[d.cell.raw];if(sc){d.cell.styles.textColor=sc;d.cell.styles.fontStyle='bold';}}}});y=doc.lastAutoTable.finalY+6;});
+      const qtyRows=QTY_ITEMS.map(item=>{const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0;if(req<=0)return null;const diff=rec-req;return[item.label,req,rec,diff>0?'+'+diff+' Extra':diff<0?diff+' Shortage':'✓ Exact'];}).filter(Boolean);
+      if(qtyRows.length){if(y>pageH-50){doc.addPage();dH();y=22;}doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Fridges & Shelves Quantities',10,y);y+=4;doc.autoTable({startY:y,head:[['Item','Requested','Received','Status']],body:qtyRows,theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:40},1:{cellWidth:25},2:{cellWidth:25},3:{cellWidth:40}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.column.index===3&&d.section==='body'){const v=String(d.cell.raw);if(v.includes('Extra')){d.cell.styles.textColor=CLR.cyan;d.cell.styles.fontStyle='bold';}else if(v.includes('Shortage')){d.cell.styles.textColor=CLR.red;d.cell.styles.fontStyle='bold';}else{d.cell.styles.textColor=CLR.green;d.cell.styles.fontStyle='bold';}}}});}
+      const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+      doc.save(`Report_${branch}_${today.replace(/\//g,'-')}.pdf`);
+    }
+
+    let toastTimer;
+    function showSaveToast(msg){const t=document.getElementById('save-toast');t.textContent=msg||'✓ Saved';t.style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity='0',2500);}
+
+    /* ── Boot ── */
+    setInterval(loadTracker, 5*60*1000);
+  </script>
+</body>
+</html>
