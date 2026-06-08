@@ -990,9 +990,21 @@
       const tagCls = {Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24'}[branch.status]||'#94a3b8';
       const cardId = 'tc_'+branch.code.replace(/[^a-zA-Z0-9]/g,'_');
 
+      /* ── Section & Group definitions ── */
+      const SECTION_ORDER = ['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
+      const SHARED_GROUPS = {
+        'Shelves':           ['Freebolt','Heavyrack','Heavy Rack'],
+        'Fridges':           ['1 Door Chiller','2 Door Chiller','1 Door Freezer','2 Door Freezer','Coldroom','1 Door Chiller','2 Door Chiller'],
+        'CCTV+AccessPoints': ['CCTV','Access Points'],
+        'OfficeFurniture':   ['Office Chair','Office Desk']
+      };
+      const assetToGroup = {};
+      Object.entries(SHARED_GROUPS).forEach(([grp, assets]) => assets.forEach(a => assetToGroup[a] = grp));
+
       const card = document.createElement('div');
       card.style.cssText = 'background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.07);border-radius:10px;margin-bottom:1.25rem;overflow:hidden;';
       card.dataset.branch = branch.code;
+
       card.innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1.25rem;background:rgba(255,255,255,0.03);border-bottom:0.5px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.ci').style.transform=b.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'">
           <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;flex-wrap:wrap;">
@@ -1004,7 +1016,7 @@
               <option value="Pending"   ${branch.status==='Pending'  ?'selected':''}>Pending</option>
             </select>
             <span class="pill pill-received">${rec} Received</span>
-            ${del>0?`<span class="pill pill-delivered">${del} Delivered</span>`:''}
+            ${del>0?`<span class="pill" style="background:rgba(251,191,36,0.1);color:#fbbf24;">${del} Delivered</span>`:''}
             <span class="pill pill-not-received">${nr} Not Received</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
@@ -1027,7 +1039,7 @@
             <button onclick="filterTrackerRows('${cardId}','Not Received',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Not Received</button>
             <button onclick="filterTrackerRows('${cardId}','None',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
           </div>
-          <div style="overflow-x:auto;padding:0 0 0.5rem;">
+          <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:12px;">
               <thead><tr>
                 <th style="min-width:160px;text-align:left;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);border-right:2px solid rgba(255,255,255,0.5);">Asset</th>
@@ -1043,55 +1055,108 @@
         </div>`;
 
       const tbody = card.getElementsByTagName('tbody')[0];
-      allAssets.forEach((row,i) => {
-        const asset=row['Asset']||'', pri=row['Priority']||'', st=row['Asset Status']||'None';
-        const dnNS=row['D.N. Not Signed']||'', dnS=row['D.N. Signed']||'', note=row['Notes']||'';
-        const pClass={Essential:'p-essential',High:'p-high',Medium:'p-medium',Low:'p-low'}[pri]||'';
-        const sPillCls={Received:'pill-received',Delivered:'pill-delivered','Not Received':'pill-not-received',None:'pill-none'}[st]||'pill-none';
-        const stCls={None:'none-val','Not Received':'not-received',Delivered:'delivered',Received:'received'}[st]||'';
-        const key=branch.code+'||'+asset;
-        const safeKey=(branch.code+'__'+asset).replace(/[^a-zA-Z0-9]/g,'_');
-        const bg=i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
-        const tr=document.createElement('tr');
-        tr.style.background=bg;
-        tr.dataset.status = st;
-        tr.innerHTML=`
-          <td style="padding:8px 10px;font-weight:500;border-right:2px solid rgba(255,255,255,0.5);border-bottom:0.5px solid rgba(255,255,255,0.1);">${asset}</td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span class="${pClass}">${pri||'-'}</span></td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            <select onchange="saveTrackerField(this,'${key}','Asset Status')" style="background:#0f1117;border:0.5px solid ${st==='Received'?'rgba(74,222,128,0.4)':st==='Delivered'?'rgba(251,191,36,0.4)':st==='Not Received'?'rgba(248,113,113,0.4)':'rgba(100,116,139,0.3)'};color:${st==='Received'?'#4ade80':st==='Delivered'?'#fbbf24':st==='Not Received'?'#f87171':'#94a3b8'};font-size:11px;padding:3px 6px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;" id="sel_${safeKey}">
-              <option value="None" ${st==='None'?'selected':''}>None</option>
-              <option value="Not Received" ${st==='Not Received'?'selected':''}>Not Received</option>
-              <option value="Delivered" ${st==='Delivered'?'selected':''}>Delivered</option>
-              <option value="Received" ${st==='Received'?'selected':''}>Received</option>
-            </select>
-          </td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            <div style="display:flex;align-items:center;justify-content:center;gap:5px;">
-              ${dnNS?`<a href="${dnNS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View D.N.</a>
-                <button onclick="showDNInput('dnns_${safeKey}','${key}','D.N. Not Signed','View D.N.')" style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif;" title="Edit link">✎</button>`:
-              `<button onclick="showDNInput('dnns_${safeKey}','${key}','D.N. Not Signed','View D.N.')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button>`}
-            </div>
-          </td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            <div style="display:flex;align-items:center;justify-content:center;gap:5px;">
-              ${dnS?`<a href="${dnS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View Signed</a>
-                <button onclick="showDNInput('dnss_${safeKey}','${key}','D.N. Signed','View Signed')" style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif;" title="Edit link">✎</button>`:
-              `<button onclick="showDNInput('dnss_${safeKey}','${key}','D.N. Signed','View Signed')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button>`}
-            </div>
-          </td>
-          <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            <textarea onblur="saveTrackerField(this,'${key}','Notes')" data-existing="${note}" style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:10px;padding:4px 6px;border-radius:4px;font-family:'DM Sans',sans-serif;width:100%;min-height:32px;resize:vertical;" placeholder="Add a note..."></textarea>
-            ${note ? '<div class="notes-display-wrap"></div>' : ''}
-          </td>`;
-        tbody.appendChild(tr);
-        if (note) { const ta=tr.querySelector('textarea[data-existing]'); if(ta) renderNotesDisplay(ta.parentElement, note); }
+      if (!tbody) { console.error('tbody not found for', branch.code); return card; }
+
+      /* ── Group assets by section then by shared group ── */
+      const bySection = {};
+      allAssets.forEach(row => {
+        const sec = row['Section'] || 'Other';
+        if (!bySection[sec]) bySection[sec] = [];
+        bySection[sec].push(row);
       });
-      /* ── Qty section ── */
+
+      /* Process sections in order */
+      const orderedSections = [...SECTION_ORDER, ...Object.keys(bySection).filter(s => !SECTION_ORDER.includes(s))];
+
+      orderedSections.forEach(sec => {
+        if (!bySection[sec]) return;
+        const secAssets = bySection[sec];
+
+        /* Add section header row */
+        const secTr = document.createElement('tr');
+        secTr.innerHTML = `<td colspan="6" style="padding:5px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;background:rgba(255,255,255,0.04);border-bottom:0.5px solid rgba(255,255,255,0.08);">${sec}</td>`;
+        tbody.appendChild(secTr);
+
+        /* Group assets within section */
+        const groups = {};
+        const groupOrder = [];
+        secAssets.forEach(row => {
+          const grp = assetToGroup[row['Asset']] || ('__ind__' + row['Asset']);
+          if (!groups[grp]) { groups[grp] = []; groupOrder.push(grp); }
+          groups[grp].push(row);
+        });
+
+        /* Remove duplicates in groupOrder */
+        const seen = new Set();
+        const uniqueGroupOrder = groupOrder.filter(g => { if(seen.has(g)) return false; seen.add(g); return true; });
+
+        uniqueGroupOrder.forEach(grp => {
+          const rows   = groups[grp];
+          const isShared = !grp.startsWith('__ind__');
+          let rowIndex = 0;
+
+          rows.forEach((row, idx) => {
+            const asset      = row['Asset'] || '';
+            const pri        = row['Priority'] || '';
+            const assetSt    = row['Asset Status'] || 'None';
+            const dnNS       = row['D.N. Not Signed'] || '';
+            const dnS        = row['D.N. Signed'] || '';
+            const note       = row['Notes'] || '';
+            const key        = branch.code + '||' + asset;
+            const safeKey    = (branch.code + '__' + asset).replace(/[^a-zA-Z0-9]/g, '_');
+            const pClass     = {Essential:'p-essential',High:'p-high',Medium:'p-medium',Low:'p-low'}[pri]||'';
+            const stCls      = {None:'none-val','Not Received':'not-received',Delivered:'delivered',Received:'received'}[assetSt]||'';
+            const stColor    = {Received:'rgba(74,222,128,0.4)',Delivered:'rgba(251,191,36,0.4)','Not Received':'rgba(248,113,113,0.4)',None:'rgba(100,116,139,0.3)'}[assetSt]||'rgba(100,116,139,0.3)';
+            const stTextColor= {Received:'#4ade80',Delivered:'#fbbf24','Not Received':'#f87171',None:'#94a3b8'}[assetSt]||'#94a3b8';
+            const bg = idx%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
+
+            /* For shared groups: only show D.N. cell on first row, span the rest */
+            const showDN = !isShared || idx === 0;
+            const dnRowspan = isShared ? rows.length : 1;
+
+            const tr = document.createElement('tr');
+            tr.dataset.status = assetSt;
+            tr.style.background = bg;
+
+            let dnCell = '';
+            if (showDN) {
+              const dnNSHtml = dnNS
+                ? `<div class="dn-cell"><a href="${dnNS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View D.N.</a><button onclick="showDNInput('dnns_${safeKey}','${key}','D.N. Not Signed','View D.N.')" style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif;">✎</button></div>`
+                : `<div class="dn-cell"><button onclick="showDNInput('dnns_${safeKey}','${key}','D.N. Not Signed','View D.N.')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button></div>`;
+              const dnSHtml = dnS
+                ? `<div class="dn-cell"><a href="${dnS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View Signed</a><button onclick="showDNInput('dnss_${safeKey}','${key}','D.N. Signed','View Signed')" style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif;">✎</button></div>`
+                : `<div class="dn-cell"><button onclick="showDNInput('dnss_${safeKey}','${key}','D.N. Signed','View Signed')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button></div>`;
+
+              dnCell = `<td rowspan="${dnRowspan}" style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;" id="dnns_${safeKey}">${dnNSHtml}</td>
+                        <td rowspan="${dnRowspan}" style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;" id="dnss_${safeKey}">${dnSHtml}</td>`;
+            }
+
+            tr.innerHTML = `
+              <td style="padding:8px 10px;font-weight:500;border-right:2px solid rgba(255,255,255,0.5);border-bottom:0.5px solid rgba(255,255,255,0.1);">${asset}</td>
+              <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span class="${pClass}">${pri||'—'}</span></td>
+              <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+                <select onchange="saveTrackerField(this,'${key}','Asset Status')" style="background:#0f1117;border:0.5px solid ${stColor};color:${stTextColor};font-size:11px;padding:3px 6px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;">
+                  <option value="None"         ${assetSt==='None'        ?'selected':''}>None</option>
+                  <option value="Not Received" ${assetSt==='Not Received'?'selected':''}>Not Received</option>
+                  <option value="Delivered"    ${assetSt==='Delivered'   ?'selected':''}>Delivered</option>
+                  <option value="Received"     ${assetSt==='Received'    ?'selected':''}>Received</option>
+                </select>
+              </td>
+              ${dnCell}
+              <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+                <textarea onblur="saveTrackerField(this,'${key}','Notes')" data-existing="${note}"
+                  style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:10px;padding:4px 6px;border-radius:4px;font-family:'DM Sans',sans-serif;width:100%;min-height:32px;resize:vertical;" placeholder="Add a note..."></textarea>
+                ${note ? '<div class="notes-display-wrap"></div>' : ''}
+              </td>`;
+
+            tbody.appendChild(tr);
+            if (note) { const ta=tr.querySelector('textarea[data-existing]'); if(ta) renderNotesDisplay(ta.parentElement, note); }
+          });
+        });
+      });
 
       /* ── Qty section ── */
       const fqBranch = qtyData[branch.code] || {};
-      const hasQty   = Object.values(fqBranch).some(v => v && v !== branch.code);
       const qtyWrap  = document.createElement('div');
       qtyWrap.style.cssText = 'border-top:0.5px solid rgba(255,255,255,0.07);';
       qtyWrap.innerHTML = `
@@ -1130,6 +1195,7 @@
         const bg  = i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
         const safeId = (branch.code+'_'+item.label).replace(/[^a-zA-Z0-9]/g,'_');
         const tr  = document.createElement('tr');
+        tr.style.background = bg;
         tr.innerHTML = `
           <td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,0.1);">${item.label}</td>
           <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);">
@@ -1154,21 +1220,6 @@
 
       return card;
     }
-
-    function filterTrackerRows(cardId, filter, btn) {
-      const filterBar = document.getElementById(cardId + '_filterbar');
-      if (filterBar) filterBar.querySelectorAll('button').forEach(b => {
-        b.style.background = 'transparent'; b.style.color = '#94a3b8'; b.style.borderColor = 'rgba(255,255,255,0.1)';
-      });
-      btn.style.background = 'rgba(34,211,238,0.12)'; btn.style.color = '#22d3ee'; btn.style.borderColor = 'rgba(34,211,238,0.3)';
-      const tbody = document.getElementById(cardId + '_tbody');
-      if (!tbody) return;
-      tbody.querySelectorAll('tr').forEach(tr => {
-        const st = tr.dataset.status || 'None';
-        tr.style.display = (filter === 'ALL' || st === filter) ? '' : 'none';
-      });
-    }
-
     async function saveTrackerField(el, key, field) {
       const [branch,asset] = key.split('||');
       let value = el.value !== undefined ? el.value : el.textContent;
