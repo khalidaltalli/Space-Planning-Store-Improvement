@@ -142,8 +142,11 @@
         <div class="table-card" style="margin-bottom:0;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
             <div class="chart-title" style="margin-bottom:0;">📋 Delivered — Awaiting Signature</div>
-            <input id="delivered-asset-filter" placeholder="Filter asset..." oninput="filterDeliveredTable()"
-              style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;width:120px;" />
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="delivered-asset-filter" placeholder="Filter asset..." oninput="filterDeliveredTable()"
+                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;width:110px;" />
+              <button onclick="exportDeliveredPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
+            </div>
           </div>
           <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-delivered-table"></div></div>
         </div>
@@ -151,8 +154,11 @@
         <div class="table-card" style="margin-bottom:0;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
             <div class="chart-title" style="margin-bottom:0;">⚠️ Qty Shortages</div>
-            <input id="shortage-asset-filter" placeholder="Filter item..." oninput="filterShortageTable()"
-              style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;width:120px;" />
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input id="shortage-asset-filter" placeholder="Filter item..." oninput="filterShortageTable()"
+                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;width:110px;" />
+              <button onclick="exportShortagePDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
+            </div>
           </div>
           <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-shortage-table"></div></div>
         </div>
@@ -375,6 +381,8 @@
       const assetToGroup={};
       Object.entries(SHARED_GROUPS).forEach(([grp,assets])=>assets.forEach(a=>assetToGroup[a]=grp));
 
+      const DN_ASSETS = new Set(['Freebolt','Heavyrack','Heavy Rack','Air Condition','Access Points','CCTV','1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','Coldroom','Curtain','SignBoard']);
+
       const card=document.createElement('div');
       card.style.cssText='background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.07);border-radius:10px;margin-bottom:1.25rem;overflow:hidden;';
       card.dataset.branch=branch.code;
@@ -457,11 +465,15 @@
             const bg=idx%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
             const showDN=!isShared||idx===0;
             const dnRowspan=isShared?rows.length:1;
+            const hasDN=DN_ASSETS.has(asset);
             let dnCell='';
-            if(showDN){
+            if(showDN && hasDN){
               const dnNSHtml=dnNS?`<div class="dn-cell"><a href="${dnNS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View D.N.</a><button onclick="showDNInput('dnns_${safeKey}','${key}','D.N. Not Signed','View D.N.')" style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif;">✎</button></div>`:`<div class="dn-cell"><button onclick="showDNInput('dnns_${safeKey}','${key}','D.N. Not Signed','View D.N.')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button></div>`;
               const dnSHtml=dnS?`<div class="dn-cell"><a href="${dnS}" target="_blank" style="color:#22d3ee;font-size:11px;text-decoration:none;">View Signed</a><button onclick="showDNInput('dnss_${safeKey}','${key}','D.N. Signed','View Signed')" style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#64748b;cursor:pointer;font-family:'DM Sans',sans-serif;">✎</button></div>`:`<div class="dn-cell"><button onclick="showDNInput('dnss_${safeKey}','${key}','D.N. Signed','View Signed')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button></div>`;
               dnCell=`<td rowspan="${dnRowspan}" style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;" id="dnns_${safeKey}">${dnNSHtml}</td><td rowspan="${dnRowspan}" style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;" id="dnss_${safeKey}">${dnSHtml}</td>`;
+            } else if(showDN && !hasDN){
+              /* Empty placeholder cells so table columns stay aligned */
+              dnCell=`<td rowspan="${dnRowspan}" style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;color:#2a303f;font-size:10px;text-align:center;">—</td><td rowspan="${dnRowspan}" style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);vertical-align:middle;color:#2a303f;font-size:10px;text-align:center;">—</td>`;
             }
             const tr=document.createElement('tr');
             tr.dataset.status=assetSt;
@@ -562,7 +574,8 @@
       if(field==='Notes'&&value.trim()){
         const ts2=new Date().toLocaleString('en-GB');
         const existing=el.dataset.existing||'';
-        const newEntry=`[${ts2}] ${value.trim()}`;
+        const user=currentUser||'Unknown';
+        const newEntry=`[${ts2}] [${user}] ${value.trim()}`;
         value=existing?existing+' | '+newEntry:newEntry;
         el.dataset.existing=value;el.value='';el.placeholder='Add another note...';
         renderNotesDisplay(el.parentElement,value);
@@ -691,6 +704,8 @@
         tr.style.display = !q || text.includes(q) ? '' : 'none';
       });
     }
+
+    async function saveQtyRow(branch,reqField,recField,reqId,recId,cardId){
       const reqInput=document.getElementById(reqId),recInput=document.getElementById(recId);
       if(reqInput?.value.trim()) await saveQtyField(branch,reqField,reqInput,cardId);
       if(recInput?.value.trim()) await saveQtyField(branch,recField,recInput,cardId);
@@ -723,9 +738,14 @@
       if(!wrap){wrap=document.createElement('div');wrap.className='notes-display-wrap';wrap.style.marginTop='4px';container.appendChild(wrap);}
       const entries=notesStr.split(' | ').filter(Boolean);
       if(entries.length===0){wrap.innerHTML='';return;}
+      function fmtEntry(e){
+        /* Format: [date] [User] text  OR legacy [date] text */
+        return e.replace(/^\[([^\]]+)\]\s*\[([^\]]+)\]\s*/,'(_$1_) <span style="font-size:9px;padding:1px 5px;border-radius:4px;font-weight:700;background:rgba(34,211,238,0.12);color:#22d3ee;">$2</span> ')
+                .replace(/^\[([^\]]+)\]\s*/,'(_$1_) ');
+      }
       const first=entries[0],rest=entries.slice(1);
       const extraId='notes-extra-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);
-      wrap.innerHTML=`<div style="font-size:10px;color:#94a3b8;line-height:1.5;">${first}</div>${rest.length>0?`<div id="${extraId}" style="display:none;">${rest.map(n=>`<div style="font-size:10px;color:#94a3b8;line-height:1.5;margin-top:2px;">${n}</div>`).join('')}</div><button onclick="const d=document.getElementById('${extraId}');const h=d.style.display==='none';d.style.display=h?'block':'none';this.textContent=h?'▲ Less':'▼ '+${rest.length}+' more'" style="font-size:9px;color:#475569;background:none;border:none;cursor:pointer;padding:2px 0;font-family:'DM Sans',sans-serif;">▼ ${rest.length} more</button>`:''}`;
+      wrap.innerHTML=`<div style="font-size:10px;color:#94a3b8;line-height:1.6;">${fmtEntry(first)}</div>${rest.length>0?`<div id="${extraId}" style="display:none;">${rest.map(n=>`<div style="font-size:10px;color:#94a3b8;line-height:1.6;margin-top:2px;">${fmtEntry(n)}</div>`).join('')}</div><button onclick="const d=document.getElementById('${extraId}');const h=d.style.display==='none';d.style.display=h?'block':'none';this.textContent=h?'▲ Less':'▼ '+${rest.length}+' more'" style="font-size:9px;color:#475569;background:none;border:none;cursor:pointer;padding:2px 0;font-family:'DM Sans',sans-serif;">▼ ${rest.length} more</button>`:''}`;
     }
 
     /* ── PDF: Missing ── */
@@ -795,11 +815,53 @@
       doc.save(`Report_${branch}_${today.replace(/\//g,'-')}.pdf`);
     }
 
+    /* ── PDF: Delivered Awaiting Signature ── */
+    function exportDeliveredPDF(){
+      const{jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+      const today=new Date().toLocaleDateString('en-GB');
+      const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],amber:[180,120,0],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225]};
+      /* Collect from current visible table */
+      const rows=[];
+      document.querySelectorAll('#task-delivered-table tbody tr').forEach(tr=>{
+        if(tr.style.display==='none')return;
+        const tds=tr.querySelectorAll('td');
+        if(tds.length>=2) rows.push([tds[0].textContent.trim(), tds[1].textContent.trim()]);
+      });
+      function dH(){doc.setFillColor(...CLR.card);doc.rect(0,0,pageW,18,'F');doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Delivered — Awaiting Signature',10,11);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(today,pageW-10,11,{align:'right'});doc.setDrawColor(...CLR.accent);doc.setLineWidth(0.5);doc.line(0,18,pageW,18);}
+      function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
+      dH();
+      doc.autoTable({startY:22,head:[['Branch','Asset']],body:rows.length?rows:[['No delivered assets','']],theme:'plain',styles:{fontSize:9,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},headStyles:{fillColor:[14,116,144],textColor:[255,255,255],fontStyle:'bold',fontSize:9},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:70},1:{cellWidth:100}},margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.section==='body'&&d.column.index===0){d.cell.styles.fontStyle='bold';d.cell.styles.textColor=CLR.accent;}}});
+      const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+      doc.save(`Delivered_Awaiting_${today.replace(/\//g,'-')}.pdf`);
+    }
+
+    /* ── PDF: Qty Shortages ── */
+    function exportShortagePDF(){
+      const{jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+      const today=new Date().toLocaleDateString('en-GB');
+      const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[185,28,28],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225],red:[185,28,28],cyan:[14,116,144]};
+      const rows=[];
+      document.querySelectorAll('#task-shortage-table tbody tr').forEach(tr=>{
+        if(tr.style.display==='none')return;
+        const tds=tr.querySelectorAll('td');
+        if(tds.length>=4) rows.push([tds[0].textContent.trim(), tds[1].textContent.trim(), tds[2].textContent.trim(), tds[3].textContent.trim()]);
+      });
+      function dH(){doc.setFillColor(...CLR.card);doc.rect(0,0,pageW,18,'F');doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Qty Shortages Report',10,11);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(today,pageW-10,11,{align:'right'});doc.setDrawColor(...CLR.accent);doc.setLineWidth(0.5);doc.line(0,18,pageW,18);}
+      function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
+      dH();
+      doc.autoTable({startY:22,head:[['Branch','Item','Req / Rec','Shortage']],body:rows.length?rows:[['No shortages','','','']],theme:'plain',styles:{fontSize:9,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},headStyles:{fillColor:[185,28,28],textColor:[255,255,255],fontStyle:'bold',fontSize:9},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:55},1:{cellWidth:55},2:{cellWidth:45},3:{cellWidth:30}},margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.section==='body'&&d.column.index===0){d.cell.styles.fontStyle='bold';d.cell.styles.textColor=CLR.cyan;}if(d.section==='body'&&d.column.index===3){d.cell.styles.textColor=CLR.red;d.cell.styles.fontStyle='bold';}}});
+      const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+      doc.save(`Shortages_${today.replace(/\//g,'-')}.pdf`);
+    }
+
     let toastTimer;
     function showSaveToast(msg){const t=document.getElementById('save-toast');t.textContent=msg||'✓ Saved';t.style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity='0',2500);}
 
     /* ── Boot ── */
-    setInterval(loadTracker, 5*60*1000);
   </script>
 </body>
 </html>
