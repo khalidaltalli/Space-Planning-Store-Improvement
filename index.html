@@ -155,7 +155,7 @@
 
         <div class="table-card" style="margin-bottom:0;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
-            <div class="chart-title" style="margin-bottom:0;">⚠️ Qty Shortages</div>
+            <div class="chart-title" style="margin-bottom:0;">⚠️ Discrepancy</div>
             <div style="display:flex;gap:6px;align-items:center;">
               <select id="shortage-asset-filter" onchange="filterShortageTable()"
                 style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:130px;">
@@ -424,6 +424,10 @@
             <button onclick="filterTrackerRows('${cardId}','Delivered',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Delivered</button>
             <button onclick="filterTrackerRows('${cardId}','Not Received',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Not Received</button>
             <button onclick="filterTrackerRows('${cardId}','None',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+            <select id="${cardId}_asset_filter" onchange="filterTrackerByAsset('${cardId}')" style="margin-left:auto;background:#0f1117;border:0.5px solid rgba(255,255,255,0.12);color:#e2e8f0;font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;">
+              <option value="">All Assets</option>
+              ${allAssets.map(r=>r['Asset']||'').filter((a,i,arr)=>a&&arr.indexOf(a)===i).sort().map(a=>`<option value="${a}">${a}</option>`).join('')}
+            </select>
           </div>
           <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:12px;">
@@ -481,6 +485,7 @@
             }
             const tr=document.createElement('tr');
             tr.dataset.status=assetSt;
+            tr.dataset.asset=asset;
             tr.style.background=bg;
             tr.innerHTML=`
               <td style="padding:8px 10px;font-weight:500;border-right:2px solid rgba(255,255,255,0.5);border-bottom:0.5px solid rgba(255,255,255,0.1);">${asset}</td>
@@ -510,7 +515,7 @@
       qtyWrap.style.cssText='border-top:0.5px solid rgba(255,255,255,0.07);';
       qtyWrap.innerHTML=`
         <div onclick="const w=this.nextElementSibling;w.style.display=w.style.display==='none'?'block':'none';this.querySelector('.qi').style.transform=w.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1.25rem;cursor:pointer;background:rgba(255,255,255,0.02);">
-          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">Fridges & Shelves Quantities</span>
+          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">Fridges & Shelves — Discrepancy</span>
           <span class="qi" style="color:#64748b;font-size:11px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
         </div>
         <div style="display:none;padding:0 1.25rem 0.75rem;overflow-x:auto;">
@@ -555,10 +560,30 @@
       const filterBar=document.getElementById(cardId+'_filterbar');
       if(filterBar) filterBar.querySelectorAll('button').forEach(b=>{b.style.background='transparent';b.style.color='#94a3b8';b.style.borderColor='rgba(255,255,255,0.1)';});
       btn.style.background='rgba(34,211,238,0.12)';btn.style.color='#22d3ee';btn.style.borderColor='rgba(34,211,238,0.3)';
+      /* Reset asset dropdown */
+      const asel=document.getElementById(cardId+'_asset_filter');
+      if(asel) asel.value='';
       const tbl=document.getElementById(cardId+'_tbody');
       if(!tbl) return;
       tbl.querySelectorAll('tr[data-status]').forEach(tr=>{
         tr.style.display=(filter==='ALL'||tr.dataset.status===filter)?'':'none';
+      });
+    }
+
+    function filterTrackerByAsset(cardId) {
+      const asel=document.getElementById(cardId+'_asset_filter');
+      const asset=asel?asel.value:'';
+      /* Reset status buttons to All */
+      const filterBar=document.getElementById(cardId+'_filterbar');
+      if(filterBar){
+        filterBar.querySelectorAll('button').forEach(b=>{b.style.background='transparent';b.style.color='#94a3b8';b.style.borderColor='rgba(255,255,255,0.1)';});
+        const allBtn=filterBar.querySelector('button');
+        if(allBtn){allBtn.style.background='rgba(34,211,238,0.12)';allBtn.style.color='#22d3ee';allBtn.style.borderColor='rgba(34,211,238,0.3)';}
+      }
+      const tbl=document.getElementById(cardId+'_tbody');
+      if(!tbl) return;
+      tbl.querySelectorAll('tr[data-status]').forEach(tr=>{
+        tr.style.display=(!asset||tr.dataset.asset===asset)?'':'none';
       });
     }
 
@@ -694,17 +719,17 @@
       const dSel=document.getElementById('delivered-asset-filter');
       if(dSel){const cur=dSel.value;dSel.innerHTML='<option value="">All Assets</option>'+deliveredAssets.map(a=>`<option value="${a}">${a}</option>`).join('');if(deliveredAssets.includes(cur))dSel.value=cur;}
 
-      /* Shortage table */
-      const shortageRows=[];
-      branchCodes.forEach(b=>{const fq=qtyData[b]||{};QTY_ITEMS.forEach(item=>{const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;if(req>0&&diff<0)shortageRows.push({branch:b,item:item.label,req,rec,diff});});});
-      document.getElementById('task-shortage-table').innerHTML=shortageRows.length
-        ?`<table><thead><tr><th style="text-align:left;min-width:100px;">Branch</th><th style="text-align:left;min-width:90px;">Item</th><th style="min-width:110px;">Req / Rec</th><th style="min-width:70px;">Short</th></tr></thead><tbody>${shortageRows.map(r=>`<tr data-asset="${r.item}"><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.branch}');return false;" style="color:#22d3ee;text-decoration:none;">${r.branch}</a></td><td>${r.item}</td><td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;">${r.req} / ${r.rec}</td><td style="text-align:center;"><span style="color:#f87171;font-weight:700;font-family:'DM Mono',monospace;">${r.diff}</span></td></tr>`).join('')}</tbody></table>`
-        :'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No shortages!</p>';
+      /* Discrepancy table (shortages + extras) */
+      const discrepancyRows=[];
+      branchCodes.forEach(b=>{const fq=qtyData[b]||{};QTY_ITEMS.forEach(item=>{const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;if(req>0&&diff!==0)discrepancyRows.push({branch:b,item:item.label,req,rec,diff,type:diff<0?'shortage':'extra'});});});
+      document.getElementById('task-shortage-table').innerHTML=discrepancyRows.length
+        ?`<table><thead><tr><th style="text-align:left;min-width:100px;">Branch</th><th style="text-align:left;min-width:90px;">Item</th><th style="min-width:110px;">Req / Rec</th><th style="min-width:80px;">Diff</th></tr></thead><tbody>${discrepancyRows.map(r=>`<tr data-asset="${r.item}"><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.branch}');return false;" style="color:#22d3ee;text-decoration:none;">${r.branch}</a></td><td>${r.item}</td><td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;">${r.req} / ${r.rec}</td><td style="text-align:center;"><span style="color:${r.type==='shortage'?'#f87171':'#22d3ee'};font-weight:700;font-family:'DM Mono',monospace;">${r.diff>0?'+'+r.diff:r.diff}</span></td></tr>`).join('')}</tbody></table>`
+        :'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No discrepancies!</p>';
 
-      /* Populate shortage item dropdown */
-      const shortageItems=[...new Set(shortageRows.map(r=>r.item))].sort();
+      /* Populate discrepancy item dropdown */
+      const discrepancyItems=[...new Set(discrepancyRows.map(r=>r.item))].sort();
       const sSel=document.getElementById('shortage-asset-filter');
-      if(sSel){const cur=sSel.value;sSel.innerHTML='<option value="">All Items</option>'+shortageItems.map(a=>`<option value="${a}">${a}</option>`).join('');if(shortageItems.includes(cur))sSel.value=cur;}
+      if(sSel){const cur=sSel.value;sSel.innerHTML='<option value="">All Items</option>'+discrepancyItems.map(a=>`<option value="${a}">${a}</option>`).join('');if(discrepancyItems.includes(cur))sSel.value=cur;}
     }
 
     function filterDeliveredTable(){
