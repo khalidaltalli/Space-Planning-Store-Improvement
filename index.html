@@ -1202,10 +1202,24 @@
       function pct(r) { const t=r.filter(x=>x['Asset Status']&&x['Asset Status']!=='None').length; return t>0?Math.round(sc(r)/t*100):0; }
       function getColor(p) { return p>=80?CLR.green:p>=50?CLR.cyan:p>0?CLR.amber:CLR.red; }
 
-      /* ── all branches from trackerData ── */
       const branchSet = {};
       trackerData.forEach(r=>{ const b=(r['Branch Code']||'').trim(); if(b) branchSet[b]=(r['Branch Status']||'').trim(); });
       const allBranches = Object.keys(branchSet).sort();
+
+      /* ── branches active during selected month ── */
+      const lastDayOfMonth = new Date(year, monthIdx+1, 0);
+      function parseDMY(str) {
+        if (!str) return null;
+        const p = str.split('/');
+        if (p.length < 3) return null;
+        return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
+      }
+      const activeBranchesInMonth = allBranches.filter(b => {
+        const ex = branchExtras[b] || {};
+        const rDate = parseDMY(ex.receivingDate);
+        return rDate && rDate <= lastDayOfMonth;
+      });
+      const reportBranches = activeBranchesInMonth.length > 0 ? activeBranchesInMonth : allBranches;
 
       /* ── page counter ── */
       let pageNum = 0;
@@ -1243,15 +1257,15 @@
       doc.text('New Store Asset Receiving', pageW/2, 96, {align:'center'});
       doc.text('Space Planning & Store Improvement', pageW/2, 104, {align:'center'});
 
-      /* Overall KPIs */
-      const allRows   = trackerData;
+      /* Overall KPIs — filtered to reportBranches only */
+      const allRows   = trackerData.filter(r=>reportBranches.includes((r['Branch Code']||'').trim()));
       const totalRec  = allRows.filter(r=>r['Asset Status']==='Received').length;
       const totalDel  = allRows.filter(r=>r['Asset Status']==='Delivered').length;
       const totalNR   = allRows.filter(r=>r['Asset Status']==='Not Received').length;
       const totalAssets = allRows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length;
       const overallPct  = totalAssets>0?Math.round(totalRec/totalAssets*100):0;
       const kpis = [
-        {label:'Branches', value:allBranches.length, color:[255,255,255]},
+        {label:'Branches', value:reportBranches.length, color:[255,255,255]},
         {label:'Total Assets', value:totalAssets, color:[255,255,255]},
         {label:'Received', value:totalRec, color:[22,163,74]},
         {label:'Delivered', value:totalDel, color:[180,120,0]},
@@ -1308,7 +1322,7 @@
 
       /* Filter branches by month using branchExtras */
       const movementRows = [];
-      allBranches.forEach(b => {
+      reportBranches.forEach(b => {
         const ex = branchExtras[b] || {};
         const rDate = ex.receivingDate || '';
         const lDate = ex.liveDate || '';
@@ -1357,7 +1371,7 @@
 
       /* Status summary bar chart */
       const statusCounts2 = {Pending:0, Receiving:0, Live:0};
-      allBranches.forEach(b => { const s=branchSet[b]; if(statusCounts2[s]!==undefined) statusCounts2[s]++; });
+      reportBranches.forEach(b => { const s=branchSet[b]; if(statusCounts2[s]!==undefined) statusCounts2[s]++; });
       doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
       doc.text('Current Branch Status Distribution', 10, y); y+=6;
       const barColors = {Pending:[180,120,0], Receiving:[14,116,144], Live:[22,163,74]};
@@ -1386,7 +1400,7 @@
       doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
       doc.text('Branch Completion %', 10, y); y += 5;
 
-      const branchStats = allBranches.map(b => {
+      const branchStats = reportBranches.map(b => {
         const rows = trackerData.filter(r=>(r['Branch Code']||'').trim()===b);
         const p = pct(rows);
         return {b, p, rows};
@@ -1511,7 +1525,7 @@
         doc.autoTable({
           startY:y,
           head:[['Asset','Section','Branches Affected','% of Total']],
-          body:nrSorted.map(([a,v])=>[a, v.section, v.count, Math.round(v.count/allBranches.length*100)+'%']),
+          body:nrSorted.map(([a,v])=>[a, v.section, v.count, Math.round(v.count/reportBranches.length*100)+'%']),
           theme:'plain',
           styles:{fontSize:8,textColor:CLR.dark,fillColor:CLR.bg,cellPadding:2.5},
           headStyles:{fillColor:[185,28,28],textColor:[255,255,255],fontStyle:'bold',fontSize:8},
@@ -1569,7 +1583,7 @@
       const itemTotals = {};
       QTY_ITEMS_R.forEach(item => { itemTotals[item.label] = {req:0,rec:0}; });
       const discRows = [];
-      allBranches.forEach(b => {
+      reportBranches.forEach(b => {
         const fq = qtyData[b] || {};
         QTY_ITEMS_R.forEach(item => {
           const req=parseInt(fq[item.req]||0)||0, rec=parseInt(fq[item.rec]||0)||0, diff=rec-req;
@@ -1644,7 +1658,7 @@
       doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
       doc.text('D.N. Status by Branch', 10, y); y+=4;
 
-      const dnBody = allBranches.map(b => {
+      const dnBody = reportBranches.map(b => {
         const bRows = trackerData.filter(r=>(r['Branch Code']||'').trim()===b);
         const dnAssets = bRows.filter(r=>DN_ASSETS.has(r['Asset']||''));
         const signed   = dnAssets.filter(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http')).length;
