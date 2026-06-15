@@ -132,7 +132,7 @@
 
     <!-- Task List -->
     <div id="task-list" style="display:none;margin-bottom:1.25rem;">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
 
         <div class="table-card" style="margin-bottom:0;">
           <div class="chart-title" style="margin-bottom:0.75rem;">🏪 Branch Status</div>
@@ -141,16 +141,30 @@
 
         <div class="table-card" style="margin-bottom:0;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
-            <div class="chart-title" style="margin-bottom:0;">📋 Delivered — Awaiting Signature</div>
+            <div class="chart-title" style="margin-bottom:0;">📋 Delivered</div>
             <div style="display:flex;gap:6px;align-items:center;">
               <select id="delivered-asset-filter" onchange="filterDeliveredTable()"
-                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:130px;">
+                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:110px;">
                 <option value="">All Assets</option>
               </select>
               <button onclick="exportDeliveredPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
             </div>
           </div>
           <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-delivered-table"></div></div>
+        </div>
+
+        <div class="table-card" style="margin-bottom:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
+            <div class="chart-title" style="margin-bottom:0;">🔴 Not Received</div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <select id="nr-asset-filter" onchange="filterNRTable()"
+                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:110px;">
+                <option value="">All Assets</option>
+              </select>
+              <button onclick="exportNRPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-nr-table"></div></div>
         </div>
 
         <div class="table-card" style="margin-bottom:0;">
@@ -163,7 +177,7 @@
             <button onclick="filterDiscrepancy('shortage',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Shortage</button>
             <button onclick="filterDiscrepancy('extra',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Extra</button>
             <select id="shortage-asset-filter" onchange="filterShortageTable()"
-              style="margin-left:auto;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:3px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:130px;">
+              style="margin-left:auto;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:3px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:110px;">
               <option value="">All Items</option>
             </select>
           </div>
@@ -252,13 +266,14 @@
     let trackerData     = [];
     let trackerStatus   = {};
     let trackerBranches = [];
+    let branchExtras    = {}; /* code -> { statusDate, assetListLink, layoutLink } */
 
     async function loadTracker() {
       document.getElementById('tracker-updated').textContent='Loading...';
       try {
         const cl=await fetchSheet('Receiving Checklist');
         trackerData=cl.rows||[];
-        const st=await fetchSheet('Receiving Statues');
+        const st=await fetchSheet('Links');
         trackerStatus={};
         (st.rows||[]).forEach(r=>{const b=(r['Branch Code']||'').trim();if(b)trackerStatus[b]=r;});
         try {
@@ -266,7 +281,23 @@
           qtyData={};
           (fq.rows||[]).forEach(r=>{const b=(r['Branch Code']||r['Branch']||'').trim();if(b)qtyData[b]=r;});
         } catch(e){qtyData={};}
-        /* FIX: removed duplicate push */
+        /* Branch extras: status date from Branch Codes, links from Links tab */
+        try {
+          const bc=await fetchSheet('Branch Codes');
+          branchExtras={};
+          (bc.rows||[]).forEach(r=>{
+            const b=(r['Branch Code']||'').trim();
+            if(b) branchExtras[b]={ statusDate: r['Status Date']||'', assetListLink:'', layoutLink:'' };
+          });
+        } catch(e){branchExtras={};}
+        /* Links: D.N. Folder, Layout Link, Asset Link from Links tab */
+        (Object.values(trackerStatus)).forEach(r=>{
+          const b=(r['Branch Code']||'').trim();
+          if(!b) return;
+          if(!branchExtras[b]) branchExtras[b]={statusDate:'',assetListLink:'',layoutLink:''};
+          branchExtras[b].layoutLink   = r['Layout link'] || r['Layout Link'] || '';
+          branchExtras[b].assetListLink= r['Asset Link']  || r['Asset link']  || '';
+        });
         const seen=new Set();
         trackerBranches=[];
         trackerData.forEach(r=>{
@@ -274,10 +305,7 @@
           if(b&&!seen.has(b)){seen.add(b);trackerBranches.push({code:b,status:bs});}
         });
         trackerBranches.sort((a,b)=>a.code.localeCompare(b.code));
-
-        /* Build checkbox list */
         buildBranchCheckboxes();
-
         document.getElementById('tracker-updated').textContent='Last updated: '+new Date().toLocaleTimeString();
         renderTracker();
       } catch(e){
@@ -402,6 +430,7 @@
               <option value="Live"      ${branch.status==='Live'     ?'selected':''}>Live</option>
               <option value="Pending"   ${branch.status==='Pending'  ?'selected':''}>Pending</option>
             </select>
+            <span id="${cardId}_statusdate" style="font-size:10px;color:#475569;font-weight:400;">${(branchExtras[branch.code]?.statusDate?branchExtras[branch.code].statusDate.split(' ')[0]:'')}</span>
             <span class="pill pill-received">${rec} Received</span>
             ${del>0?`<span class="pill" style="background:rgba(251,191,36,0.1);color:#fbbf24;">${del} Delivered</span>`:''}
             <span class="pill pill-not-received">${nr} Not Received</span>
@@ -417,6 +446,12 @@
             ${folder
               ?`<a href="${folder}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:4px 12px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;text-decoration:none;">🔗 D.N. Folder</a>`
               :`<button onclick="addFolder('${branch.code}','${cardId}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add Folder</button>`}
+            ${(branchExtras[branch.code]?.assetListLink)
+              ?`<a href="${branchExtras[branch.code].assetListLink}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:6px;background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;text-decoration:none;">📄 Asset List</a>`
+              :`<button onclick="saveBranchLink('${branch.code}','assetListLink','📄 Asset List')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Asset List</button>`}
+            ${(branchExtras[branch.code]?.layoutLink)
+              ?`<a href="${branchExtras[branch.code].layoutLink}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:6px;background:rgba(52,211,153,0.08);border:0.5px solid rgba(52,211,153,0.2);color:#34d399;text-decoration:none;">🗺️ Layout</a>`
+              :`<button onclick="saveBranchLink('${branch.code}','layoutLink','🗺️ Layout')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(52,211,153,0.08);border:0.5px solid rgba(52,211,153,0.2);color:#34d399;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Layout</button>`}
             <button onclick="generateBranchReport('${branch.code}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:auto;">⬇ Report PDF</button>
             <button onclick="generateMissingPDF('${branch.code}')" style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:4px;">⬇ Missing PDF</button>
           </div>
@@ -681,10 +716,34 @@
       const c=tagColors[newStatus]||'#94a3b8';
       sel.style.background=c+'18';sel.style.color=c;
       trackerBranches=trackerBranches.map(b=>b.code===branchCode?{...b,status:newStatus}:b);
+      /* Stamp today's date (date only) next to the dropdown */
+      const today=new Date().toLocaleDateString('en-GB'); /* dd/mm/yyyy */
+      if(!branchExtras[branchCode])branchExtras[branchCode]={};
+      branchExtras[branchCode].statusDate=today;
+      const cardId='tc_'+branchCode.replace(/[^a-zA-Z0-9]/g,'_');
+      const dateEl=document.getElementById(cardId+'_statusdate');
+      if(dateEl) dateEl.textContent=today;
       await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'updateBranchStatus',branch:branchCode,status:newStatus})});
       const ts=new Date().toLocaleString('en-GB');
       await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch:branchCode,asset:'-',field:'Branch Status',value:newStatus,timestamp:ts})});
       showSaveToast('Branch status updated to '+newStatus);
+    }
+
+    function saveBranchLink(branchCode, field, label) {
+      const val = prompt(`Paste the ${label} link for ${branchCode}:`);
+      if (!val || !val.trim()) return;
+      const url = val.trim();
+      if (!branchExtras[branchCode]) branchExtras[branchCode] = {};
+      branchExtras[branchCode][field] = url;
+      /* Save to sheet */
+      const payload = { action:'updateBranchLinks', branch:branchCode };
+      payload[field === 'assetListLink' ? 'assetListLink' : 'layoutLink'] = url;
+      fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const ts=new Date().toLocaleString('en-GB');
+      fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'logEdit',user:currentUser||'Unknown',branch:branchCode,asset:'-',field,value:url,timestamp:ts})});
+      showSaveToast(`${label} link saved!`);
+      /* Refresh card — re-render tracker */
+      renderTracker();
     }
 
     function scrollToBranch(branchCode){
@@ -722,7 +781,17 @@
       const dSel=document.getElementById('delivered-asset-filter');
       if(dSel){const cur=dSel.value;dSel.innerHTML='<option value="">All Assets</option>'+deliveredAssets.map(a=>`<option value="${a}">${a}</option>`).join('');if(deliveredAssets.includes(cur))dSel.value=cur;}
 
-      /* Discrepancy table (shortages + extras) */
+      /* Not Received table */
+      const nrRows=[];
+      branchCodes.forEach(b=>{trackerData.filter(r=>(r['Branch Code']||'').trim()===b&&r['Asset Status']==='Not Received').forEach(r=>nrRows.push({branch:b,asset:r['Asset']||'',section:r['Section']||''}));});
+      document.getElementById('task-nr-table').innerHTML=nrRows.length
+        ?`<table><thead><tr><th style="text-align:left;min-width:100px;">Branch</th><th style="text-align:left;min-width:130px;">Asset</th></tr></thead><tbody>${nrRows.map(r=>`<tr data-asset="${r.asset}"><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.branch}');return false;" style="color:#22d3ee;text-decoration:none;">${r.branch}</a></td><td><span class="pill pill-not-received">${r.asset}</span></td></tr>`).join('')}</tbody></table>`
+        :'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ All assets received!</p>';
+
+      /* Populate NR asset dropdown */
+      const nrAssets=[...new Set(nrRows.map(r=>r.asset))].sort();
+      const nrSel=document.getElementById('nr-asset-filter');
+      if(nrSel){const cur=nrSel.value;nrSel.innerHTML='<option value="">All Assets</option>'+nrAssets.map(a=>`<option value="${a}">${a}</option>`).join('');if(nrAssets.includes(cur))nrSel.value=cur;}
       const discrepancyRows=[];
       branchCodes.forEach(b=>{const fq=qtyData[b]||{};QTY_ITEMS.forEach(item=>{const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;if(req>0&&diff!==0)discrepancyRows.push({branch:b,item:item.label,req,rec,diff,type:diff<0?'shortage':'extra'});});});
       document.getElementById('task-shortage-table').innerHTML=discrepancyRows.length
@@ -738,6 +807,13 @@
     function filterDeliveredTable(){
       const q=document.getElementById('delivered-asset-filter')?.value||'';
       document.querySelectorAll('#task-delivered-table tbody tr').forEach(tr=>{
+        tr.style.display=(!q||tr.dataset.asset===q)?'':'none';
+      });
+    }
+
+    function filterNRTable(){
+      const q=document.getElementById('nr-asset-filter')?.value||'';
+      document.querySelectorAll('#task-nr-table tbody tr').forEach(tr=>{
         tr.style.display=(!q||tr.dataset.asset===q)?'':'none';
       });
     }
@@ -877,6 +953,27 @@
       if(qtyRows.length){if(y>pageH-50){doc.addPage();dH();y=22;}doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Fridges & Shelves Quantities',10,y);y+=4;doc.autoTable({startY:y,head:[['Item','Requested','Received','Status']],body:qtyRows,theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:40},1:{cellWidth:25},2:{cellWidth:25},3:{cellWidth:40}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.column.index===3&&d.section==='body'){const v=String(d.cell.raw);if(v.includes('Extra')){d.cell.styles.textColor=CLR.cyan;d.cell.styles.fontStyle='bold';}else if(v.includes('Shortage')){d.cell.styles.textColor=CLR.red;d.cell.styles.fontStyle='bold';}else{d.cell.styles.textColor=CLR.green;d.cell.styles.fontStyle='bold';}}}});}
       const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
       doc.save(`Report_${branch}_${today.replace(/\//g,'-')}.pdf`);
+    }
+
+    /* ── PDF: Not Received ── */
+    function exportNRPDF(){
+      const{jsPDF}=window.jspdf;
+      const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+      const today=new Date().toLocaleDateString('en-GB');
+      const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[185,28,28],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225],red:[185,28,28],cyan:[14,116,144]};
+      const rows=[];
+      document.querySelectorAll('#task-nr-table tbody tr').forEach(tr=>{
+        if(tr.style.display==='none')return;
+        const tds=tr.querySelectorAll('td');
+        if(tds.length>=2) rows.push([tds[0].textContent.trim(), tds[1].textContent.trim()]);
+      });
+      function dH(){doc.setFillColor(...CLR.card);doc.rect(0,0,pageW,18,'F');doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Not Received Assets',10,11);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(today,pageW-10,11,{align:'right'});doc.setDrawColor(...CLR.red);doc.setLineWidth(0.5);doc.line(0,18,pageW,18);}
+      function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
+      dH();
+      doc.autoTable({startY:22,head:[['Branch','Asset']],body:rows.length?rows:[['No not-received assets','']],theme:'plain',styles:{fontSize:9,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},headStyles:{fillColor:[185,28,28],textColor:[255,255,255],fontStyle:'bold',fontSize:9},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:70,textColor:CLR.cyan,fontStyle:'bold'},1:{cellWidth:100}},margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2});
+      const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+      doc.save(`Not_Received_${today.replace(/\//g,'-')}.pdf`);
     }
 
     /* ── PDF: Delivered Awaiting Signature ── */
