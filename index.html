@@ -113,15 +113,50 @@
         <option value="Pending">Pending</option>
       </select>
       <label>Branch:</label>
-      <select id="t-branch-filter" onchange="renderTracker()"><option value="ALL">All</option></select>
+      <!-- Multi-select branch dropdown -->
+      <div style="position:relative;" id="branch-multiselect-wrap">
+        <button id="branch-multiselect-btn" onclick="toggleBranchDropdown()"
+          style="background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.12);color:#e2e8f0;font-size:12px;padding:6px 28px 6px 10px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;min-width:160px;text-align:left;position:relative;">
+          All Branches
+          <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:#64748b;">▼</span>
+        </button>
+        <div id="branch-multiselect-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;min-width:200px;max-height:260px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+          <div style="padding:6px 8px;border-bottom:0.5px solid rgba(255,255,255,0.07);display:flex;gap:6px;">
+            <button onclick="selectAllBranches(true)" style="flex:1;font-size:10px;padding:3px 6px;border-radius:4px;background:rgba(34,211,238,0.1);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
+            <button onclick="selectAllBranches(false)" style="flex:1;font-size:10px;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+          </div>
+          <div id="branch-checkbox-list" style="padding:4px 0;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Task List -->
     <div id="task-list" style="display:none;margin-bottom:1.25rem;">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-        <div class="table-card" style="margin-bottom:0;"><div class="chart-title" style="margin-bottom:0.75rem;">🏪 Branch Status</div><div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-branch-table"></div></div></div>
-        <div class="table-card" style="margin-bottom:0;"><div class="chart-title" style="margin-bottom:0.75rem;">📋 Delivered — Awaiting Signature</div><div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-delivered-table"></div></div></div>
-        <div class="table-card" style="margin-bottom:0;"><div class="chart-title" style="margin-bottom:0.75rem;">⚠️ Qty Shortages</div><div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-shortage-table"></div></div></div>
+
+        <div class="table-card" style="margin-bottom:0;">
+          <div class="chart-title" style="margin-bottom:0.75rem;">🏪 Branch Status</div>
+          <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-branch-table"></div></div>
+        </div>
+
+        <div class="table-card" style="margin-bottom:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
+            <div class="chart-title" style="margin-bottom:0;">📋 Delivered — Awaiting Signature</div>
+            <input id="delivered-asset-filter" placeholder="Filter asset..." oninput="filterDeliveredTable()"
+              style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;width:120px;" />
+          </div>
+          <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-delivered-table"></div></div>
+        </div>
+
+        <div class="table-card" style="margin-bottom:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
+            <div class="chart-title" style="margin-bottom:0;">⚠️ Qty Shortages</div>
+            <input id="shortage-asset-filter" placeholder="Filter item..." oninput="filterShortageTable()"
+              style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;width:120px;" />
+          </div>
+          <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-shortage-table"></div></div>
+        </div>
+
       </div>
     </div>
 
@@ -226,10 +261,10 @@
           if(b&&!seen.has(b)){seen.add(b);trackerBranches.push({code:b,status:bs});}
         });
         trackerBranches.sort((a,b)=>a.code.localeCompare(b.code));
-        const tBranchSel=document.getElementById('t-branch-filter');
-        const cur=tBranchSel.value;
-        tBranchSel.innerHTML='<option value="ALL">All</option>'+trackerBranches.map(b=>`<option value="${b.code}">${b.code}</option>`).join('');
-        if([...tBranchSel.options].some(o=>o.value===cur))tBranchSel.value=cur;
+
+        /* Build checkbox list */
+        buildBranchCheckboxes();
+
         document.getElementById('tracker-updated').textContent='Last updated: '+new Date().toLocaleTimeString();
         renderTracker();
       } catch(e){
@@ -237,13 +272,86 @@
       }
     }
 
+    /* ── Multi-select branch helpers ── */
+    let selectedBranches = new Set(); /* empty = all selected */
+
+    function buildBranchCheckboxes() {
+      const selStatus = document.getElementById('t-status-filter').value;
+      const filtered  = selStatus === 'ALL' ? trackerBranches : trackerBranches.filter(b=>b.status===selStatus);
+      const list = document.getElementById('branch-checkbox-list');
+      list.innerHTML = filtered.map(b=>`
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;color:#e2e8f0;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+          <input type="checkbox" value="${b.code}" checked onchange="onBranchCheckChange()"
+            style="accent-color:#22d3ee;width:13px;height:13px;cursor:pointer;" />
+          ${b.code}
+        </label>`).join('');
+      selectedBranches = new Set(); /* reset = all checked */
+      updateBranchBtn();
+    }
+
+    function toggleBranchDropdown() {
+      const list = document.getElementById('branch-multiselect-list');
+      list.style.display = list.style.display === 'none' ? 'block' : 'none';
+    }
+
+    /* Close dropdown when clicking outside */
+    document.addEventListener('click', e=>{
+      const wrap = document.getElementById('branch-multiselect-wrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('branch-multiselect-list').style.display = 'none';
+      }
+    });
+
+    function onBranchCheckChange() {
+      const checks = document.querySelectorAll('#branch-checkbox-list input[type=checkbox]');
+      const checked = [...checks].filter(c=>c.checked).map(c=>c.value);
+      const all     = [...checks].map(c=>c.value);
+      /* if all checked, treat as "all" */
+      selectedBranches = checked.length === all.length ? new Set() : new Set(checked);
+      updateBranchBtn();
+      renderTracker();
+    }
+
+    function selectAllBranches(val) {
+      document.querySelectorAll('#branch-checkbox-list input[type=checkbox]').forEach(c=>c.checked=val);
+      onBranchCheckChange();
+    }
+
+    function updateBranchBtn() {
+      const checks  = document.querySelectorAll('#branch-checkbox-list input[type=checkbox]');
+      const checked = [...checks].filter(c=>c.checked);
+      const btn = document.getElementById('branch-multiselect-btn');
+      if (!btn) return;
+      if (selectedBranches.size === 0 || checked.length === checks.length) {
+        btn.childNodes[0].textContent = 'All Branches ';
+      } else if (checked.length === 0) {
+        btn.childNodes[0].textContent = 'No Branches ';
+      } else if (checked.length === 1) {
+        btn.childNodes[0].textContent = checked[0].value + ' ';
+      } else {
+        btn.childNodes[0].textContent = checked.length + ' Branches ';
+      }
+    }
+
+    function getSelectedBranchCodes(statusFilter) {
+      const selStatus = statusFilter || document.getElementById('t-status-filter').value;
+      let branches = selStatus === 'ALL' ? trackerBranches : trackerBranches.filter(b=>b.status===selStatus);
+      if (selectedBranches.size > 0) branches = branches.filter(b=>selectedBranches.has(b.code));
+      return branches;
+    }
+
     function renderTracker() {
-      const selStatus=document.getElementById('t-status-filter').value;
-      const selBranch=document.getElementById('t-branch-filter').value;
-      let branches=trackerBranches;
-      if(selStatus!=='ALL') branches=branches.filter(b=>b.status===selStatus);
-      if(selBranch!=='ALL') branches=branches.filter(b=>b.code===selBranch);
-      const container=document.getElementById('tracker-content');
+      /* Rebuild checkboxes if status filter changed */
+      buildBranchCheckboxes();
+      /* Re-apply previously selected branches after rebuild */
+      if (selectedBranches.size > 0) {
+        document.querySelectorAll('#branch-checkbox-list input[type=checkbox]').forEach(c=>{
+          c.checked = selectedBranches.has(c.value);
+        });
+        updateBranchBtn();
+      }
+      const branches = getSelectedBranchCodes();
+      const container = document.getElementById('tracker-content');
       container.innerHTML='';
       if(branches.length===0){container.innerHTML='<div class="loading">No branches found.</div>';return;}
       branches.forEach(b=>container.appendChild(buildTrackerCard(b)));
@@ -564,7 +672,25 @@
       document.getElementById('task-shortage-table').innerHTML=shortageRows.length?`<table><thead><tr><th style="text-align:left;min-width:100px;">Branch</th><th style="text-align:left;min-width:90px;">Item</th><th style="min-width:110px;">Req / Rec</th><th style="min-width:70px;">Short</th></tr></thead><tbody>${shortageRows.map(r=>`<tr><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.branch}');return false;" style="color:#22d3ee;text-decoration:none;">${r.branch}</a></td><td>${r.item}</td><td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;">${r.req} / ${r.rec}</td><td style="text-align:center;"><span style="color:#f87171;font-weight:700;font-family:'DM Mono',monospace;">${r.diff}</span></td></tr>`).join('')}</tbody></table>`:'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No shortages!</p>';
     }
 
-    async function saveQtyRow(branch,reqField,recField,reqId,recId,cardId){
+    function filterDeliveredTable() {
+      const q = (document.getElementById('delivered-asset-filter')?.value || '').toLowerCase();
+      const tbl = document.querySelector('#task-delivered-table table');
+      if (!tbl) return;
+      tbl.querySelectorAll('tbody tr').forEach(tr => {
+        const text = tr.textContent.toLowerCase();
+        tr.style.display = !q || text.includes(q) ? '' : 'none';
+      });
+    }
+
+    function filterShortageTable() {
+      const q = (document.getElementById('shortage-asset-filter')?.value || '').toLowerCase();
+      const tbl = document.querySelector('#task-shortage-table table');
+      if (!tbl) return;
+      tbl.querySelectorAll('tbody tr').forEach(tr => {
+        const text = tr.textContent.toLowerCase();
+        tr.style.display = !q || text.includes(q) ? '' : 'none';
+      });
+    }
       const reqInput=document.getElementById(reqId),recInput=document.getElementById(recId);
       if(reqInput?.value.trim()) await saveQtyField(branch,reqField,reqInput,cardId);
       if(recInput?.value.trim()) await saveQtyField(branch,recField,recInput,cardId);
