@@ -135,51 +135,53 @@
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">
 
         <div class="table-card" style="margin-bottom:0;">
-          <div class="chart-title" style="margin-bottom:0.75rem;">🏪 Branch Status</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+            <div class="chart-title" style="margin-bottom:0;">🏪 Branch Status</div>
+          </div>
           <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-branch-table"></div></div>
         </div>
 
         <div class="table-card" style="margin-bottom:0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
             <div class="chart-title" style="margin-bottom:0;">📋 Delivered</div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <select id="delivered-asset-filter" onchange="filterDeliveredTable()"
-                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:110px;">
-                <option value="">All Assets</option>
-              </select>
-              <button onclick="exportDeliveredPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
+            <button onclick="exportDeliveredPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ PDF</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:0.6rem;align-items:center;flex-wrap:wrap;">
+            <div style="position:relative;" id="del-asset-wrap">
+              <button id="del-asset-btn" onclick="toggleMultiDropdown('del')" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">All Assets ▾</button>
+              <div id="del-asset-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;min-width:160px;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4);padding:4px 0;"></div>
             </div>
           </div>
           <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-delivered-table"></div></div>
         </div>
 
         <div class="table-card" style="margin-bottom:0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
             <div class="chart-title" style="margin-bottom:0;">🔴 Not Received</div>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <select id="nr-asset-filter" onchange="filterNRTable()"
-                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:110px;">
-                <option value="">All Assets</option>
-              </select>
-              <button onclick="exportNRPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
+            <button onclick="exportNRPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ PDF</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:0.6rem;align-items:center;flex-wrap:wrap;">
+            <div style="position:relative;" id="nr-asset-wrap">
+              <button id="nr-asset-btn" onclick="toggleMultiDropdown('nr')" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">All Assets ▾</button>
+              <div id="nr-asset-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;min-width:160px;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4);padding:4px 0;"></div>
             </div>
           </div>
           <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-nr-table"></div></div>
         </div>
 
         <div class="table-card" style="margin-bottom:0;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
             <div class="chart-title" style="margin-bottom:0;">⚠️ Discrepancy</div>
-            <button onclick="exportShortagePDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
+            <button onclick="exportShortagePDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ PDF</button>
           </div>
           <div style="display:flex;gap:6px;margin-bottom:0.6rem;align-items:center;flex-wrap:wrap;">
             <button onclick="filterDiscrepancy('ALL',this)" id="disc-filter-all" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.12);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
             <button onclick="filterDiscrepancy('shortage',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Shortage</button>
             <button onclick="filterDiscrepancy('extra',this)" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">Extra</button>
-            <select id="shortage-asset-filter" onchange="filterShortageTable()"
-              style="margin-left:auto;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:3px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:110px;">
-              <option value="">All Items</option>
-            </select>
+            <div style="position:relative;margin-left:auto;" id="disc-asset-wrap">
+              <button id="disc-asset-btn" onclick="toggleMultiDropdown('disc')" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">All Items ▾</button>
+              <div id="disc-asset-list" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:200;background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;min-width:160px;max-height:200px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4);padding:4px 0;"></div>
+            </div>
           </div>
           <div style="overflow-x:auto;max-height:280px;overflow-y:auto;"><div id="task-shortage-table"></div></div>
         </div>
@@ -778,8 +780,7 @@
 
       /* Populate delivered asset dropdown */
       const deliveredAssets=[...new Set(deliveredRows.map(r=>r.asset))].sort();
-      const dSel=document.getElementById('delivered-asset-filter');
-      if(dSel){const cur=dSel.value;dSel.innerHTML='<option value="">All Assets</option>'+deliveredAssets.map(a=>`<option value="${a}">${a}</option>`).join('');if(deliveredAssets.includes(cur))dSel.value=cur;}
+      buildAssetDropdown('del', deliveredAssets);
 
       /* Not Received table */
       const nrRows=[];
@@ -790,8 +791,7 @@
 
       /* Populate NR asset dropdown */
       const nrAssets=[...new Set(nrRows.map(r=>r.asset))].sort();
-      const nrSel=document.getElementById('nr-asset-filter');
-      if(nrSel){const cur=nrSel.value;nrSel.innerHTML='<option value="">All Assets</option>'+nrAssets.map(a=>`<option value="${a}">${a}</option>`).join('');if(nrAssets.includes(cur))nrSel.value=cur;}
+      buildAssetDropdown('nr', nrAssets);
       const discrepancyRows=[];
       branchCodes.forEach(b=>{const fq=qtyData[b]||{};QTY_ITEMS.forEach(item=>{const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;if(req>0&&diff!==0)discrepancyRows.push({branch:b,item:item.label,req,rec,diff,type:diff<0?'shortage':'extra'});});});
       document.getElementById('task-shortage-table').innerHTML=discrepancyRows.length
@@ -800,49 +800,99 @@
 
       /* Populate discrepancy item dropdown */
       const discrepancyItems=[...new Set(discrepancyRows.map(r=>r.item))].sort();
-      const sSel=document.getElementById('shortage-asset-filter');
-      if(sSel){const cur=sSel.value;sSel.innerHTML='<option value="">All Items</option>'+discrepancyItems.map(a=>`<option value="${a}">${a}</option>`).join('');if(discrepancyItems.includes(cur))sSel.value=cur;}
+      buildAssetDropdown('disc', discrepancyItems);
     }
 
-    function filterDeliveredTable(){
-      const q=document.getElementById('delivered-asset-filter')?.value||'';
-      document.querySelectorAll('#task-delivered-table tbody tr').forEach(tr=>{
-        tr.style.display=(!q||tr.dataset.asset===q)?'':'none';
+    /* ══════════════════════════════════════
+       MULTI-SELECT ASSET DROPDOWNS
+       key: 'del' | 'nr' | 'disc'
+    ══════════════════════════════════════ */
+    const sectionSelected = { del: new Set(), nr: new Set(), disc: new Set() };
+
+    document.addEventListener('click', e => {
+      ['del','nr','disc'].forEach(key => {
+        const wrap = document.getElementById(key+'-asset-wrap');
+        if (wrap && !wrap.contains(e.target))
+          document.getElementById(key+'-asset-list').style.display = 'none';
+      });
+    });
+
+    function toggleMultiDropdown(key) {
+      const list = document.getElementById(key+'-asset-list');
+      list.style.display = list.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function buildAssetDropdown(key, assets) {
+      const list = document.getElementById(key+'-asset-list');
+      if (!list) return;
+      /* All / None buttons */
+      list.innerHTML = `<div style="padding:4px 8px;border-bottom:0.5px solid rgba(255,255,255,0.07);display:flex;gap:6px;">
+        <button onclick="selectAllAssets('${key}',true)" style="flex:1;font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(34,211,238,0.1);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
+        <button onclick="selectAllAssets('${key}',false)" style="flex:1;font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+      </div>` +
+      assets.map(a => `<label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:11px;color:#e2e8f0;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+        <input type="checkbox" value="${a}" checked onchange="onAssetCheck('${key}')" style="accent-color:#22d3ee;width:12px;height:12px;cursor:pointer;" />
+        ${a}
+      </label>`).join('');
+      sectionSelected[key] = new Set(); /* empty = all */
+      updateAssetBtn(key, assets);
+    }
+
+    function selectAllAssets(key, val) {
+      document.querySelectorAll(`#${key}-asset-list input[type=checkbox]`).forEach(c => c.checked = val);
+      onAssetCheck(key);
+    }
+
+    function onAssetCheck(key) {
+      const checks  = [...document.querySelectorAll(`#${key}-asset-list input[type=checkbox]`)];
+      const checked = checks.filter(c => c.checked).map(c => c.value);
+      sectionSelected[key] = checked.length === checks.length ? new Set() : new Set(checked);
+      updateAssetBtn(key, checks.map(c => c.value));
+      applyTableFilter(key);
+    }
+
+    function updateAssetBtn(key, allAssets) {
+      const btn = document.getElementById(key+'-asset-btn');
+      if (!btn) return;
+      const sel = sectionSelected[key];
+      if (sel.size === 0 || sel.size === allAssets.length) {
+        btn.textContent = 'All Assets ▾';
+      } else if (sel.size === 1) {
+        btn.textContent = [...sel][0] + ' ▾';
+      } else {
+        btn.textContent = sel.size + ' Assets ▾';
+      }
+      if (key === 'disc') btn.textContent = btn.textContent.replace('Assets','Items');
+    }
+
+    function applyTableFilter(key) {
+      const tableId = key === 'del' ? 'task-delivered-table' : key === 'nr' ? 'task-nr-table' : 'task-shortage-table';
+      const sel = sectionSelected[key];
+      document.querySelectorAll(`#${tableId} tbody tr[data-asset]`).forEach(tr => {
+        const matchAsset = sel.size === 0 || sel.has(tr.dataset.asset);
+        const matchType  = key !== 'disc' || discrepancyTypeFilter === 'ALL' || tr.dataset.type === discrepancyTypeFilter;
+        tr.style.display = (matchAsset && matchType) ? '' : 'none';
       });
     }
 
-    function filterNRTable(){
-      const q=document.getElementById('nr-asset-filter')?.value||'';
-      document.querySelectorAll('#task-nr-table tbody tr').forEach(tr=>{
-        tr.style.display=(!q||tr.dataset.asset===q)?'':'none';
-      });
-    }
+    function filterDeliveredTable() { applyTableFilter('del'); }
+    function filterNRTable()        { applyTableFilter('nr');  }
+    function filterShortageTable()  { applyTableFilter('disc'); }
 
     let discrepancyTypeFilter = 'ALL';
 
     function filterDiscrepancy(type, btn) {
       discrepancyTypeFilter = type;
-      document.querySelectorAll('#disc-filter-all, #disc-filter-all ~ button').forEach(b=>{
+      document.querySelectorAll('[onclick^="filterDiscrepancy"]').forEach(b => {
         b.style.background='transparent';b.style.color='#94a3b8';b.style.borderColor='rgba(255,255,255,0.1)';
       });
-      /* highlight active pill */
-      const pills = document.querySelectorAll('[onclick^="filterDiscrepancy"]');
-      pills.forEach(b=>{ if(b.onclick.toString().includes(`'${type}'`)||b.getAttribute('onclick').includes(`'${type}'`)){ b.style.background=type==='extra'?'rgba(34,211,238,0.12)':'rgba(248,113,113,0.12)'; b.style.color=type==='extra'?'#22d3ee':type==='shortage'?'#f87171':'#22d3ee'; b.style.borderColor=type==='extra'?'rgba(34,211,238,0.3)':'rgba(248,113,113,0.3)'; } });
-      if(type==='ALL'){ const ab=document.getElementById('disc-filter-all'); if(ab){ab.style.background='rgba(34,211,238,0.12)';ab.style.color='#22d3ee';ab.style.borderColor='rgba(34,211,238,0.3)';} }
-      applyDiscrepancyFilters();
-    }
-
-    function filterShortageTable() {
-      applyDiscrepancyFilters();
-    }
-
-    function applyDiscrepancyFilters() {
-      const asset = document.getElementById('shortage-asset-filter')?.value || '';
-      document.querySelectorAll('#task-shortage-table tbody tr').forEach(tr=>{
-        const matchType  = discrepancyTypeFilter === 'ALL' || tr.dataset.type === discrepancyTypeFilter;
-        const matchAsset = !asset || tr.dataset.asset === asset;
-        tr.style.display = (matchType && matchAsset) ? '' : 'none';
-      });
+      const colors = { ALL:'#22d3ee', shortage:'#f87171', extra:'#22d3ee' };
+      const bgs    = { ALL:'rgba(34,211,238,0.12)', shortage:'rgba(248,113,113,0.12)', extra:'rgba(34,211,238,0.12)' };
+      const borders= { ALL:'rgba(34,211,238,0.3)', shortage:'rgba(248,113,113,0.3)', extra:'rgba(34,211,238,0.3)' };
+      btn.style.background   = bgs[type]    || bgs.ALL;
+      btn.style.color        = colors[type] || colors.ALL;
+      btn.style.borderColor  = borders[type]|| borders.ALL;
+      applyTableFilter('disc');
     }
 
     async function saveQtyRow(branch,reqField,recField,reqId,recId,cardId){
