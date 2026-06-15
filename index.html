@@ -99,6 +99,7 @@
         <div class="live-badge"><div class="live-dot"></div> Live</div>
         <span id="user-badge" style="display:none;font-size:11px;padding:4px 10px;border-radius:10px;" class="user-badge"></span>
         <button class="btn" style="background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;font-size:11px;" onclick="sessionStorage.removeItem('tracker_user');location.reload()">Sign Out</button>
+        <button class="btn" style="background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;" onclick="openMonthlyReport()">📅 Monthly Report</button>
         <button class="btn" style="background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;" onclick="openAddBranch()">+ Add Branch</button>
         <button class="btn" onclick="loadTracker()">↻ Refresh</button>
       </div>
@@ -219,7 +220,42 @@
     </div>
   </div>
 
-  <div style="position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
+  <!-- Monthly Report Modal -->
+  <div id="monthly-report-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100;">
+    <div style="background:#1a1f2e;border:0.5px solid rgba(167,139,250,0.2);border-radius:12px;padding:1.5rem;width:320px;">
+      <h3 style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:0.25rem;">📅 Monthly Report</h3>
+      <p style="font-size:11px;color:#64748b;margin-bottom:1rem;">Generate a full PDF report for a specific month</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
+        <div>
+          <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">Month</label>
+          <select id="report-month" style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:12px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;">
+            <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+            <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+            <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+            <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">Year</label>
+          <input id="report-year" type="number" value="2025" min="2024" max="2030"
+            style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:12px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;" />
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('monthly-report-modal').style.display='none'">Cancel</button>
+        <button class="btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" id="gen-report-btn" onclick="generateMonthlyReport()">⬇ Generate PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  function openMonthlyReport() {
+    const now = new Date();
+    document.getElementById('report-month').value = now.getMonth();
+    document.getElementById('report-year').value  = now.getFullYear();
+    document.getElementById('monthly-report-modal').style.display = 'flex';
+  }
+  </script>background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
 
   <script>
     const APPS_URL = 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
@@ -1134,7 +1170,516 @@
     let toastTimer;
     function showSaveToast(msg){const t=document.getElementById('save-toast');t.textContent=msg||'✓ Saved';t.style.opacity='1';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.opacity='0',2500);}
 
-    /* ── Boot ── */
+    /* ══════════════════════════════════════════════════
+       MONTHLY REPORT PDF
+    ══════════════════════════════════════════════════ */
+    function generateMonthlyReport() {
+      const monthIdx  = parseInt(document.getElementById('report-month').value);
+      const year      = parseInt(document.getElementById('report-year').value);
+      const monthName = ['January','February','March','April','May','June','July','August','September','October','November','December'][monthIdx];
+      const {jsPDF}   = window.jspdf;
+      const doc       = new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      const pageW     = doc.internal.pageSize.getWidth();
+      const pageH     = doc.internal.pageSize.getHeight();
+      const today     = new Date().toLocaleDateString('en-GB');
+      const generated = new Date().toLocaleString('en-GB');
+      const btn       = document.getElementById('gen-report-btn');
+      btn.textContent = 'Generating...'; btn.disabled = true;
+
+      const CLR = {
+        bg:[255,255,255], card:[240,242,247], dark:[15,23,42],
+        accent:[14,116,144], green:[22,163,74], amber:[180,120,0],
+        red:[185,28,28], cyan:[14,116,144], grey:[100,116,139],
+        purple:[109,40,217], rowOdd:[248,250,252], border:[203,213,225],
+        navy:[26,62,92]
+      };
+
+      const SECTION_ORDER = ['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
+      const DN_ASSETS = new Set(['Freebolt','Heavyrack','Heavy Rack','Air Condition','Access Points','CCTV','1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','Coldroom','Curtain','SignBoard']);
+
+      /* ── helpers ── */
+      function sc(r) { return r.filter(x=>x['Asset Status']==='Received').length; }
+      function pct(r) { const t=r.filter(x=>x['Asset Status']&&x['Asset Status']!=='None').length; return t>0?Math.round(sc(r)/t*100):0; }
+      function getColor(p) { return p>=80?CLR.green:p>=50?CLR.cyan:p>0?CLR.amber:CLR.red; }
+
+      /* ── all branches from trackerData ── */
+      const branchSet = {};
+      trackerData.forEach(r=>{ const b=(r['Branch Code']||'').trim(); if(b) branchSet[b]=(r['Branch Status']||'').trim(); });
+      const allBranches = Object.keys(branchSet).sort();
+
+      /* ── page counter ── */
+      let pageNum = 0;
+      function newPage() { if(pageNum>0) doc.addPage(); pageNum++; }
+      function drawPageHeader(title) {
+        doc.setFillColor(...CLR.navy); doc.rect(0,0,pageW,16,'F');
+        doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+        doc.text('New Store Asset Receiving — '+monthName+' '+year, 10, 10);
+        doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...CLR.grey);
+        doc.text(title, pageW/2, 10, {align:'center'});
+        doc.text('Page '+pageNum, pageW-10, 10, {align:'right'});
+        doc.setDrawColor(...CLR.accent); doc.setLineWidth(0.3); doc.line(0,16,pageW,16);
+      }
+      function drawPageFooter() {
+        doc.setFillColor(...CLR.card); doc.rect(0,pageH-8,pageW,8,'F');
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.grey);
+        doc.text('Generated: '+generated, 10, pageH-3);
+        doc.text('Space Planning & Store Improvement', pageW/2, pageH-3, {align:'center'});
+        doc.text(today, pageW-10, pageH-3, {align:'right'});
+      }
+
+      /* ══════════════════════════════
+         PAGE 1 — COVER
+      ══════════════════════════════ */
+      newPage();
+      /* Background */
+      doc.setFillColor(...CLR.navy); doc.rect(0,0,pageW,pageH,'F');
+      doc.setFillColor(14,116,144); doc.rect(0,pageH*0.55,pageW,pageH*0.45,'F');
+      /* Title */
+      doc.setFontSize(28); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+      doc.text('Monthly Report', pageW/2, 70, {align:'center'});
+      doc.setFontSize(18); doc.setTextColor(34,211,238);
+      doc.text(monthName+' '+year, pageW/2, 85, {align:'center'});
+      doc.setFontSize(11); doc.setFont('helvetica','normal'); doc.setTextColor(148,163,184);
+      doc.text('New Store Asset Receiving', pageW/2, 96, {align:'center'});
+      doc.text('Space Planning & Store Improvement', pageW/2, 104, {align:'center'});
+
+      /* Overall KPIs */
+      const allRows   = trackerData;
+      const totalRec  = allRows.filter(r=>r['Asset Status']==='Received').length;
+      const totalDel  = allRows.filter(r=>r['Asset Status']==='Delivered').length;
+      const totalNR   = allRows.filter(r=>r['Asset Status']==='Not Received').length;
+      const totalAssets = allRows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length;
+      const overallPct  = totalAssets>0?Math.round(totalRec/totalAssets*100):0;
+      const kpis = [
+        {label:'Branches', value:allBranches.length, color:[255,255,255]},
+        {label:'Total Assets', value:totalAssets, color:[255,255,255]},
+        {label:'Received', value:totalRec, color:[22,163,74]},
+        {label:'Delivered', value:totalDel, color:[180,120,0]},
+        {label:'Not Received', value:totalNR, color:[185,28,28]},
+        {label:'Completion', value:overallPct+'%', color:[34,211,238]},
+      ];
+      const kw=(pageW-20)/kpis.length;
+      kpis.forEach((k,i)=>{
+        const x=10+i*kw;
+        doc.setFillColor(255,255,255,0.05); doc.setDrawColor(255,255,255,0.1);
+        doc.roundedRect(x,120,kw-3,22,2,2,'FD');
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(148,163,184);
+        doc.text(k.label.toUpperCase(), x+(kw-3)/2, 127, {align:'center'});
+        doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(...k.color);
+        doc.text(String(k.value), x+(kw-3)/2, 136, {align:'center'});
+      });
+
+      /* Cover donut */
+      const cx=pageW/2, cy=175, r=25;
+      function arc(x,y,rad,a1,a2,col){
+        const steps=Math.max(3,Math.round(Math.abs(a2-a1)/3));
+        const pts=[];
+        for(let i=0;i<=steps;i++){const a=(a1+(a2-a1)*i/steps)*Math.PI/180;pts.push([x+rad*Math.cos(a-Math.PI/2),y+rad*Math.sin(a-Math.PI/2)]);}
+        pts.unshift([x,y]);pts.push([x,y]);
+        doc.setFillColor(...col);
+        doc.lines(pts.slice(1).map((p,i)=>[p[0]-pts[i][0],p[1]-pts[i][1]]),pts[0][0],pts[0][1],[1,1],'F');
+      }
+      let ang=0;
+      if(totalRec>0){arc(cx,cy,r,ang,ang+totalRec/totalAssets*360,[22,163,74]);ang+=totalRec/totalAssets*360;}
+      if(totalDel>0){arc(cx,cy,r,ang,ang+totalDel/totalAssets*360,[180,120,0]);ang+=totalDel/totalAssets*360;}
+      if(totalNR>0) arc(cx,cy,r,ang,360,[185,28,28]);
+      doc.setFillColor(...CLR.navy); doc.circle(cx,cy,r*0.6,'F');
+      doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(34,211,238);
+      doc.text(overallPct+'%', cx, cy+5, {align:'center'});
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(148,163,184);
+      doc.text('Overall Completion', cx, cy+12, {align:'center'});
+
+      /* Legend */
+      [[22,163,74,'Received '+totalRec],[180,120,0,'Delivered '+totalDel],[185,28,28,'Not Received '+totalNR]].forEach((it,i)=>{
+        doc.setFillColor(it[0],it[1],it[2]); doc.rect(cx-35, cy+22+i*8, 5,4,'F');
+        doc.setFontSize(8); doc.setTextColor(200,200,200); doc.text(it[3], cx-27, cy+25+i*8);
+      });
+
+      doc.setFontSize(8); doc.setTextColor(100,116,139);
+      doc.text('Generated: '+generated, pageW/2, pageH-15, {align:'center'});
+      drawPageFooter();
+
+      /* ══════════════════════════════
+         PAGE 2 — BRANCH MOVEMENT
+      ══════════════════════════════ */
+      newPage();
+      drawPageHeader('Branch Movement');
+      let y = 22;
+
+      /* Filter branches by month using branchExtras */
+      const movementRows = [];
+      allBranches.forEach(b => {
+        const ex = branchExtras[b] || {};
+        const rDate = ex.receivingDate || '';
+        const lDate = ex.liveDate || '';
+        /* Check if date falls in selected month/year */
+        function inMonth(dateStr) {
+          if (!dateStr) return false;
+          const parts = dateStr.split('/');
+          if (parts.length < 3) return false;
+          return parseInt(parts[1])-1 === monthIdx && parseInt(parts[2]) === year;
+        }
+        if (inMonth(rDate)) movementRows.push({branch:b, status:'Receiving', date:rDate, current:branchSet[b]});
+        if (inMonth(lDate)) movementRows.push({branch:b, status:'Live',      date:lDate, current:branchSet[b]});
+      });
+      movementRows.sort((a,b)=>a.date.localeCompare(b.date));
+
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Branch Status Changes — '+monthName+' '+year, 10, y); y+=6;
+
+      if (movementRows.length > 0) {
+        doc.autoTable({
+          startY:y,
+          head:[['Branch','Moved To','Date','Current Status']],
+          body:movementRows.map(r=>[r.branch, r.status, r.date, r.current]),
+          theme:'plain',
+          styles:{fontSize:9,textColor:CLR.dark,fillColor:CLR.bg,cellPadding:3},
+          headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:9},
+          alternateRowStyles:{fillColor:CLR.rowOdd},
+          columnStyles:{0:{cellWidth:55},1:{cellWidth:35},2:{cellWidth:30},3:{cellWidth:40}},
+          margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+          didParseCell:d=>{
+            if(d.section==='body'&&d.column.index===1){
+              d.cell.styles.textColor=d.cell.raw==='Live'?CLR.green:CLR.cyan;
+              d.cell.styles.fontStyle='bold';
+            }
+            if(d.section==='body'&&d.column.index===3){
+              const c={Live:CLR.green,Receiving:CLR.cyan,Pending:CLR.amber}[d.cell.raw]||CLR.grey;
+              d.cell.styles.textColor=c;
+            }
+          }
+        });
+        y = doc.lastAutoTable.finalY + 10;
+      } else {
+        doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.grey);
+        doc.text('No branch status changes recorded for '+monthName+' '+year+'.', 10, y); y+=10;
+      }
+
+      /* Status summary bar chart */
+      const statusCounts2 = {Pending:0, Receiving:0, Live:0};
+      allBranches.forEach(b => { const s=branchSet[b]; if(statusCounts2[s]!==undefined) statusCounts2[s]++; });
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Current Branch Status Distribution', 10, y); y+=6;
+      const barColors = {Pending:[180,120,0], Receiving:[14,116,144], Live:[22,163,74]};
+      const maxCount  = Math.max(...Object.values(statusCounts2), 1);
+      const barMaxW   = pageW - 60;
+      Object.entries(statusCounts2).forEach(([status, count], i) => {
+        const bw = Math.max((count/maxCount)*barMaxW, count>0?4:0);
+        const c  = barColors[status];
+        doc.setFillColor(...CLR.rowOdd); doc.rect(35, y+i*10, barMaxW, 7, 'F');
+        doc.setFillColor(...c); doc.rect(35, y+i*10, bw, 7, 'F');
+        doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+        doc.text(status, 10, y+i*10+5);
+        doc.setTextColor(...c); doc.text(String(count), 37+bw, y+i*10+5);
+      });
+      y += 40;
+      drawPageFooter();
+
+      /* ══════════════════════════════
+         PAGE 3 — BRANCH COMPLETION + CHART
+      ══════════════════════════════ */
+      newPage();
+      drawPageHeader('Branch Completion');
+      y = 22;
+
+      /* Horizontal bar chart — branch completion */
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Branch Completion %', 10, y); y += 5;
+
+      const branchStats = allBranches.map(b => {
+        const rows = trackerData.filter(r=>(r['Branch Code']||'').trim()===b);
+        const p = pct(rows);
+        return {b, p, rows};
+      }).sort((a,b)=>b.p-a.p);
+
+      const chartBarH  = 5;
+      const chartGap   = 2;
+      const labelW     = 30;
+      const barAreaW   = pageW - labelW - 25;
+      branchStats.forEach((bs, i) => {
+        if (y > pageH - 30) { drawPageFooter(); newPage(); drawPageHeader('Branch Completion (cont.)'); y=22; }
+        const bw = Math.max((bs.p/100)*barAreaW, bs.p>0?2:0);
+        const c  = getColor(bs.p);
+        doc.setFillColor(...CLR.rowOdd); doc.rect(labelW+10, y, barAreaW, chartBarH, 'F');
+        doc.setFillColor(...c); doc.roundedRect(labelW+10, y, bw, chartBarH, 1,1,'F');
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.dark);
+        doc.text(bs.b, 10, y+chartBarH-1);
+        doc.setTextColor(...c); doc.setFont('helvetica','bold');
+        doc.text(bs.p+'%', labelW+12+bw, y+chartBarH-1);
+        y += chartBarH + chartGap;
+      });
+      y += 6;
+
+      /* Branch completion table */
+      if (y > pageH - 60) { drawPageFooter(); newPage(); drawPageHeader('Branch Completion Table'); y=22; }
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Branch Completion Summary', 10, y); y+=4;
+      doc.autoTable({
+        startY:y,
+        head:[['Branch','Status','Total','Received','Delivered','Not Rec.','%']],
+        body:branchStats.map(bs=>{
+          const t=bs.rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length;
+          const rc=bs.rows.filter(r=>r['Asset Status']==='Received').length;
+          const dl=bs.rows.filter(r=>r['Asset Status']==='Delivered').length;
+          const nr=bs.rows.filter(r=>r['Asset Status']==='Not Received').length;
+          return[bs.b, branchSet[bs.b]||'', t, rc, dl, nr, bs.p+'%'];
+        }),
+        theme:'plain',
+        styles:{fontSize:8,textColor:CLR.dark,fillColor:CLR.bg,cellPadding:2.5},
+        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
+        alternateRowStyles:{fillColor:CLR.rowOdd},
+        columnStyles:{0:{cellWidth:40},1:{cellWidth:22},2:{cellWidth:16},3:{cellWidth:18},4:{cellWidth:18},5:{cellWidth:18},6:{cellWidth:16}},
+        margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+        didParseCell:d=>{
+          if(d.section==='body'&&d.column.index===6){
+            const v=parseInt(d.cell.raw);
+            d.cell.styles.textColor=v>=80?CLR.green:v>=50?CLR.cyan:v>0?CLR.amber:CLR.red;
+            d.cell.styles.fontStyle='bold';
+          }
+          if(d.section==='body'&&d.column.index===1){
+            const c={Live:CLR.green,Receiving:CLR.cyan,Pending:CLR.amber}[d.cell.raw]||CLR.grey;
+            d.cell.styles.textColor=c;
+          }
+        }
+      });
+      drawPageFooter();
+
+      /* ══════════════════════════════
+         PAGE 4 — SECTION COMPLETION
+      ══════════════════════════════ */
+      newPage();
+      drawPageHeader('Section Completion');
+      y = 22;
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Section Completion — All Branches', 10, y); y+=4;
+
+      /* Build section × branch table */
+      const sections2 = [...new Set(trackerData.map(r=>r['Section']).filter(Boolean))].sort((a,b)=>{
+        const si=SECTION_ORDER.indexOf(a), sj=SECTION_ORDER.indexOf(b);
+        return (si===-1?99:si)-(sj===-1?99:sj);
+      });
+
+      const sectionBody = branchStats.map(bs => {
+        const row = [bs.b];
+        sections2.forEach(sec => {
+          const sRows = bs.rows.filter(r=>r['Section']===sec);
+          const p2 = pct(sRows);
+          row.push(sRows.length>0 ? p2+'%' : '—');
+        });
+        row.push(bs.p+'%');
+        return row;
+      });
+
+      doc.autoTable({
+        startY:y,
+        head:[['Branch',...sections2,'Overall']],
+        body:sectionBody,
+        theme:'plain',
+        styles:{fontSize:7,textColor:CLR.dark,fillColor:CLR.bg,cellPadding:2},
+        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:7},
+        alternateRowStyles:{fillColor:CLR.rowOdd},
+        margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+        didParseCell:d=>{
+          if(d.section==='body'&&d.column.index>0){
+            const v=parseInt(d.cell.raw);
+            if(!isNaN(v)){
+              d.cell.styles.textColor=v>=80?CLR.green:v>=50?CLR.cyan:v>0?CLR.amber:CLR.red;
+              if(d.column.index===sections2.length+1) d.cell.styles.fontStyle='bold';
+            }
+          }
+        }
+      });
+      drawPageFooter();
+
+      /* ══════════════════════════════
+         PAGE 5 — ASSET ISSUES
+      ══════════════════════════════ */
+      newPage();
+      drawPageHeader('Asset Issues');
+      y = 22;
+
+      /* Not Received by asset */
+      const nrMap = {};
+      trackerData.filter(r=>r['Asset Status']==='Not Received').forEach(r=>{
+        const a=r['Asset']||''; if(!nrMap[a]) nrMap[a]={count:0,section:r['Section']||''}; nrMap[a].count++;
+      });
+      const nrSorted = Object.entries(nrMap).sort((a,b)=>b[1].count-a[1].count);
+
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Not Received Assets ('+nrSorted.length+' unique assets)', 10, y); y+=4;
+      if (nrSorted.length > 0) {
+        doc.autoTable({
+          startY:y,
+          head:[['Asset','Section','Branches Affected','% of Total']],
+          body:nrSorted.map(([a,v])=>[a, v.section, v.count, Math.round(v.count/allBranches.length*100)+'%']),
+          theme:'plain',
+          styles:{fontSize:8,textColor:CLR.dark,fillColor:CLR.bg,cellPadding:2.5},
+          headStyles:{fillColor:[185,28,28],textColor:[255,255,255],fontStyle:'bold',fontSize:8},
+          alternateRowStyles:{fillColor:CLR.rowOdd},
+          columnStyles:{0:{cellWidth:65},1:{cellWidth:40},2:{cellWidth:35},3:{cellWidth:25}},
+          margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+          didParseCell:d=>{
+            if(d.section==='body'&&d.column.index===2){d.cell.styles.textColor=CLR.red;d.cell.styles.fontStyle='bold';}
+          }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      /* Delivered awaiting signature */
+      if (y > pageH-60) { drawPageFooter(); newPage(); drawPageHeader('Asset Issues (cont.)'); y=22; }
+      const delRows = trackerData.filter(r=>r['Asset Status']==='Delivered');
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Delivered — Awaiting Signature ('+delRows.length+')', 10, y); y+=4;
+      if (delRows.length > 0) {
+        doc.autoTable({
+          startY:y,
+          head:[['Branch','Asset','Section']],
+          body:delRows.map(r=>[(r['Branch Code']||'').trim(), r['Asset']||'', r['Section']||'']),
+          theme:'plain',
+          styles:{fontSize:8,textColor:CLR.dark,fillColor:CLR.bg,cellPadding:2.5},
+          headStyles:{fillColor:[180,120,0],textColor:[255,255,255],fontStyle:'bold',fontSize:8},
+          alternateRowStyles:{fillColor:CLR.rowOdd},
+          columnStyles:{0:{cellWidth:45},1:{cellWidth:65},2:{cellWidth:40}},
+          margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+        });
+      } else {
+        doc.setFontSize(10); doc.setTextColor(...CLR.green); doc.text('✓ No assets awaiting signature!', 10, y);
+      }
+      drawPageFooter();
+
+      /* ══════════════════════════════
+         PAGE 6 — QTY DISCREPANCY + CHART
+      ══════════════════════════════ */
+      newPage();
+      drawPageHeader('Qty Discrepancy');
+      y = 22;
+
+      const QTY_ITEMS_R = [
+        {label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'},
+        {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
+        {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+        {label:'3D Fridge',  req:'3D Fridge Req',   rec:'3D Fridge Rec'},
+        {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
+        {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+        {label:'3D Freezer', req:'3D Freezer Req',  rec:'3D Freezer Rec'},
+      ];
+
+      /* Aggregate totals per item */
+      const itemTotals = {};
+      QTY_ITEMS_R.forEach(item => { itemTotals[item.label] = {req:0,rec:0}; });
+      const discRows = [];
+      allBranches.forEach(b => {
+        const fq = qtyData[b] || {};
+        QTY_ITEMS_R.forEach(item => {
+          const req=parseInt(fq[item.req]||0)||0, rec=parseInt(fq[item.rec]||0)||0, diff=rec-req;
+          if (req>0) {
+            itemTotals[item.label].req += req;
+            itemTotals[item.label].rec += rec;
+            if (diff!==0) discRows.push({branch:b, item:item.label, req, rec, diff, type:diff<0?'shortage':'extra'});
+          }
+        });
+      });
+
+      /* Discrepancy chart — item totals */
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Qty Overview by Item', 10, y); y+=5;
+      const chartItems = QTY_ITEMS_R.filter(it=>itemTotals[it.label].req>0);
+      const maxReq = Math.max(...chartItems.map(it=>itemTotals[it.label].req),1);
+      const cBW = (pageW-60)/2;
+      chartItems.forEach((it,i) => {
+        const tot = itemTotals[it.label];
+        const reqW = (tot.req/maxReq)*cBW;
+        const recW = (tot.rec/maxReq)*cBW;
+        const diff = tot.rec-tot.req;
+        const c = diff<0?CLR.red:diff>0?CLR.cyan:CLR.green;
+        doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(...CLR.dark);
+        doc.text(it.label, 10, y+i*9+5);
+        doc.setFillColor(...CLR.rowOdd); doc.rect(42, y+i*9, cBW, 6,'F');
+        doc.setFillColor(...CLR.green); doc.rect(42, y+i*9, Math.min(recW,cBW), 6,'F');
+        doc.setFillColor(...c,0.3);
+        if(diff<0) doc.rect(42+recW, y+i*9, reqW-recW, 6,'F');
+        doc.setTextColor(...c); doc.setFont('helvetica','bold');
+        doc.text(`${tot.rec}/${tot.req} (${diff>=0?'+':''}${diff})`, 44+cBW, y+i*9+5);
+      });
+      y += chartItems.length*9 + 8;
+
+      /* Discrepancy detail table */
+      if (y > pageH-60) { drawPageFooter(); newPage(); drawPageHeader('Qty Discrepancy (cont.)'); y=22; }
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('Branch Discrepancy Detail ('+discRows.length+')', 10, y); y+=4;
+      if (discRows.length > 0) {
+        doc.autoTable({
+          startY:y,
+          head:[['Branch','Item','Requested','Received','Diff','Type']],
+          body:discRows.map(r=>[r.branch,r.item,r.req,r.rec,r.diff>0?'+'+r.diff:r.diff,r.type==='shortage'?'Shortage':'Extra']),
+          theme:'plain',
+          styles:{fontSize:8,textColor:CLR.dark,fillColor:CLR.bg,cellPadding:2.5},
+          headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
+          alternateRowStyles:{fillColor:CLR.rowOdd},
+          columnStyles:{0:{cellWidth:38},1:{cellWidth:28},2:{cellWidth:22},3:{cellWidth:22},4:{cellWidth:18},5:{cellWidth:22}},
+          margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+          didParseCell:d=>{
+            if(d.section==='body'&&d.column.index===4){
+              const v=String(d.cell.raw);
+              d.cell.styles.textColor=v.startsWith('-')?CLR.red:CLR.cyan;
+              d.cell.styles.fontStyle='bold';
+            }
+            if(d.section==='body'&&d.column.index===5){
+              d.cell.styles.textColor=d.cell.raw==='Shortage'?CLR.red:CLR.cyan;
+            }
+          }
+        });
+      } else {
+        doc.setFontSize(10); doc.setTextColor(...CLR.green); doc.text('✓ No discrepancies found!', 10, y);
+      }
+      drawPageFooter();
+
+      /* ══════════════════════════════
+         PAGE 7 — D.N. STATUS
+      ══════════════════════════════ */
+      newPage();
+      drawPageHeader('D.N. Status');
+      y = 22;
+      doc.setFontSize(12); doc.setFont('helvetica','bold'); doc.setTextColor(...CLR.dark);
+      doc.text('D.N. Status by Branch', 10, y); y+=4;
+
+      const dnBody = allBranches.map(b => {
+        const bRows = trackerData.filter(r=>(r['Branch Code']||'').trim()===b);
+        const dnAssets = bRows.filter(r=>DN_ASSETS.has(r['Asset']||''));
+        const signed   = dnAssets.filter(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http')).length;
+        const unsigned = dnAssets.filter(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http')&&!(r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'))).length;
+        const missing  = dnAssets.filter(r=>(!r['D.N. Not Signed']||!r['D.N. Not Signed'].startsWith('http'))&&(!r['D.N. Signed']||!r['D.N. Signed'].startsWith('http'))).length;
+        const total    = dnAssets.length;
+        return [b, branchSet[b]||'', total, signed, unsigned, missing];
+      });
+
+      doc.autoTable({
+        startY:y,
+        head:[['Branch','Status','D.N. Assets','Signed','Unsigned','Missing']],
+        body:dnBody,
+        theme:'plain',
+        styles:{fontSize:8,textColor:CLR.dark,fillColor:CLR.bg,cellPadding:2.5},
+        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
+        alternateRowStyles:{fillColor:CLR.rowOdd},
+        columnStyles:{0:{cellWidth:38},1:{cellWidth:22},2:{cellWidth:22},3:{cellWidth:20},4:{cellWidth:22},5:{cellWidth:20}},
+        margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+        didParseCell:d=>{
+          if(d.section==='body'){
+            if(d.column.index===3){d.cell.styles.textColor=CLR.green;d.cell.styles.fontStyle='bold';}
+            if(d.column.index===4){d.cell.styles.textColor=CLR.cyan;}
+            if(d.column.index===5&&parseInt(d.cell.raw)>0){d.cell.styles.textColor=CLR.red;d.cell.styles.fontStyle='bold';}
+            if(d.column.index===1){const c={Live:CLR.green,Receiving:CLR.cyan,Pending:CLR.amber}[d.cell.raw]||CLR.grey;d.cell.styles.textColor=c;}
+          }
+        }
+      });
+      drawPageFooter();
+
+      /* ── Save ── */
+      doc.save(`Monthly_Report_${monthName}_${year}.pdf`);
+      btn.textContent='⬇ Generate PDF'; btn.disabled=false;
+      document.getElementById('monthly-report-modal').style.display='none';
+    }
   </script>
 </body>
 </html>
