@@ -222,9 +222,9 @@
 
   <!-- Monthly Report Modal -->
   <div id="monthly-report-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:100;">
-    <div style="background:#1a1f2e;border:0.5px solid rgba(167,139,250,0.2);border-radius:12px;padding:1.5rem;width:320px;">
+    <div style="background:#1a1f2e;border:0.5px solid rgba(167,139,250,0.2);border-radius:12px;padding:1.5rem;width:440px;max-height:85vh;display:flex;flex-direction:column;">
       <h3 style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:0.25rem;">📅 Monthly Report</h3>
-      <p style="font-size:11px;color:#64748b;margin-bottom:1rem;">Generate a full PDF report for a specific month</p>
+      <p style="font-size:11px;color:#64748b;margin-bottom:1rem;">Select month, year and branches to include</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
         <div>
           <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">Month</label>
@@ -241,21 +241,37 @@
             style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:12px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;" />
         </div>
       </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('monthly-report-modal').style.display='none'">Cancel</button>
-        <button class="btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" id="gen-report-btn" onclick="generateMonthlyReport()">⬇ Generate PDF</button>
+      <div style="flex:1;overflow-y:auto;min-height:0;">
+        <div style="margin-bottom:0.75rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:700;color:#22d3ee;text-transform:uppercase;letter-spacing:0.5px;">Receiving</span>
+            <div style="display:flex;gap:6px;">
+              <button onclick="toggleReportGroup('Receiving',true)" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(34,211,238,0.1);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
+              <button onclick="toggleReportGroup('Receiving',false)" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+            </div>
+          </div>
+          <div id="report-branches-receiving" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"></div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:700;color:#4ade80;text-transform:uppercase;letter-spacing:0.5px;">Live</span>
+            <div style="display:flex;gap:6px;">
+              <button onclick="toggleReportGroup('Live',true)" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
+              <button onclick="toggleReportGroup('Live',false)" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+            </div>
+          </div>
+          <div id="report-branches-live" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:space-between;margin-top:1rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);">
+        <span id="report-branch-count" style="font-size:11px;color:#64748b;align-self:center;">0 branches selected</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('monthly-report-modal').style.display='none'">Cancel</button>
+          <button class="btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" id="gen-report-btn" onclick="generateMonthlyReport()">⬇ Generate PDF</button>
+        </div>
       </div>
     </div>
-  </div>
-
-  <script>
-  function openMonthlyReport() {
-    const now = new Date();
-    document.getElementById('report-month').value = now.getMonth();
-    document.getElementById('report-year').value  = now.getFullYear();
-    document.getElementById('monthly-report-modal').style.display = 'flex';
-  }
-  </script>background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
+  </div>background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
 
   <script>
     const APPS_URL = 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
@@ -1205,21 +1221,8 @@
       const branchSet = {};
       trackerData.forEach(r=>{ const b=(r['Branch Code']||'').trim(); if(b) branchSet[b]=(r['Branch Status']||'').trim(); });
       const allBranches = Object.keys(branchSet).sort();
-
-      /* ── branches active during selected month ── */
-      const lastDayOfMonth = new Date(year, monthIdx+1, 0);
-      function parseDMY(str) {
-        if (!str) return null;
-        const p = str.split('/');
-        if (p.length < 3) return null;
-        return new Date(parseInt(p[2]), parseInt(p[1])-1, parseInt(p[0]));
-      }
-      const activeBranchesInMonth = allBranches.filter(b => {
-        const ex = branchExtras[b] || {};
-        const rDate = parseDMY(ex.receivingDate);
-        return rDate && rDate <= lastDayOfMonth;
-      });
-      const reportBranches = activeBranchesInMonth.length > 0 ? activeBranchesInMonth : allBranches;
+      const reportBranches = getReportBranches();
+      if (reportBranches.length === 0) { alert('Please select at least one branch.'); btn.textContent='⬇ Generate PDF'; btn.disabled=false; return; }
 
       /* ── page counter ── */
       let pageNum = 0;
@@ -1693,6 +1696,44 @@
       doc.save(`Monthly_Report_${monthName}_${year}.pdf`);
       btn.textContent='⬇ Generate PDF'; btn.disabled=false;
       document.getElementById('monthly-report-modal').style.display='none';
+    }
+
+    /* ── Monthly Report Modal helpers ── */
+    function openMonthlyReport() {
+      const now = new Date();
+      document.getElementById('report-month').value = now.getMonth();
+      document.getElementById('report-year').value  = now.getFullYear();
+      const bSet = {};
+      trackerData.forEach(r=>{ const b=(r['Branch Code']||'').trim(); if(b) bSet[b]=(r['Branch Status']||'').trim(); });
+      const receiving = Object.keys(bSet).filter(b=>bSet[b]==='Receiving').sort();
+      const live      = Object.keys(bSet).filter(b=>bSet[b]==='Live').sort();
+      const recContainer  = document.getElementById('report-branches-receiving');
+      const liveContainer = document.getElementById('report-branches-live');
+      recContainer.innerHTML = receiving.map(b=>`
+        <label style="display:flex;align-items:center;gap:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#e2e8f0;background:rgba(255,255,255,0.02);border-radius:5px;">
+          <input type="checkbox" value="${b}" checked data-group="Receiving" onchange="updateReportCount()"
+            style="accent-color:#22d3ee;width:12px;height:12px;cursor:pointer;" />${b}</label>`).join('');
+      liveContainer.innerHTML = live.length ? live.map(b=>`
+        <label style="display:flex;align-items:center;gap:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#e2e8f0;background:rgba(255,255,255,0.02);border-radius:5px;">
+          <input type="checkbox" value="${b}" data-group="Live" onchange="updateReportCount()"
+            style="accent-color:#4ade80;width:12px;height:12px;cursor:pointer;" />${b}</label>`).join('')
+        : '<p style="font-size:11px;color:#475569;padding:4px 8px;">No live branches</p>';
+      updateReportCount();
+      document.getElementById('monthly-report-modal').style.display = 'flex';
+    }
+
+    function toggleReportGroup(group, val) {
+      document.querySelectorAll(`#monthly-report-modal input[data-group="${group}"]`).forEach(c=>c.checked=val);
+      updateReportCount();
+    }
+
+    function updateReportCount() {
+      const count = document.querySelectorAll('#monthly-report-modal input[type=checkbox]:checked').length;
+      document.getElementById('report-branch-count').textContent = count+' branch'+(count!==1?'es':'')+' selected';
+    }
+
+    function getReportBranches() {
+      return [...document.querySelectorAll('#monthly-report-modal input[type=checkbox]:checked')].map(c=>c.value);
     }
   </script>
 </body>
