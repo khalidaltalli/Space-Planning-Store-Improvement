@@ -143,8 +143,10 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
             <div class="chart-title" style="margin-bottom:0;">📋 Delivered — Awaiting Signature</div>
             <div style="display:flex;gap:6px;align-items:center;">
-              <input id="delivered-asset-filter" placeholder="Filter asset..." oninput="filterDeliveredTable()"
-                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;width:110px;" />
+              <select id="delivered-asset-filter" onchange="filterDeliveredTable()"
+                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:130px;">
+                <option value="">All Assets</option>
+              </select>
               <button onclick="exportDeliveredPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
             </div>
           </div>
@@ -155,8 +157,10 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;gap:8px;">
             <div class="chart-title" style="margin-bottom:0;">⚠️ Qty Shortages</div>
             <div style="display:flex;gap:6px;align-items:center;">
-              <input id="shortage-asset-filter" placeholder="Filter item..." oninput="filterShortageTable()"
-                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;width:110px;" />
+              <select id="shortage-asset-filter" onchange="filterShortageTable()"
+                style="background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:4px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;max-width:130px;">
+                <option value="">All Items</option>
+              </select>
               <button onclick="exportShortagePDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">⬇ PDF</button>
             </div>
           </div>
@@ -346,15 +350,15 @@
       return branches;
     }
 
+    let lastStatusFilter = '';
+
     function renderTracker() {
-      /* Rebuild checkboxes if status filter changed */
-      buildBranchCheckboxes();
-      /* Re-apply previously selected branches after rebuild */
-      if (selectedBranches.size > 0) {
-        document.querySelectorAll('#branch-checkbox-list input[type=checkbox]').forEach(c=>{
-          c.checked = selectedBranches.has(c.value);
-        });
-        updateBranchBtn();
+      const selStatus = document.getElementById('t-status-filter').value;
+      /* Only rebuild checkboxes when status filter changes, not on every render */
+      if (selStatus !== lastStatusFilter) {
+        lastStatusFilter = selStatus;
+        selectedBranches = new Set(); /* reset selection on status change */
+        buildBranchCheckboxes();
       }
       const branches = getSelectedBranchCodes();
       const container = document.getElementById('tracker-content');
@@ -677,31 +681,43 @@
         return{b,nr,pct,color};
       }).sort((a,b)=>a.pct-b.pct);
       document.getElementById('task-branch-table').innerHTML=`<table><thead><tr><th style="text-align:left;min-width:110px;">Branch</th><th style="min-width:90px;">Not Received</th><th style="min-width:110px;">Progress</th></tr></thead><tbody>${branchRows.map(r=>`<tr><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.b}');return false;" style="color:#22d3ee;text-decoration:none;">${r.b}</a></td><td style="text-align:center;font-family:'DM Mono',monospace;color:#f87171;font-weight:700;">${r.nr}</td><td style="text-align:center;"><span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${r.color};">${r.pct}%</span><div class="progress-bar-wrap" style="margin-top:3px;"><div class="progress-bar-fill" style="width:${r.pct}%;background:${r.color};"></div></div></td></tr>`).join('')}</tbody></table>`;
+
+      /* Delivered table */
       const deliveredRows=[];
       branchCodes.forEach(b=>{trackerData.filter(r=>(r['Branch Code']||'').trim()===b&&r['Asset Status']==='Delivered').forEach(r=>deliveredRows.push({branch:b,asset:r['Asset']||'',dnNS:r['D.N. Not Signed']||''}));});
-      document.getElementById('task-delivered-table').innerHTML=deliveredRows.length?`<table><thead><tr><th style="text-align:left;min-width:110px;">Branch</th><th style="text-align:left;min-width:140px;">Asset</th></tr></thead><tbody>${deliveredRows.map(r=>`<tr><td style="font-weight:600;">${r.dnNS?`<a href="${r.dnNS}" target="_blank" style="color:#22d3ee;text-decoration:none;">${r.branch}</a>`:`<span style="color:#f1f5f9;">${r.branch}</span>`}</td><td><span class="pill pill-delivered">${r.asset}</span></td></tr>`).join('')}</tbody></table>`:'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No pending signatures!</p>';
+      document.getElementById('task-delivered-table').innerHTML=deliveredRows.length
+        ?`<table><thead><tr><th style="text-align:left;min-width:110px;">Branch</th><th style="text-align:left;min-width:140px;">Asset</th></tr></thead><tbody>${deliveredRows.map(r=>`<tr data-asset="${r.asset}"><td style="font-weight:600;">${r.dnNS?`<a href="${r.dnNS}" target="_blank" style="color:#22d3ee;text-decoration:none;">${r.branch}</a>`:`<span style="color:#f1f5f9;">${r.branch}</span>`}</td><td><span class="pill pill-delivered">${r.asset}</span></td></tr>`).join('')}</tbody></table>`
+        :'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No pending signatures!</p>';
+
+      /* Populate delivered asset dropdown */
+      const deliveredAssets=[...new Set(deliveredRows.map(r=>r.asset))].sort();
+      const dSel=document.getElementById('delivered-asset-filter');
+      if(dSel){const cur=dSel.value;dSel.innerHTML='<option value="">All Assets</option>'+deliveredAssets.map(a=>`<option value="${a}">${a}</option>`).join('');if(deliveredAssets.includes(cur))dSel.value=cur;}
+
+      /* Shortage table */
       const shortageRows=[];
       branchCodes.forEach(b=>{const fq=qtyData[b]||{};QTY_ITEMS.forEach(item=>{const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;if(req>0&&diff<0)shortageRows.push({branch:b,item:item.label,req,rec,diff});});});
-      document.getElementById('task-shortage-table').innerHTML=shortageRows.length?`<table><thead><tr><th style="text-align:left;min-width:100px;">Branch</th><th style="text-align:left;min-width:90px;">Item</th><th style="min-width:110px;">Req / Rec</th><th style="min-width:70px;">Short</th></tr></thead><tbody>${shortageRows.map(r=>`<tr><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.branch}');return false;" style="color:#22d3ee;text-decoration:none;">${r.branch}</a></td><td>${r.item}</td><td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;">${r.req} / ${r.rec}</td><td style="text-align:center;"><span style="color:#f87171;font-weight:700;font-family:'DM Mono',monospace;">${r.diff}</span></td></tr>`).join('')}</tbody></table>`:'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No shortages!</p>';
+      document.getElementById('task-shortage-table').innerHTML=shortageRows.length
+        ?`<table><thead><tr><th style="text-align:left;min-width:100px;">Branch</th><th style="text-align:left;min-width:90px;">Item</th><th style="min-width:110px;">Req / Rec</th><th style="min-width:70px;">Short</th></tr></thead><tbody>${shortageRows.map(r=>`<tr data-asset="${r.item}"><td style="font-weight:600;"><a href="#" onclick="scrollToBranch('${r.branch}');return false;" style="color:#22d3ee;text-decoration:none;">${r.branch}</a></td><td>${r.item}</td><td style="text-align:center;font-family:'DM Mono',monospace;font-size:11px;">${r.req} / ${r.rec}</td><td style="text-align:center;"><span style="color:#f87171;font-weight:700;font-family:'DM Mono',monospace;">${r.diff}</span></td></tr>`).join('')}</tbody></table>`
+        :'<p style="color:#4ade80;font-size:12px;padding:8px 0;">✓ No shortages!</p>';
+
+      /* Populate shortage item dropdown */
+      const shortageItems=[...new Set(shortageRows.map(r=>r.item))].sort();
+      const sSel=document.getElementById('shortage-asset-filter');
+      if(sSel){const cur=sSel.value;sSel.innerHTML='<option value="">All Items</option>'+shortageItems.map(a=>`<option value="${a}">${a}</option>`).join('');if(shortageItems.includes(cur))sSel.value=cur;}
     }
 
-    function filterDeliveredTable() {
-      const q = (document.getElementById('delivered-asset-filter')?.value || '').toLowerCase();
-      const tbl = document.querySelector('#task-delivered-table table');
-      if (!tbl) return;
-      tbl.querySelectorAll('tbody tr').forEach(tr => {
-        const text = tr.textContent.toLowerCase();
-        tr.style.display = !q || text.includes(q) ? '' : 'none';
+    function filterDeliveredTable(){
+      const q=document.getElementById('delivered-asset-filter')?.value||'';
+      document.querySelectorAll('#task-delivered-table tbody tr').forEach(tr=>{
+        tr.style.display=(!q||tr.dataset.asset===q)?'':'none';
       });
     }
 
-    function filterShortageTable() {
-      const q = (document.getElementById('shortage-asset-filter')?.value || '').toLowerCase();
-      const tbl = document.querySelector('#task-shortage-table table');
-      if (!tbl) return;
-      tbl.querySelectorAll('tbody tr').forEach(tr => {
-        const text = tr.textContent.toLowerCase();
-        tr.style.display = !q || text.includes(q) ? '' : 'none';
+    function filterShortageTable(){
+      const q=document.getElementById('shortage-asset-filter')?.value||'';
+      document.querySelectorAll('#task-shortage-table tbody tr').forEach(tr=>{
+        tr.style.display=(!q||tr.dataset.asset===q)?'':'none';
       });
     }
 
