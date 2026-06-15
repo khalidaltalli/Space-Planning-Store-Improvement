@@ -555,7 +555,7 @@
       qtyWrap.style.cssText='border-top:0.5px solid rgba(255,255,255,0.07);';
       qtyWrap.innerHTML=`
         <div onclick="const w=this.nextElementSibling;w.style.display=w.style.display==='none'?'block':'none';this.querySelector('.qi').style.transform=w.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1.25rem;cursor:pointer;background:rgba(255,255,255,0.02);">
-          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">Fridges & Shelves — Discrepancy</span>
+          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">Fridges & Shelves Quantities</span>
           <span class="qi" style="color:#64748b;font-size:11px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
         </div>
         <div style="display:none;padding:0 1.25rem 0.75rem;overflow-x:auto;">
@@ -721,8 +721,8 @@
       /* Stamp today's date (date only) next to the dropdown */
       const today=new Date().toLocaleDateString('en-GB'); /* dd/mm/yyyy */
       if(!branchExtras[branchCode])branchExtras[branchCode]={};
-      if(newStatus==='Receiving')branchExtras[branchCode].receivingDate=today;
-      if(newStatus==='Live')branchExtras[branchCode].liveDate=today;
+      if(newStatus==='Receiving'&&!branchExtras[branchCode].receivingDate) branchExtras[branchCode].receivingDate=today;
+      if(newStatus==='Live'&&!branchExtras[branchCode].liveDate) branchExtras[branchCode].liveDate=today;
       const cardId='tc_'+branchCode.replace(/[^a-zA-Z0-9]/g,'_');
       const dateEl=document.getElementById(cardId+'_statusdate');
       if(dateEl) dateEl.textContent=today;
