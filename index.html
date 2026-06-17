@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'DM Sans', sans-serif; background: #0f1117; color: #e2e8f0; min-height: 100vh; padding: 1.5rem; }
@@ -152,6 +153,7 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
             <div class="chart-title" style="margin-bottom:0;">📋 Delivered</div>
             <button onclick="exportDeliveredPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(251,191,36,0.08);border:0.5px solid rgba(251,191,36,0.2);color:#fbbf24;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ PDF</button>
+            <button onclick="exportDeliveredXLSX()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ XLS</button>
           </div>
           <div style="display:flex;gap:6px;margin-bottom:0.6rem;align-items:center;flex-wrap:wrap;">
             <span style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid transparent;color:transparent;pointer-events:none;">All</span>
@@ -167,6 +169,7 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
             <div class="chart-title" style="margin-bottom:0;">🔴 Not Received</div>
             <button onclick="exportNRPDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ PDF</button>
+            <button onclick="exportNRXLSX()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ XLS</button>
           </div>
           <div style="display:flex;gap:6px;margin-bottom:0.6rem;align-items:center;flex-wrap:wrap;">
             <span style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid transparent;color:transparent;pointer-events:none;">All</span>
@@ -182,6 +185,7 @@
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
             <div class="chart-title" style="margin-bottom:0;">⚠️ Discrepancy</div>
             <button onclick="exportShortagePDF()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ PDF</button>
+            <button onclick="exportDiscrepancyXLSX()" style="font-size:10px;padding:3px 8px;border-radius:5px;background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;">⬇ XLS</button>
           </div>
           <div style="display:flex;gap:6px;margin-bottom:0.6rem;align-items:center;flex-wrap:wrap;">
             <button onclick="filterDiscrepancy('ALL',this)" id="disc-filter-all" style="font-size:10px;padding:3px 10px;border-radius:10px;border:0.5px solid rgba(34,211,238,0.3);background:rgba(34,211,238,0.12);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
@@ -271,7 +275,9 @@
         </div>
       </div>
     </div>
-  </div>background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
+  </div>
+
+  <div style="position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1f2e;border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:200;" id="save-toast">✓ Saved</div>
 
   <script>
     const APPS_URL = 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
@@ -1696,6 +1702,59 @@
       doc.save(`Monthly_Report_${monthName}_${year}.pdf`);
       btn.textContent='⬇ Generate PDF'; btn.disabled=false;
       document.getElementById('monthly-report-modal').style.display='none';
+    }
+
+    /* ══════════════════════════════════════
+       EXCEL EXPORTS (SheetJS)
+    ══════════════════════════════════════ */
+    function exportDeliveredXLSX() {
+      const today=new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+      const rows=[['Branch','Asset']];
+      document.querySelectorAll('#task-delivered-table tbody tr').forEach(tr=>{
+        if(tr.style.display==='none')return;
+        const tds=tr.querySelectorAll('td');
+        if(tds.length>=2)rows.push([tds[0].textContent.trim(),tds[1].textContent.trim()]);
+      });
+      const wb=XLSX.utils.book_new();
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols']=[{wch:22},{wch:32}];
+      XLSX.utils.book_append_sheet(wb,ws,'Delivered');
+      XLSX.writeFile(wb,`Delivered_${today}.xlsx`);
+    }
+
+    function exportNRXLSX() {
+      const today=new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+      const rows=[['Branch','Asset']];
+      document.querySelectorAll('#task-nr-table tbody tr').forEach(tr=>{
+        if(tr.style.display==='none')return;
+        const tds=tr.querySelectorAll('td');
+        if(tds.length>=2)rows.push([tds[0].textContent.trim(),tds[1].textContent.trim()]);
+      });
+      const wb=XLSX.utils.book_new();
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols']=[{wch:22},{wch:32}];
+      XLSX.utils.book_append_sheet(wb,ws,'Not Received');
+      XLSX.writeFile(wb,`Not_Received_${today}.xlsx`);
+    }
+
+    function exportDiscrepancyXLSX() {
+      const today=new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+      const rows=[['Branch','Item','Req','Rec','Diff','Type']];
+      document.querySelectorAll('#task-shortage-table tbody tr').forEach(tr=>{
+        if(tr.style.display==='none')return;
+        const tds=tr.querySelectorAll('td');
+        if(tds.length>=4){
+          const reqRec=tds[2].textContent.trim().split('/');
+          const req=parseInt(reqRec[0])||0, rec=parseInt(reqRec[1])||0;
+          const diff=parseInt(tds[3].textContent)||0;
+          rows.push([tds[0].textContent.trim(),tds[1].textContent.trim(),req,rec,diff,diff<0?'Shortage':'Extra']);
+        }
+      });
+      const wb=XLSX.utils.book_new();
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols']=[{wch:22},{wch:18},{wch:10},{wch:10},{wch:10},{wch:12}];
+      XLSX.utils.book_append_sheet(wb,ws,'Discrepancy');
+      XLSX.writeFile(wb,`Discrepancy_${today}.xlsx`);
     }
 
     /* ── Monthly Report Modal helpers ── */
