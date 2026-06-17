@@ -1799,8 +1799,9 @@
       }
       XLSX.writeFile(wb, `${branch}_${today}.xlsx`);
     }
+
+    function exportDiscrepancyXLSX() {
       const today=new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
-      const rows=[['Branch','Item','Req','Rec','Diff','Type']];
       document.querySelectorAll('#task-shortage-table tbody tr').forEach(tr=>{
         if(tr.style.display==='none')return;
         const tds=tr.querySelectorAll('td');
