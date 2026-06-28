@@ -505,20 +505,39 @@
     return status;
   }
 
-  // ─── API CALL (fetch with redirect follow) ───────────────────────
-  async function appsScriptRequest(params) {
-    const url = APPS_SCRIPT_URL + '?' + new URLSearchParams(params).toString();
-    const res = await fetch(url, { redirect: 'follow' });
-    const text = await res.text();
-    // Strip any JSONP wrapper if present
-    const clean = text.trim().replace(/^[^(]+\(/, '').replace(/\);?$/, '');
-    return JSON.parse(clean);
+  // ─── JSONP — bypasses CORS on Apps Script ────────────────────────
+  // fetch() is blocked by CORS when called from GitHub Pages to Apps Script.
+  // JSONP injects a <script> tag instead, which is never subject to CORS.
+  function jsonp(params) {
+    return new Promise((resolve, reject) => {
+      const cbName = '_cb_' + Date.now();
+      const script = document.createElement('script');
+      const timer  = setTimeout(() => {
+        delete window[cbName];
+        if (script.parentNode) document.body.removeChild(script);
+        reject(new Error('Request timed out'));
+      }, 20000);
+      window[cbName] = (data) => {
+        clearTimeout(timer);
+        delete window[cbName];
+        if (script.parentNode) document.body.removeChild(script);
+        resolve(data);
+      };
+      script.onerror = () => {
+        clearTimeout(timer);
+        delete window[cbName];
+        reject(new Error('Script load failed'));
+      };
+      const qs = new URLSearchParams({ ...params, callback: cbName }).toString();
+      script.src = APPS_SCRIPT_URL + '?' + qs;
+      document.body.appendChild(script);
+    });
   }
 
   // ─── FETCH ────────────────────────────────────────────────────────
   async function fetchStores() {
     try {
-      const data = await appsScriptRequest({ action: 'getStores' });
+      const data = await jsonp({ action: 'getStores' });
       allStores  = data;
       populateStatusFilter();
       applyFilters();
@@ -716,9 +735,7 @@
     btn.disabled = true; btn.textContent = 'Saving…';
     const updated = getEditedValues();
     try {
-      const result = await appsScriptRequest({
-        payload: JSON.stringify({ action: 'updateStore', data: updated, user: currentUser.name })
-      });
+      const result = await jsonp({ payload: JSON.stringify({ action: 'updateStore', data: updated, user: currentUser.name }) });
       if (result.success) {
         const idx = allStores.findIndex(s => s['Store Code'] === currentStore['Store Code']);
         if (idx !== -1) allStores[idx] = updated;
