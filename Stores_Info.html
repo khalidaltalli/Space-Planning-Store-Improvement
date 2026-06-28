@@ -215,6 +215,11 @@
     .pill-mezz     { background: var(--grey-dim);               color: var(--grey); }
     .pill-pharmacy { background: var(--purple-dim);             color: var(--purple); }
     .pill-cold     { background: rgba(96,165,250,0.12);         color: #60a5fa; }
+    .pill-region-central { background: rgba(52,211,153,0.12);  color: #34d399; }
+    .pill-region-western { background: rgba(251,146,60,0.12);  color: #fb923c; }
+    .pill-region-eastern { background: rgba(56,189,248,0.12);  color: #38bdf8; }
+    .pill-region-remote  { background: rgba(167,139,250,0.12); color: #a78bfa; }
+    .pill-region-default { background: var(--grey-dim);        color: var(--grey); }
     .pill-location {
       display: inline-flex; align-items: center; gap: 4px;
       font-size: 11px; padding: 3px 8px; border-radius: 20px;
@@ -561,6 +566,17 @@
     renderGrid(filtered);
   }
 
+  // ─── REGION PILL HELPER ──────────────────────────────────────────
+  function regionPillClass(region) {
+    if (!region) return 'pill-region-default';
+    const r = region.toLowerCase().replace(/\s/g, '');
+    if (r.includes('central'))       return 'pill-region-central';
+    if (r.includes('west'))          return 'pill-region-western';
+    if (r.includes('east'))          return 'pill-region-eastern';
+    if (r.includes('remote'))        return 'pill-region-remote';
+    return 'pill-region-default';
+  }
+
   // ─── RENDER GRID ──────────────────────────────────────────────────
   function renderGrid(stores) {
     const grid  = document.getElementById('store-grid');
@@ -584,6 +600,7 @@
       const classLetter = rawClass.replace(/^CLASS_?/, '') || rawClass;
       const classCss    = classLetter ? 'pill-class-' + classLetter.toLowerCase() : '';
       const locationText = [s['City'], s['District']].filter(Boolean).join(' · ');
+      const region      = (s['Region'] || '').toString().trim();
 
       return `
         <div class="store-card" style="--card-accent:${accentColor(s['Store Status'])}" onclick="openModal(${idx})">
@@ -597,6 +614,7 @@
             </svg>${locationText}</div>` : ''}
           <div class="card-pills">
             ${classLetter ? `<span class="pill ${classCss}">Class ${classLetter}</span>` : ''}
+            ${region      ? `<span class="pill ${regionPillClass(region)}">${region}</span>` : ''}
             ${hasMezz     ? `<span class="pill pill-mezz">Mezz Floor</span>` : ''}
             ${hasPharmacy && pharmacyLabel ? `<span class="pill pill-pharmacy">${pharmacyLabel}</span>` : ''}
             ${hasColdRoom ? `<span class="pill pill-cold">Cold Room</span>` : ''}
