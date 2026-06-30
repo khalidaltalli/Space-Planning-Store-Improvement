@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Tasks</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="theme.css">
+<style>
+  .task-row { display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .task-row:last-child { border-bottom:none; }
+  .task-title { flex:1; font-size:14px; color:#e2e8f0; }
+  .task-title.done { color:#64748b; text-decoration:line-through; }
+  .task-updated { font-size:11px; color:#64748b; white-space:nowrap; }
+  .task-status { font-size:12px; }
+  input#newTask { font-size:15px; padding:12px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <a href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/">
+      <img src="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/logo.png" alt="Logo">
+    </a>
+  </div>
+  <div class="header-center">
+    <h1>My Tasks</h1>
+    <p>Private — Space Planning &amp; Store Improvement</p>
+  </div>
+  <div class="header-right">
+    <span class="live-badge"><span class="live-dot"></span>Private</span>
+    <a class="back-link" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/">&larr; Main Platform</a>
+  </div>
+</div>
+
+<main>
+  <div class="panel">
+    <input id="newTask" placeholder="Add a task and press Enter…">
+  </div>
+
+  <div class="panel">
+    <h3>Open Tasks</h3>
+    <div id="openTasks">Loading…</div>
+  </div>
+
+  <div class="panel">
+    <h3>Done</h3>
+    <div id="doneTasks"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Report</h3>
+    <div class="period-btns">
+      <button data-period="day" class="active">Today</button>
+      <button data-period="week">This Week</button>
+      <button data-period="month">This Month</button>
+    </div>
+    <div id="reportList">—</div>
+  </div>
+</main>
+
+<script src="api.js"></script>
+<script>
+let tasks = [];
+
+function fmt(d) {
+  if (!d) return '';
+  try { return new Date(d).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); }
+  catch (e) { return d; }
+}
+
+function renderRow(t) {
+  const isDone = t.Status === 'Done';
+  return `
+    <div class="task-row">
+      <input type="checkbox" ${isDone ? 'checked' : ''} data-id="${t.ID}" class="toggleDone">
+      <div class="task-title ${isDone ? 'done' : ''}">${t.Title || ''}</div>
+      <div class="task-updated">last update: ${fmt(t.Updated || t.Created)}</div>
+    </div>`;
+}
+
+function render() {
+  const open = tasks.filter(t => t.Status !== 'Done').sort((a,b) => new Date(b.Updated||b.Created) - new Date(a.Updated||a.Created));
+  const done = tasks.filter(t => t.Status === 'Done').sort((a,b) => new Date(b.Updated||b.Created) - new Date(a.Updated||a.Created));
+
+  document.getElementById('openTasks').innerHTML = open.length
+    ? open.map(renderRow).join('')
+    : '<p style="font-size:13px; color:#64748b;">No open tasks.</p>';
+
+  document.getElementById('doneTasks').innerHTML = done.length
+    ? done.map(renderRow).join('')
+    : '<p style="font-size:13px; color:#64748b;">Nothing done yet.</p>';
+
+  document.querySelectorAll('.toggleDone').forEach(cb => {
+    cb.addEventListener('change', async () => {
+      await WorkHub.saveRow('My Tasks', { 'Status': cb.checked ? 'Done' : 'Open' }, cb.dataset.id);
+      await refresh();
+    });
+  });
+
+  renderReport(currentPeriod);
+}
+
+function inPeriod(dateStr, period) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return false;
+  const now = new Date();
+  if (period === 'day') return d.toDateString() === now.toDateString();
+  if (period === 'week') { const w = new Date(now); w.setDate(now.getDate()-7); return d >= w && d <= now; }
+  if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  return false;
+}
+
+let currentPeriod = 'day';
+function renderReport(period) {
+  currentPeriod = period;
+  const touched = tasks.filter(t => inPeriod(t.Updated || t.Created, period))
+    .sort((a,b) => new Date(b.Updated||b.Created) - new Date(a.Updated||a.Created));
+  document.getElementById('reportList').innerHTML = touched.length
+    ? touched.map(t => `<div class="task-row"><div class="task-title">${t.Title||''}</div><div class="task-status">${t.Status||'Open'}</div><div class="task-updated">${fmt(t.Updated||t.Created)}</div></div>`).join('')
+    : '<p style="font-size:13px; color:#64748b;">No tasks edited in this period.</p>';
+}
+
+async function refresh() {
+  tasks = await WorkHub.getTab('My Tasks');
+  render();
+}
+
+(async function () {
+  await WorkHub.requireAccess();
+  await refresh();
+
+  document.getElementById('newTask').addEventListener('keydown', async (e) => {
+    if (e.key !== 'Enter') return;
+    const title = e.target.value.trim();
+    if (!title) return;
+    await WorkHub.saveRow('My Tasks', { 'Title': title, 'Status': 'Open' });
+    e.target.value = '';
+    await refresh();
+  });
+
+  document.querySelectorAll('.period-btns button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.period-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderReport(btn.dataset.period);
+    });
+  });
+})();
+</script>
+</body>
+</html>
