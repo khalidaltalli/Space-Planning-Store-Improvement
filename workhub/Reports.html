@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Work Hub — Personal Reports</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <a href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/">
+      <img src="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/logo.png" alt="Logo">
+    </a>
+  </div>
+  <div class="header-center">
+    <h1>My Work Hub</h1>
+    <p>Private Workflow — Space Planning &amp; Store Improvement</p>
+  </div>
+  <div class="header-right">
+    <span class="live-badge"><span class="live-dot"></span>Private</span>
+    <a class="back-link" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/">&larr; Main Platform</a>
+  </div>
+</div>
+<nav class="whnav">
+  <a href="index.html">Dashboard</a>
+  <a href="branch-queue.html">Branch Work Queue</a>
+  <a href="layout-prep.html">Layout Preparation</a>
+  <a href="asset-receiving.html">Asset Receiving</a>
+  <a href="procurement.html">Procurement Follow-up</a>
+  <a href="delivery-notes.html">Delivery Notes Follow-up</a>
+  <a href="notes-activity.html">Notes & Activity</a>
+  <a href="time-tracking.html">Time Tracking</a>
+  <a href="reports.html" class="active">Personal Reports</a>
+</nav>
+<main>
+  <div class="panel">
+    <div class="period-btns">
+      <button data-period="day" class="active">Daily</button>
+      <button data-period="week">Weekly</button>
+      <button data-period="month">Monthly</button>
+    </div>
+
+    <div class="cards" id="summaryCards"></div>
+
+    <h3>Tasks Completed</h3>
+    <table>
+      <thead><tr><th>Branch</th><th>Task</th><th>Updated</th></tr></thead>
+      <tbody id="taskRows"></tbody>
+    </table>
+
+    <h3>Time Logged</h3>
+    <table>
+      <thead><tr><th>Branch</th><th>Task</th><th>Start</th><th>Minutes</th></tr></thead>
+      <tbody id="timeRows"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="api.js"></script>
+<script>
+let period = 'day';
+let allTasks = [], allTime = [];
+
+function inPeriod(dateStr, period) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return false;
+  const now = new Date();
+  if (period === 'day') return d.toDateString() === now.toDateString();
+  if (period === 'week') {
+    const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+    return d >= weekAgo && d <= now;
+  }
+  if (period === 'month') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  return false;
+}
+
+function render() {
+  const tasksDone = allTasks.filter(t => t.Status === 'Done' && inPeriod(t.Updated, period));
+  const timeEntries = allTime.filter(t => inPeriod(t.Start, period));
+  const totalMinutes = timeEntries.reduce((sum, t) => sum + (parseInt(t['Duration Minutes']) || 0), 0);
+  const branchesTouched = new Set([...tasksDone.map(t => t['Branch Code']), ...timeEntries.map(t => t['Branch Code'])].filter(Boolean));
+
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="card"><div class="num">${tasksDone.length}</div><div class="label">Tasks Completed</div></div>
+    <div class="card"><div class="num">${Math.round(totalMinutes/60*10)/10}h</div><div class="label">Time Logged</div></div>
+    <div class="card"><div class="num">${branchesTouched.size}</div><div class="label">Branches Touched</div></div>
+  `;
+
+  document.getElementById('taskRows').innerHTML = tasksDone.length
+    ? tasksDone.map(t => `<tr><td>${t['Branch Code']||''}</td><td>${t.Title||''}</td><td>${t.Updated||''}</td></tr>`).join('')
+    : '<tr><td colspan="3">No completed tasks in this period</td></tr>';
+
+  document.getElementById('timeRows').innerHTML = timeEntries.length
+    ? timeEntries.map(t => `<tr><td>${t['Branch Code']||''}</td><td>${t.Task||''}</td><td>${t.Start||''}</td><td>${t['Duration Minutes']||''}</td></tr>`).join('')
+    : '<tr><td colspan="4">No time logged in this period</td></tr>';
+}
+
+(async function () {
+  await WorkHub.requireAccess();
+  [allTasks, allTime] = await Promise.all([
+    WorkHub.getTab('My Tasks'),
+    WorkHub.getTab('Time Tracking')
+  ]);
+
+  document.querySelectorAll('.period-btns button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.period-btns button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      period = btn.dataset.period;
+      render();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
