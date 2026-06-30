@@ -186,11 +186,20 @@ async function fetchSheet(name){
 }
 
 async function postAction(payload){
-  await fetch(APPS_URL, {
-    method:'POST', mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  });
+  let res;
+  try{
+    res = await fetch(APPS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'}, // avoids CORS preflight, Apps Script still parses it as JSON
+      body: JSON.stringify(payload)
+    });
+  }catch(err){
+    throw new Error('Network/CORS error — check the deployment is set to "Anyone" access. (' + err.message + ')');
+  }
+  let data = {};
+  try{ data = await res.json(); }catch(e){ /* non-JSON response */ }
+  if(data && data.error) throw new Error(data.error);
+  return data;
 }
 
 async function loadAll(){
