@@ -4,6 +4,135 @@
 <meta charset="UTF-8">
 <title>My Work Hub — Branch Work Queue</title>
 <meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <a href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/">
+      <img src="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/logo.png" alt="Logo">
+    </a>
+  </div>
+  <div class="header-center">
+    <h1>My Work Hub</h1>
+    <p>Private Workflow — Space Planning &amp; Store Improvement</p>
+  </div>
+  <div class="header-right">
+    <span class="live-badge"><span class="live-dot"></span>Private</span>
+    <a class="back-link" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/">&larr; Main Platform</a>
+  </div>
+</div>
+<nav class="whnav">
+  <a href="index.html">Dashboard</a>
+  <a href="branch-queue.html">Branch Work Queue</a>
+  <a href="layout-prep.html">Layout Preparation</a>
+  <a href="asset-receiving.html">Asset Receiving</a>
+  <a href="procurement.html">Procurement Follow-up</a>
+  <a href="delivery-notes.html">Delivery Notes Follow-up</a>
+  <a href="notes-activity.html">Notes & Activity</a>
+  <a href="time-tracking.html">Time Tracking</a>
+  <a href="reports.html">Personal Reports</a>
+</nav>
+<main>
+  <div class="panel">
+    <label for="branchSelect">Select Branch</label>
+    <select id="branchSelect"><option>Loading branches…</option></select>
+
+    <div class="info-grid" id="branchInfo" style="display:none;">
+      <div><div class="label">Status</div><div class="val" id="infoStatus">—</div></div>
+      <div><div class="label">Receiving Date</div><div class="val" id="infoReceiving">—</div></div>
+      <div><div class="label">Live Date</div><div class="val" id="infoLive">—</div></div>
+      <div><div class="label">D.N. Folder</div><div class="val" id="infoDn">—</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0;">Add Task (private — only you see this)</h3>
+    <label for="taskTitle">Task</label>
+    <input id="taskTitle" placeholder="e.g. Confirm shelf layout with vendor">
+    <label for="taskPriority">Priority</label>
+    <select id="taskPriority"><option>Low</option><option selected>Medium</option><option>High</option></select>
+    <label for="taskDue">Due Date</label>
+    <input id="taskDue" type="date">
+    <button id="addTaskBtn">Add Task</button>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0;">My Tasks for this Branch</h3>
+    <table>
+      <thead><tr><th>Task</th><th>Priority</th><th>Due</th><th>Status</th></tr></thead>
+      <tbody id="taskRows"><tr><td colspan="4">Select a branch above</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="api.js"></script>
+<script>
+let branches = [];
+
+async function loadTasks(branchCode) {
+  const tasks = await WorkHub.getTab('My Tasks', branchCode);
+  document.getElementById('taskRows').innerHTML = tasks.length
+    ? tasks.map(t => `<tr><td>${t.Title || ''}</td><td>${t.Priority || ''}</td><td>${t['Due Date'] || '—'}</td><td>${t.Status || 'Open'}</td></tr>`).join('')
+    : '<tr><td colspan="4">No tasks yet for this branch</td></tr>';
+}
+
+function showBranchInfo(b) {
+  document.getElementById('branchInfo').style.display = 'grid';
+  document.getElementById('infoStatus').textContent = b.status || '—';
+  document.getElementById('infoReceiving').textContent = b.receivingDate || '—';
+  document.getElementById('infoLive').textContent = b.liveDate || '—';
+  document.getElementById('infoDn').textContent = b.dnFolder || '—';
+}
+
+(async function () {
+  await WorkHub.requireAccess();
+  branches = await WorkHub.getBranches();
+
+  const sel = document.getElementById('branchSelect');
+  sel.innerHTML = '<option value="">— Select —</option>' +
+    branches.map(b => `<option value="${b.branchCode}">${b.branchCode} (${b.status})</option>`).join('');
+
+  // Pre-select branch if passed via ?branch=CODE from the dashboard link
+  const params = new URLSearchParams(location.search);
+  const preselect = params.get('branch');
+  if (preselect) sel.value = preselect;
+
+  async function onBranchChange() {
+    const code = sel.value;
+    if (!code) return;
+    const b = branches.find(x => x.branchCode === code);
+    if (b) showBranchInfo(b);
+    await loadTasks(code);
+  }
+
+  sel.addEventListener('change', onBranchChange);
+  if (sel.value) onBranchChange();
+
+  document.getElementById('addTaskBtn').addEventListener('click', async () => {
+    const code = sel.value;
+    if (!code) { alert('Select a branch first'); return; }
+    const title = document.getElementById('taskTitle').value.trim();
+    if (!title) { alert('Enter a task'); return; }
+    await WorkHub.saveRow('My Tasks', {
+      'Branch Code': code,
+      'Title': title,
+      'Priority': document.getElementById('taskPriority').value,
+      'Due Date': document.getElementById('taskDue').value,
+      'Status': 'Open'
+    });
+    document.getElementById('taskTitle').value = '';
+    await loadTasks(code);
+  });
+})();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Work Hub — Branch Work Queue</title>
+<meta name="robots" content="noindex, nofollow">
 <style>
   body { font-family: -apple-system, Segoe UI, sans-serif; background:#f4f6f8; margin:0; color:#1a1a1a; }
   header { background:#1a3a5c; color:#fff; padding:18px 24px; }
