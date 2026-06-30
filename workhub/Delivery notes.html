@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Work Hub — Delivery Notes Follow-up</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <a href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/">
+      <img src="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/logo.png" alt="Logo">
+    </a>
+  </div>
+  <div class="header-center">
+    <h1>My Work Hub</h1>
+    <p>Private Workflow — Space Planning &amp; Store Improvement</p>
+  </div>
+  <div class="header-right">
+    <span class="live-badge"><span class="live-dot"></span>Private</span>
+    <a class="back-link" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/">&larr; Main Platform</a>
+  </div>
+</div>
+<nav class="whnav">
+  <a href="index.html">Dashboard</a>
+  <a href="branch-queue.html">Branch Work Queue</a>
+  <a href="layout-prep.html">Layout Preparation</a>
+  <a href="asset-receiving.html">Asset Receiving</a>
+  <a href="procurement.html">Procurement Follow-up</a>
+  <a href="delivery-notes.html" class="active">Delivery Notes Follow-up</a>
+  <a href="notes-activity.html">Notes & Activity</a>
+  <a href="time-tracking.html">Time Tracking</a>
+  <a href="reports.html">Personal Reports</a>
+</nav>
+<main>
+  <div class="panel">
+    <label for="branchSelect">Select Branch</label>
+    <select id="branchSelect"><option>Loading branches…</option></select>
+    <div class="info" id="dnFolderInfo" style="display:none;"></div>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0;">Add Follow-up</h3>
+    <label>D.N. Link</label>
+    <input id="dnLink" placeholder="link to the specific delivery note">
+    <label>Status</label>
+    <select id="status"><option>Not Signed</option><option>Signed</option></select>
+    <label>Notes</label>
+    <input id="notes" placeholder="who's chasing it, next step">
+    <button id="addBtn">Add Follow-up</button>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0;">Delivery Notes Tracker</h3>
+    <table>
+      <thead><tr><th>D.N. Link</th><th>Status</th><th>Notes</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="3">Select a branch above</td></tr></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="api.js"></script>
+<script>
+const TAB = 'Delivery Notes Followup';
+let branchCode = '';
+let branches = [];
+
+async function load() {
+  if (!branchCode) return;
+  const b = branches.find(x => x.branchCode === branchCode);
+  const info = document.getElementById('dnFolderInfo');
+  if (b && b.dnFolder) {
+    info.style.display = 'block';
+    info.innerHTML = 'Main D.N. Folder (from main platform): <a href="' + b.dnFolder + '" target="_blank">' + b.dnFolder + '</a>';
+  } else {
+    info.style.display = 'none';
+  }
+
+  const rows = await WorkHub.getTab(TAB, branchCode);
+  document.getElementById('rows').innerHTML = rows.length
+    ? rows.map(r => `
+      <tr>
+        <td>${r['D.N. Link'] ? `<a href="${r['D.N. Link']}" target="_blank">link</a>` : ''}</td>
+        <td><select class="statusSel" data-id="${r.ID}">
+          <option ${r.Status==='Not Signed'||!r.Status?'selected':''}>Not Signed</option>
+          <option ${r.Status==='Signed'?'selected':''}>Signed</option>
+        </select></td>
+        <td>${r.Notes || ''}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="3">No delivery note follow-ups yet</td></tr>';
+
+  document.querySelectorAll('.statusSel').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      await WorkHub.saveRow(TAB, { 'Status': sel.value }, sel.dataset.id);
+    });
+  });
+}
+
+(async function () {
+  await WorkHub.requireAccess();
+  branches = await WorkHub.getBranches();
+  const sel = document.getElementById('branchSelect');
+  sel.innerHTML = '<option value="">— Select —</option>' +
+    branches.map(b => `<option value="${b.branchCode}">${b.branchCode} (${b.status})</option>`).join('');
+  sel.addEventListener('change', () => { branchCode = sel.value; load(); });
+
+  document.getElementById('addBtn').addEventListener('click', async () => {
+    if (!branchCode) { alert('Select a branch first'); return; }
+    await WorkHub.saveRow(TAB, {
+      'Branch Code': branchCode,
+      'D.N. Link': document.getElementById('dnLink').value,
+      'Status': document.getElementById('status').value,
+      'Notes': document.getElementById('notes').value
+    });
+    document.getElementById('dnLink').value = '';
+    document.getElementById('notes').value = '';
+    load();
+  });
+})();
+</script>
+</body>
+</html>
