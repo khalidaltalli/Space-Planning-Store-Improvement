@@ -9,84 +9,61 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family:'DM Sans', sans-serif; background:#0f1117; color:#e2e8f0; min-height:100vh; padding:1.5rem; }
 
-  .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:0.5px solid rgba(255,255,255,0.08); }
+  .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:0.5px solid rgba(255,255,255,0.08); }
   .header h1 { font-size:22px; font-weight:700; color:#fff; letter-spacing:-0.3px; }
-  .header p  { font-size:12px; color:#94a3b8; margin-top:3px; font-weight:500; }
+  .header p  { font-size:12px; color:#f1f5f9; margin-top:3px; font-weight:500; }
   .live-badge { display:flex; align-items:center; gap:6px; font-size:11px; color:#22d3ee; background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); padding:5px 12px; border-radius:20px; }
-  .live-dot { width:6px; height:6px; border-radius:50%; background:#22d3ee; box-shadow:0 0 6px #22d3ee; }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:#22d3ee; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .btn { background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); color:#22d3ee; font-size:12px; padding:6px 14px; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.15s; }
+  .btn:hover { background:rgba(34,211,238,0.15); }
 
   .config { font-size:11px; color:#64748b; margin-bottom:14px; border:0.5px dashed rgba(255,255,255,0.12); padding:12px 14px; border-radius:8px; display:none; }
   .config.show { display:block; }
   .config input { width:100%; font-family:'DM Mono', monospace; font-size:11px; background:#0f1117; border:0.5px solid rgba(255,255,255,0.12); color:#e2e8f0; padding:7px 10px; border-radius:6px; margin-top:6px; }
-  .config button { margin-top:8px; font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; background:#22d3ee; color:#0f1117; border:none; padding:7px 14px; border-radius:6px; cursor:pointer; }
   .config-toggle { font-size:10px; color:#64748b; text-decoration:underline; cursor:pointer; margin-bottom:14px; display:inline-block; }
 
-  .toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
-  .toolbar-left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  select.filter, input.search {
-    font-family:'DM Sans',sans-serif; font-size:12px; color:#e2e8f0;
-    background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.12); border-radius:7px; padding:8px 10px;
-  }
+  .controls { display:flex; gap:10px; margin-bottom:0.9rem; align-items:center; flex-wrap:wrap; }
+  .controls label { font-size:12px; color:#f1f5f9; font-weight:500; }
+  select.filter, input.search { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.12); color:#e2e8f0; font-size:12px; padding:6px 10px; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; }
+  input.search { width:180px; cursor:text; }
   select.filter:focus, input.search:focus { outline:none; border-color:rgba(34,211,238,0.4); }
-  input.search { width:180px; }
 
-  .btn-add { font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; background:rgba(34,211,238,0.1); color:#22d3ee; border:0.5px solid rgba(34,211,238,0.3); border-radius:7px; padding:8px 12px; cursor:pointer; white-space:nowrap; }
-  .btn-add:hover { background:rgba(34,211,238,0.18); }
+  .table-card { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.07); border-radius:10px; padding:1rem 1.25rem; margin-bottom:1.25rem; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th { text-align:center; padding:8px 10px; color:#f1f5f9; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid rgba(255,255,255,0.4); border-right:0.5px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.02); }
+  th:first-child { text-align:left; } th:last-child { border-right:none; }
+  td { padding:8px 10px; color:#f1f5f9; text-align:center; border-bottom:0.5px solid rgba(255,255,255,0.15); border-right:0.5px solid rgba(255,255,255,0.08); }
+  td:first-child { text-align:left; } td:last-child { border-right:none; }
+  tbody tr:nth-child(odd)  td { background:rgba(255,255,255,0.03); }
+  tbody tr:nth-child(even) td { background:rgba(255,255,255,0.07); }
+  tbody tr:hover           td { background:rgba(255,255,255,0.12); }
 
-  .manual-panel { display:none; background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px; margin-bottom:16px; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .branch-link { color:#22d3ee; text-decoration:none; font-weight:700; }
+  .asset-pill { display:inline-block; font-size:11px; font-weight:500; color:#fb7185; background:rgba(251,113,133,0.1); border:0.5px solid rgba(251,113,133,0.2); padding:4px 11px; border-radius:20px; }
+
+  .dn-cell { display:inline-flex; align-items:center; gap:6px; justify-content:center; }
+  .dn-link { color:#22d3ee; font-size:11px; text-decoration:none; }
+  .dn-link:hover { text-decoration:underline; }
+  .dn-add-btn { font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); color:#22d3ee; cursor:pointer; font-family:'DM Sans',sans-serif; }
+  .dn-edit-btn { font-size:9px; padding:1px 6px; border-radius:4px; background:rgba(255,255,255,0.05); border:0.5px solid rgba(255,255,255,0.1); color:#64748b; cursor:pointer; font-family:'DM Sans',sans-serif; }
+  .dn-none { font-size:10px; color:#475569; }
+
+  .manual-panel { display:none; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:1rem; }
   .manual-panel.show { display:flex; }
   .manual-panel .field { display:flex; flex-direction:column; gap:4px; }
   .manual-panel label { font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#94a3b8; font-weight:600; }
-  .manual-panel input { font-family:'DM Sans',sans-serif; font-size:12px; color:#e2e8f0; background:#0f1117; border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; padding:7px 9px; width:160px; }
-  .manual-panel button { font-family:'DM Sans',sans-serif; font-size:12px; font-weight:700; background:#22d3ee; color:#0f1117; border:none; border-radius:6px; padding:8px 16px; cursor:pointer; }
+  .manual-panel input { font-family:'DM Sans',sans-serif; font-size:12px; color:#e2e8f0; background:#0f1117; border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; padding:7px 9px; width:170px; }
+  .manual-panel button { font-family:'DM Sans',sans-serif; font-size:12px; font-weight:700; background:rgba(74,222,128,0.08); border:0.5px solid rgba(74,222,128,0.2); color:#4ade80; border-radius:6px; padding:8px 16px; cursor:pointer; }
 
-  .table-wrap { background:#161a24; border:0.5px solid rgba(255,255,255,0.08); border-radius:12px; overflow:hidden; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  thead th {
-    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; font-weight:700;
-    color:#fff; background:#1a1f2e; padding:12px 16px; border-bottom:0.5px solid rgba(255,255,255,0.08);
-  }
-  tbody td { padding:11px 16px; border-bottom:0.5px solid rgba(255,255,255,0.05); vertical-align:middle; }
-  tbody tr:nth-child(even) { background:rgba(255,255,255,0.012); }
-  tbody tr:hover td { background:rgba(34,211,238,0.03); }
-  tbody tr:last-child td { border-bottom:none; }
-
-  .branch-code { color:#22d3ee; font-family:'DM Mono', monospace; font-weight:600; font-size:12px; letter-spacing:0.2px; }
-
-  .asset-pill {
-    display:inline-block; font-size:11px; font-weight:500; color:#fb7185;
-    background:rgba(251,113,133,0.1); border:0.5px solid rgba(251,113,133,0.2);
-    padding:4px 11px; border-radius:20px;
-  }
-
-  .dn-cell { display:flex; align-items:center; gap:8px; }
-  .pill { font-size:10px; padding:4px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:5px; font-weight:600; white-space:nowrap; }
-  .pill.notsigned { background:rgba(251,191,36,0.1); color:#fbbf24; border:0.5px solid rgba(251,191,36,0.25); }
-  .pill.signed { background:rgba(74,222,128,0.1); color:#4ade80; border:0.5px solid rgba(74,222,128,0.25); }
-  .pill.none { background:rgba(255,255,255,0.04); color:#64748b; border:0.5px solid rgba(255,255,255,0.08); }
-  a.pill-link { text-decoration:none; }
-
-  .icon-btn {
-    width:22px; height:22px; border-radius:6px; border:0.5px solid rgba(255,255,255,0.12);
-    background:#0f1117; color:#94a3b8; cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
-    font-size:11px; flex-shrink:0;
-  }
-  .icon-btn:hover { color:#22d3ee; border-color:rgba(34,211,238,0.4); }
-
-  .add-link { font-size:11px; font-weight:600; color:#22d3ee; background:rgba(34,211,238,0.08); border:0.5px dashed rgba(34,211,238,0.3); padding:4px 11px; border-radius:20px; cursor:pointer; }
-  .add-link:hover { background:rgba(34,211,238,0.15); }
-
-  .empty { font-size:12px; color:#64748b; padding:24px; text-align:center; }
   .row-uploading { opacity:0.5; pointer-events:none; }
+  .loading { text-align:center; padding:3rem; color:#64748b; font-size:13px; }
+  .empty { text-align:center; padding:2rem; color:#64748b; font-size:12px; }
 
   input.hidden-file { display:none; }
 
-  .toast {
-    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
-    background:#1a1f2e; border:0.5px solid rgba(74,222,128,0.3); color:#4ade80;
-    font-size:12px; padding:10px 18px; border-radius:8px; opacity:0; pointer-events:none; transition:all .25s;
-  }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast { position:fixed; bottom:1.5rem; right:1.5rem; background:#1a1f2e; border:0.5px solid rgba(74,222,128,0.3); color:#4ade80; font-size:12px; padding:8px 16px; border-radius:8px; opacity:0; transition:opacity 0.3s; pointer-events:none; z-index:200; }
+  .toast.show { opacity:1; }
   .toast.err { border-color:rgba(248,113,113,0.3); color:#f87171; }
 </style>
 </head>
@@ -95,40 +72,44 @@
   <div class="header">
     <div>
       <h1>Delivery Note Upload</h1>
-      <p>Asset receiving — branch &amp; asset delivery notes</p>
+      <p>New Store Asset Receiving — Kamal</p>
     </div>
-    <div class="live-badge"><div class="live-dot"></div> Kamal</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="live-badge"><div class="live-dot"></div> Live</div>
+      <button class="btn" id="refreshBtn">↻ Refresh</button>
+    </div>
   </div>
 
   <span class="config-toggle" id="cfgToggle">setup / connection</span>
   <div class="config" id="cfgBox">
-    Apps Script Web App URL (same one behind the Receiving Tracker):
+    Apps Script Web App URL:
     <input id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec" />
-    <button id="cfgSave">Save</button>
   </div>
 
-  <div class="toolbar">
-    <div class="toolbar-left">
-      <select class="filter" id="branchFilter"><option value="ALL">All branches</option></select>
-      <input class="search" id="assetSearch" placeholder="Search asset…" />
-    </div>
-    <button class="btn-add" id="manualToggle">+ branch / asset not listed</button>
+  <div class="controls">
+    <label>Status:</label>
+    <select class="filter" id="statusFilter">
+      <option value="ALL">All Branches</option>
+      <option value="Receiving" selected>Receiving</option>
+      <option value="Live">Live</option>
+      <option value="Pending">Pending</option>
+    </select>
+    <label>Branch:</label>
+    <select class="filter" id="branchFilter"><option value="ALL">All Branches</option></select>
+    <input class="search" id="assetSearch" placeholder="Search asset…" />
+    <button class="btn" id="manualToggle" style="margin-left:auto;">+ branch / asset not listed</button>
   </div>
 
   <div class="manual-panel" id="manualPanel">
-    <div class="field"><label>Branch code</label><input id="manualBranch" placeholder="e.g. ALK-ASM002" /></div>
+    <div class="field"><label>Branch code</label><input id="manualBranch" placeholder="e.g. JED-SHZ002" /></div>
     <div class="field"><label>Asset</label><input id="manualAsset" placeholder="e.g. Freezer" /></div>
     <button id="manualSubmit">Add row</button>
   </div>
 
-  <div class="table-wrap">
+  <div class="table-card">
     <table>
-      <thead>
-        <tr><th>Branch</th><th>Asset</th><th>D.N. Not Signed</th><th>D.N. Signed</th></tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="4" class="empty">Connect the tracker above to load branches and assets.</td></tr>
-      </tbody>
+      <thead><tr><th>Branch</th><th>Asset</th><th>D.N. Not Signed</th><th>D.N. Signed</th></tr></thead>
+      <tbody id="tbody"><tr><td colspan="4" class="loading">Loading…</td></tr></tbody>
     </table>
   </div>
 
@@ -136,24 +117,21 @@
   <div class="toast" id="toast"></div>
 
 <script>
-const TRACKER_SHEET = 'Asset Tracker';
-const MANUAL_SHEET = 'Manual Additions';
-let APPS_SCRIPT_URL = localStorage.getItem('dn_apps_script_url') || '';
+const TRACKER_SHEET = 'Receiving Checklist';
+let APPS_URL = localStorage.getItem('dn_apps_script_url') || 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
 
 const cfgToggle = document.getElementById('cfgToggle');
 const cfgBox = document.getElementById('cfgBox');
 const cfgUrl = document.getElementById('cfgUrl');
-const cfgSave = document.getElementById('cfgSave');
-cfgUrl.value = APPS_SCRIPT_URL;
-if(!APPS_SCRIPT_URL) cfgBox.classList.add('show');
+cfgUrl.value = APPS_URL;
 cfgToggle.onclick = () => cfgBox.classList.toggle('show');
-cfgSave.onclick = () => {
-  APPS_SCRIPT_URL = cfgUrl.value.trim();
-  localStorage.setItem('dn_apps_script_url', APPS_SCRIPT_URL);
-  cfgBox.classList.remove('show');
-  init();
+cfgUrl.onchange = () => {
+  APPS_URL = cfgUrl.value.trim();
+  localStorage.setItem('dn_apps_script_url', APPS_URL);
+  loadAll();
 };
 
+const statusFilter = document.getElementById('statusFilter');
 const branchFilter = document.getElementById('branchFilter');
 const assetSearch = document.getElementById('assetSearch');
 const tbody = document.getElementById('tbody');
@@ -165,7 +143,8 @@ const manualBranch = document.getElementById('manualBranch');
 const manualAsset = document.getElementById('manualAsset');
 const manualSubmit = document.getElementById('manualSubmit');
 
-let rows = []; // { branch, asset, dnNotSigned, dnSigned }
+let checklist = [];   // raw rows from Receiving Checklist
+let branchStatusMap = {}; // branch -> status
 let pendingRow = null;
 
 manualToggle.onclick = () => manualPanel.classList.toggle('show');
@@ -176,107 +155,91 @@ function showToast(msg, isErr){
   setTimeout(() => toast.classList.remove('show'), 2600);
 }
 
-async function fetchSheet(sheet){
-  const res = await fetch(`${APPS_SCRIPT_URL}?sheet=${encodeURIComponent(sheet)}`);
+async function fetchSheet(name){
+  const res = await fetch(`${APPS_URL}?sheet=${encodeURIComponent(name)}`);
+  if(!res.ok) throw new Error('HTTP '+res.status);
   return res.json();
 }
 
 async function postAction(payload){
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
+  await fetch(APPS_URL, {
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
     body: JSON.stringify(payload)
   });
-  const data = await res.json().catch(() => ({}));
-  if(data && data.error) throw new Error(data.error);
-  return data;
 }
 
 async function loadAll(){
-  tbody.innerHTML = '<tr><td colspan="4" class="empty">Loading…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4" class="loading">Loading…</td></tr>';
   try{
-    const importJson = await fetchSheet('Import');
-    const headers = importJson.headers || [];
-    const branches = headers.filter(h => h && h !== 'Asset');
-    const base = [];
-    (importJson.rows || []).forEach(row => {
-      const asset = row['Asset'];
-      if(!asset) return;
-      branches.forEach(b => { if((row[b]||'').trim() !== '') base.push({ branch: b, asset }); });
+    const cl = await fetchSheet(TRACKER_SHEET);
+    checklist = cl.rows || [];
+
+    branchStatusMap = {};
+    const seen = new Set();
+    const branchList = [];
+    checklist.forEach(r=>{
+      const b=(r['Branch Code']||'').trim(), bs=(r['Branch Status']||'').trim();
+      if(b && !seen.has(b)){ seen.add(b); branchList.push(b); branchStatusMap[b]=bs; }
     });
+    branchList.sort();
 
-    try{
-      const manualJson = await fetchSheet(MANUAL_SHEET);
-      (manualJson.rows || []).forEach(r => {
-        const type = (r['Type']||'').trim();
-        const branch = (r['Branch']||'').trim();
-        const value = (r['Value']||'').trim();
-        if(type === 'Asset' && branch && value) base.push({ branch, asset: value });
-        if(type === 'Branch' && value && !branches.includes(value)) branches.push(value);
-      });
-    }catch(e){}
-
-    let trackerMap = {};
-    try{
-      const trackerJson = await fetchSheet(TRACKER_SHEET);
-      (trackerJson.rows || []).forEach(r => {
-        const key = `${(r['Branch Code']||'').trim()}|${(r['Asset']||'').trim()}`;
-        trackerMap[key] = {
-          dnNotSigned: r['D.N. Link Not Signed'] || '',
-          dnSigned: r['D.N. Link Signed'] || ''
-        };
-      });
-    }catch(e){}
-
-    rows = base.map(r => {
-      const key = `${r.branch}|${r.asset}`;
-      const t = trackerMap[key] || {};
-      return { branch: r.branch, asset: r.asset, dnNotSigned: t.dnNotSigned || '', dnSigned: t.dnSigned || '' };
-    });
-
-    branchFilter.innerHTML = '<option value="ALL">All branches</option>' +
-      branches.sort().map(b => `<option value="${b}">${b}</option>`).join('');
+    branchFilter.innerHTML = '<option value="ALL">All Branches</option>' +
+      branchList.map(b=>`<option value="${b}">${b}</option>`).join('');
 
     render();
   }catch(e){
-    tbody.innerHTML = '<tr><td colspan="4" class="empty">Could not load — check connection URL.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="4" class="empty">Could not load — check connection URL.<br>${e.message}</td></tr>`;
   }
 }
 
 function render(){
+  const status = statusFilter.value;
   const branchVal = branchFilter.value;
   const search = assetSearch.value.trim().toLowerCase();
-  const filtered = rows.filter(r =>
-    (branchVal === 'ALL' || r.branch === branchVal) &&
-    (!search || r.asset.toLowerCase().includes(search))
-  );
 
-  if(!filtered.length){ tbody.innerHTML = '<tr><td colspan="4" class="empty">No matching rows.</td></tr>'; return; }
+  const rows = checklist.filter(r=>{
+    const b=(r['Branch Code']||'').trim();
+    const bs=(r['Branch Status']||'').trim();
+    const asset=(r['Asset']||'').trim();
+    if(!b || !asset) return false;
+    if(status!=='ALL' && bs!==status) return false;
+    if(branchVal!=='ALL' && b!==branchVal) return false;
+    if(search && !asset.toLowerCase().includes(search)) return false;
+    return true;
+  });
 
-  tbody.innerHTML = filtered.map((r, i) => {
-    const idx = rows.indexOf(r);
-    const ns = r.dnNotSigned
-      ? `<a class="pill-link" href="${r.dnNotSigned}" target="_blank"><span class="pill notsigned">📄 view</span></a><button class="icon-btn" data-idx="${idx}" data-action="upload" title="Replace">✎</button>`
-      : `<span class="add-link" data-idx="${idx}" data-action="upload">+ add</span>`;
-    const sg = r.dnSigned
-      ? `<a class="pill-link" href="${r.dnSigned}" target="_blank"><span class="pill signed">✓ signed</span></a>`
-      : `<span class="pill none">None</span>`;
+  if(!rows.length){ tbody.innerHTML = '<tr><td colspan="4" class="empty">No matching rows.</td></tr>'; return; }
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const idx = checklist.indexOf(r);
+    const branch = (r['Branch Code']||'').trim();
+    const asset = (r['Asset']||'').trim();
+    const ns = r['D.N. Not Signed'] || '';
+    const s  = r['D.N. Signed'] || '';
+    const nsHtml = ns
+      ? `<div class="dn-cell"><a class="dn-link" href="${ns}" target="_blank">View D.N.</a><button class="dn-edit-btn" data-idx="${idx}" data-action="upload">✎</button></div>`
+      : `<div class="dn-cell"><button class="dn-add-btn" data-idx="${idx}" data-action="upload">+ Add</button></div>`;
+    const sHtml = s
+      ? `<div class="dn-cell"><a class="dn-link" href="${s}" target="_blank">View Signed</a></div>`
+      : `<span class="dn-none">None</span>`;
     return `<tr data-row="${idx}">
-      <td><span class="branch-code">${r.branch}</span></td>
-      <td><span class="asset-pill">${r.asset}</span></td>
-      <td><div class="dn-cell">${ns}</div></td>
-      <td><div class="dn-cell">${sg}</div></td>
+      <td><a class="branch-link" href="#">${branch}</a></td>
+      <td><span class="asset-pill">${asset}</span></td>
+      <td>${nsHtml}</td>
+      <td>${sHtml}</td>
     </tr>`;
   }).join('');
 }
 
+statusFilter.onchange = render;
 branchFilter.onchange = render;
 assetSearch.oninput = render;
+document.getElementById('refreshBtn').onclick = loadAll;
 
 tbody.addEventListener('click', (e) => {
   const target = e.target.closest('[data-action="upload"]');
   if(!target) return;
-  if(!APPS_SCRIPT_URL){ showToast('Set the connection URL first.', true); return; }
   pendingRow = parseInt(target.dataset.idx, 10);
   hiddenFile.value = '';
   hiddenFile.click();
@@ -294,7 +257,9 @@ function toBase64(file){
 hiddenFile.onchange = async () => {
   const file = hiddenFile.files[0];
   if(!file || pendingRow === null) return;
-  const r = rows[pendingRow];
+  const r = checklist[pendingRow];
+  const branch = (r['Branch Code']||'').trim();
+  const asset = (r['Asset']||'').trim();
   const tr = tbody.querySelector(`tr[data-row="${pendingRow}"]`);
   if(tr) tr.classList.add('row-uploading');
   try{
@@ -302,14 +267,15 @@ hiddenFile.onchange = async () => {
     await postAction({
       action: 'uploadDN',
       sheet: TRACKER_SHEET,
-      branch: r.branch,
-      asset: r.asset,
-      field: 'D.N. Link Not Signed',
+      branch, asset,
+      field: 'D.N. Not Signed',
       fileName: file.name,
       mimeType: file.type || 'application/octet-stream',
-      fileData: base64
+      fileData: base64,
+      user: 'Kamal',
+      timestamp: new Date().toLocaleString('en-GB')
     });
-    showToast(`Uploaded for ${r.branch} / ${r.asset}`);
+    showToast(`Uploaded for ${branch} / ${asset}`);
     await loadAll();
   }catch(err){
     showToast('Upload failed: ' + err.message, true);
@@ -318,29 +284,32 @@ hiddenFile.onchange = async () => {
 };
 
 manualSubmit.onclick = async () => {
-  const branch = manualBranch.value.trim();
+  const branch = manualBranch.value.trim().toUpperCase();
   const asset = manualAsset.value.trim();
   if(!branch || !asset){ showToast('Enter both branch and asset.', true); return; }
-  if(!APPS_SCRIPT_URL){ showToast('Set the connection URL first.', true); return; }
   manualSubmit.disabled = true; manualSubmit.textContent = 'Adding…';
   try{
-    await postAction({ action: 'addManual', sheet: MANUAL_SHEET, type: 'Asset', value: asset, branch });
-    manualBranch.value = ''; manualAsset.value = '';
+    const existingStatus = branchStatusMap[branch] || 'Receiving';
+    await postAction({
+      action: 'addManualAsset',
+      sheet: TRACKER_SHEET,
+      branch, asset,
+      branchStatus: existingStatus,
+      user: 'Kamal',
+      timestamp: new Date().toLocaleString('en-GB')
+    });
+    manualBranch.value=''; manualAsset.value='';
     manualPanel.classList.remove('show');
-    showToast('Row added.');
-    await loadAll();
+    showToast('Row added — refreshing…');
+    setTimeout(loadAll, 1500);
   }catch(e){
     showToast('Could not add row: ' + e.message, true);
   }
   manualSubmit.disabled = false; manualSubmit.textContent = 'Add row';
 };
 
-function init(){
-  if(!APPS_SCRIPT_URL) return;
-  loadAll();
-  setInterval(loadAll, 30000);
-}
-init();
+loadAll();
+setInterval(loadAll, 30000);
 </script>
 </body>
 </html>
