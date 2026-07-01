@@ -1,428 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Delivery Note Upload</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family:'DM Sans', sans-serif; background:#0f1117; color:#e2e8f0; min-height:100vh; padding:1.5rem; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>D.N. Upload — Space Planning</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f1117; color: #e2e8f0; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
 
-  .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; padding-bottom:1rem; border-bottom:0.5px solid rgba(255,255,255,0.08); }
-  .header h1 { font-size:22px; font-weight:700; color:#fff; letter-spacing:-0.3px; }
-  .header p  { font-size:12px; color:#f1f5f9; margin-top:3px; font-weight:500; }
-  .live-badge { display:flex; align-items:center; gap:6px; font-size:11px; color:#22d3ee; background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); padding:5px 12px; border-radius:20px; }
-  .live-dot { width:6px; height:6px; border-radius:50%; background:#22d3ee; animation:pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .btn { background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); color:#22d3ee; font-size:12px; padding:6px 14px; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.15s; }
-  .btn:hover { background:rgba(34,211,238,0.15); }
+    /* ── Header ── */
+    .header { background: #1a1f2e; border-bottom: 0.5px solid rgba(255,255,255,0.07); padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .header-title { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+    .header-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .missing-pill { font-size: 11px; padding: 4px 12px; border-radius: 20px; background: rgba(248,113,113,0.12); border: 0.5px solid rgba(248,113,113,0.3); color: #f87171; font-weight: 600; }
+    .missing-pill.ok { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: #4ade80; }
+    .user-pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: rgba(34,211,238,0.1); border: 0.5px solid rgba(34,211,238,0.2); color: #22d3ee; }
 
-  /* ── To-do bubble ── */
-  .todo-bar { display:flex; align-items:center; gap:10px; margin-bottom:1.1rem; padding:10px 16px; border-radius:10px; background:rgba(251,191,36,0.08); border:0.5px solid rgba(251,191,36,0.25); }
-  .todo-bar.clear { background:rgba(74,222,128,0.08); border-color:rgba(74,222,128,0.25); }
-  .todo-count { font-family:'DM Mono',monospace; font-size:18px; font-weight:700; color:#fbbf24; }
-  .todo-bar.clear .todo-count { color:#4ade80; }
-  .todo-text { font-size:12px; color:#f1f5f9; }
-  .todo-text b { color:#fff; }
+    /* ── Login ── */
+    .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+    .login-card { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 2rem; width: 320px; }
+    .login-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 0.25rem; }
+    .login-card p { font-size: 12px; color: #64748b; margin-bottom: 1.5rem; }
+    .login-error { font-size: 11px; color: #f87171; margin-top: 8px; display: none; }
 
-  .controls { display:flex; gap:10px; margin-bottom:1.1rem; align-items:center; flex-wrap:wrap; }
-  .controls label { font-size:12px; color:#f1f5f9; font-weight:500; }
-  select.filter { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.12); color:#e2e8f0; font-size:12px; padding:6px 10px; border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; }
-  select.filter:focus { outline:none; border-color:rgba(34,211,238,0.4); }
+    /* ── Filters ── */
+    .filters { padding: 0.75rem 1.5rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
+    .filter-btn { font-size: 11px; padding: 4px 12px; border-radius: 20px; border: 0.5px solid rgba(255,255,255,0.1); background: transparent; color: #94a3b8; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+    .filter-btn.active { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.3); color: #22d3ee; }
+    .filter-btn.red.active { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.3); color: #f87171; }
+    .search-input { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 11px; padding: 5px 10px; border-radius: 6px; font-family: 'DM Sans', sans-serif; width: 180px; }
+    .search-input:focus { outline: none; border-color: rgba(34,211,238,0.3); }
 
-  .manual-panel { display:none; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:1rem; }
-  .manual-panel.show { display:flex; }
-  .manual-panel .field { display:flex; flex-direction:column; gap:4px; }
-  .manual-panel label { font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:#94a3b8; font-weight:600; }
-  .manual-panel input { font-family:'DM Sans',sans-serif; font-size:12px; color:#e2e8f0; background:#0f1117; border:0.5px solid rgba(255,255,255,0.12); border-radius:6px; padding:7px 9px; width:170px; }
-  .manual-panel button { font-family:'DM Sans',sans-serif; font-size:12px; font-weight:700; background:rgba(74,222,128,0.08); border:0.5px solid rgba(74,222,128,0.2); color:#4ade80; border-radius:6px; padding:8px 16px; cursor:pointer; }
+    /* ── Table ── */
+    .table-wrap { padding: 1rem 1.5rem; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; border-bottom: 0.5px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    tbody tr { border-bottom: 0.5px solid rgba(255,255,255,0.04); transition: background 0.1s; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 8px 10px; vertical-align: middle; }
 
-  /* ── Branch pill / card ── */
-  .branch-card { background:#1a1f2e; border:0.5px solid rgba(255,255,255,0.07); border-radius:10px; margin-bottom:0.85rem; overflow:hidden; }
-  .branch-pill-head { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1.1rem; cursor:pointer; background:rgba(255,255,255,0.02); }
-  .branch-pill-head:hover { background:rgba(255,255,255,0.04); }
-  .branch-left { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .branch-code { color:#fff; font-weight:700; font-size:14px; }
-  .status-chip { font-size:10px; padding:2px 9px; border-radius:10px; font-weight:600; }
-  .status-Receiving { background:rgba(34,211,238,0.12); color:#22d3ee; }
-  .status-Live      { background:rgba(74,222,128,0.12); color:#4ade80; }
-  .status-Pending   { background:rgba(251,191,36,0.12); color:#fbbf24; }
-  .pill { font-size:10px; padding:2px 9px; border-radius:10px; font-weight:600; }
-  .pill-missing { background:rgba(251,191,36,0.1); color:#fbbf24; }
-  .pill-done    { background:rgba(74,222,128,0.1); color:#4ade80; }
-  .chevron { color:#64748b; font-size:11px; transition:transform 0.2s; }
+    /* ── DN Cell ── */
+    .dn-cell { display: flex; align-items: center; gap: 6px; }
+    .dn-status { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+    .dn-signed   { background: rgba(74,222,128,0.12); color: #4ade80; }
+    .dn-unsigned { background: rgba(251,191,36,0.12); color: #fbbf24; }
+    .dn-missing  { background: rgba(248,113,113,0.12); color: #f87171; }
+    .upload-btn { font-size: 10px; padding: 2px 8px; border-radius: 5px; background: rgba(167,139,250,0.1); border: 0.5px solid rgba(167,139,250,0.25); color: #a78bfa; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+    .upload-btn:hover { background: rgba(167,139,250,0.18); }
+    .upload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .view-link { font-size: 10px; color: #22d3ee; text-decoration: none; }
+    .view-link:hover { text-decoration: underline; }
+    .progress-mini { height: 3px; border-radius: 2px; background: rgba(255,255,255,0.06); margin-top: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 2px; background: #22d3ee; transition: width 0.3s; }
 
-  table { width:100%; border-collapse:collapse; font-size:12px; }
-  th { text-align:center; padding:8px 10px; color:#f1f5f9; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.4px; border-bottom:1px solid rgba(255,255,255,0.25); border-right:0.5px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.02); }
-  th:first-child { text-align:left; } th:last-child { border-right:none; }
-  td { padding:8px 10px; color:#f1f5f9; text-align:center; border-bottom:0.5px solid rgba(255,255,255,0.08); border-right:0.5px solid rgba(255,255,255,0.05); }
-  td:first-child { text-align:left; } td:last-child { border-right:none; }
-  tbody tr:nth-child(odd)  td { background:rgba(255,255,255,0.02); }
-  tbody tr:nth-child(even) td { background:rgba(255,255,255,0.04); }
-  tbody tr:hover td { background:rgba(255,255,255,0.07); }
+    /* ── Upload progress overlay ── */
+    .upload-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 200; }
+    .upload-box { background: #1a1f2e; border: 0.5px solid rgba(167,139,250,0.3); border-radius: 12px; padding: 1.5rem 2rem; text-align: center; min-width: 260px; }
+    .upload-box p { font-size: 13px; color: #e2e8f0; margin-bottom: 0.75rem; }
+    .upload-box .spinner { width: 28px; height: 28px; border: 3px solid rgba(167,139,250,0.2); border-top-color: #a78bfa; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 0.75rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-  .asset-pill { display:inline-block; font-size:11px; font-weight:500; color:#fb7185; background:rgba(251,113,133,0.1); border:0.5px solid rgba(251,113,133,0.2); padding:4px 11px; border-radius:20px; }
+    /* ── Toast ── */
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1a1f2e; border: 0.5px solid rgba(74,222,128,0.3); color: #4ade80; font-size: 12px; padding: 8px 16px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 300; }
 
-  .dn-cell { display:inline-flex; align-items:center; gap:6px; justify-content:center; }
-  .dn-link { color:#22d3ee; font-size:11px; text-decoration:none; }
-  .dn-link:hover { text-decoration:underline; }
-  .dn-add-btn { font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2); color:#22d3ee; cursor:pointer; font-family:'DM Sans',sans-serif; }
-  .dn-edit-btn { font-size:9px; padding:1px 6px; border-radius:4px; background:rgba(255,255,255,0.05); border:0.5px solid rgba(255,255,255,0.1); color:#64748b; cursor:pointer; font-family:'DM Sans',sans-serif; }
-  .dn-none { font-size:10px; color:#475569; }
+    /* ── Forms ── */
+    .form-input { width: 100%; background: #0f1117; border: 0.5px solid rgba(255,255,255,0.12); color: #e2e8f0; font-size: 12px; padding: 8px 10px; border-radius: 6px; font-family: 'DM Sans', sans-serif; }
+    .form-input:focus { outline: none; border-color: rgba(34,211,238,0.4); }
+    .btn { font-size: 12px; padding: 7px 16px; border-radius: 7px; border: 0.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #e2e8f0; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all 0.15s; }
+    .btn-primary { background: rgba(167,139,250,0.1); border-color: rgba(167,139,250,0.3); color: #a78bfa; }
 
-  .row-uploading { opacity:0.5; pointer-events:none; }
-  .loading { text-align:center; padding:3rem; color:#64748b; font-size:13px; }
-  .empty { text-align:center; padding:2rem; color:#64748b; font-size:12px; }
+    /* ── Activity Log ── */
+    .log-wrap { padding: 0 1.5rem 2rem; }
+    .log-title { font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; padding-top: 1rem; border-top: 0.5px solid rgba(255,255,255,0.06); }
+    .log-entry { display: flex; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid rgba(255,255,255,0.04); font-size: 11px; }
+    .log-dot { width: 7px; height: 7px; border-radius: 50%; background: #a78bfa; margin-top: 3px; flex-shrink: 0; }
+    .log-ts { color: #475569; white-space: nowrap; }
 
-  input.hidden-file { display:none; }
-
-  .toast { position:fixed; bottom:1.5rem; right:1.5rem; background:#1a1f2e; border:0.5px solid rgba(74,222,128,0.3); color:#4ade80; font-size:12px; padding:8px 16px; border-radius:8px; opacity:0; transition:opacity 0.3s; pointer-events:none; z-index:200; }
-  .toast.show { opacity:1; }
-  .toast.err { border-color:rgba(248,113,113,0.3); color:#f87171; }
-</style>
+    /* hide file input */
+    input[type=file] { display: none; }
+  </style>
 </head>
 <body>
 
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-card">
+      <h2>📎 D.N. Upload</h2>
+      <p>Space Planning & Store Improvement</p>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;">Name</label>
+        <select id="login-user" class="form-input" onchange="togglePinField()">
+          <option value="">Select your name</option>
+          <option value="Kamal">Kamal</option>
+          <option value="Ahmed Khalil">Ahmed Khalil</option>
+          <option value="Khalid">Khalid</option>
+          <option value="Viewer">Viewer (View Only)</option>
+        </select>
+      </div>
+      <div id="pin-wrap" style="margin-bottom:14px;">
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;">PIN</label>
+        <input id="login-pin" type="password" class="form-input" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Sign In</button>
+      <div id="login-error" class="login-error">Incorrect PIN. Please try again.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app" style="display:none;">
+
+  <!-- Header -->
   <div class="header">
     <div>
-      <h1>Delivery Note Upload</h1>
-      <p>New Store Asset Receiving — Kamal</p>
+      <div class="header-title">📎 D.N. Upload Portal</div>
+      <div class="header-sub">Space Planning & Store Improvement</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <div class="live-badge"><div class="live-dot"></div> Live</div>
-      <button class="btn" id="refreshBtn">↻ Refresh</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="missing-pill" class="missing-pill">Loading...</span>
+      <span id="current-user-pill" class="user-pill"></span>
+      <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="loadData()">↻ Refresh</button>
+      <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="signOut()">Sign Out</button>
     </div>
   </div>
 
-  <div class="todo-bar" id="todoBar">
-    <span class="todo-count" id="todoCount">0</span>
-    <span class="todo-text" id="todoText">delivery notes still missing</span>
+  <!-- Filters -->
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn red" onclick="setFilter('missing',this)">Missing Only</button>
+    <button class="filter-btn" onclick="setFilter('unsigned',this)">Unsigned</button>
+    <button class="filter-btn" onclick="setFilter('signed',this)">Signed</button>
+    <input class="search-input" id="branch-search" placeholder="Search branch..." oninput="applyFilter()" />
+    <span id="count-label" style="font-size:11px;color:#475569;margin-left:auto;"></span>
   </div>
 
-  <div class="controls">
-    <label>Branch Status:</label>
-    <select class="filter" id="statusFilter">
-      <option value="ALL">All Branches</option>
-      <option value="Receiving" selected>Receiving</option>
-      <option value="Live">Live</option>
-      <option value="Pending">Pending</option>
-    </select>
-    <label>Branch:</label>
-    <select class="filter" id="branchFilter"><option value="ALL">All Branches</option></select>
-    <label>D.N. Status:</label>
-    <select class="filter" id="dnStatusFilter">
-      <option value="ALL">All</option>
-      <option value="Missing">Missing (No D.N.)</option>
-      <option value="Awaiting">Awaiting Signature</option>
-      <option value="Signed">Signed</option>
-    </select>
-    <label>Asset:</label>
-    <select class="filter" id="assetFilter"><option value="ALL">All Assets</option></select>
-    <button class="btn" id="manualToggle" style="margin-left:auto;">+ branch / asset not listed</button>
+  <!-- Table -->
+  <div class="table-wrap">
+    <div id="loading" style="text-align:center;padding:3rem;color:#475569;font-size:13px;">Loading branches...</div>
+    <table id="dn-table" style="display:none;">
+      <thead>
+        <tr>
+          <th style="min-width:120px;">Branch</th>
+          <th style="min-width:80px;">Status</th>
+          <th>Freebolt & Heavy Rack</th>
+          <th>Sign Board</th>
+          <th>Curtains</th>
+          <th>Cold Room</th>
+          <th>Fridges & Freezers</th>
+          <th>Access Points & CCTV</th>
+          <th>Air Condition</th>
+        </tr>
+      </thead>
+      <tbody id="dn-tbody"></tbody>
+    </table>
   </div>
 
-  <div class="manual-panel" id="manualPanel">
-    <div class="field"><label>Branch code</label><input id="manualBranch" placeholder="e.g. JED-SHZ002" /></div>
-    <div class="field"><label>Asset</label><input id="manualAsset" placeholder="e.g. Freezer" /></div>
-    <button id="manualSubmit">Add row</button>
+  <!-- Activity Log -->
+  <div class="log-wrap">
+    <div class="log-title">📋 Upload Activity Log</div>
+    <div id="activity-log"><p style="font-size:11px;color:#475569;">Loading...</p></div>
   </div>
 
-  <div id="branchList"><div class="loading">Loading…</div></div>
+</div>
 
-  <input type="file" id="hiddenFile" class="hidden-file" accept=".pdf,image/*" />
-  <div class="toast" id="toast"></div>
+<!-- Upload overlay -->
+<div class="upload-overlay" id="upload-overlay">
+  <div class="upload-box">
+    <div class="spinner"></div>
+    <p id="upload-status-text">Uploading file...</p>
+    <div class="progress-mini" style="width:200px;margin:0 auto;">
+      <div class="progress-fill" id="upload-progress" style="width:0%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelected()" />
+
+<!-- Toast -->
+<div id="toast"></div>
 
 <script>
-const TRACKER_SHEET = 'Receiving Checklist';
-const APPS_URL = 'https://script.google.com/macros/s/AKfycbwsYQoaCfmuqtrkJJfAKQhsjhkcY4o1fVBp9Crl_fudG-69pePmqNDtNo0suZvp4Pnyfw/exec';
+  const APPS_URL = 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
 
-/* Only these assets carry a delivery note. Grouped sets share one D.N. cell. */
-const GROUPS = [
-  { name: 'Chillers & Freezers',   assets: ['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'] },
-  { name: 'Coldroom',              assets: ['Coldroom'] },
-  { name: 'CCTV & Access Points',  assets: ['CCTV','Access Points'] },
-  { name: 'Freebolt & Heavy Racks',assets: ['Freebolt','Heavyrack','Heavy Rack'] },
-  { name: 'SignBoard',             assets: ['SignBoard'] },
-  { name: 'AC',                    assets: ['Air Condition'] },
-  { name: 'Curtain',               assets: ['Curtain'] }
-];
-const ASSET_TO_GROUP = {};
-GROUPS.forEach(g => g.assets.forEach(a => ASSET_TO_GROUP[a] = g.name));
+  const USERS = { 'Kamal': '1234', 'Ahmed Khalil': '1234', 'Khalid': '6969', 'Viewer': null };
 
-const statusFilter = document.getElementById('statusFilter');
-const branchFilter = document.getElementById('branchFilter');
-const dnStatusFilter = document.getElementById('dnStatusFilter');
-const assetFilter = document.getElementById('assetFilter');
-const branchList = document.getElementById('branchList');
-const hiddenFile = document.getElementById('hiddenFile');
-const toast = document.getElementById('toast');
-const manualToggle = document.getElementById('manualToggle');
-const manualPanel = document.getElementById('manualPanel');
-const manualBranch = document.getElementById('manualBranch');
-const manualAsset = document.getElementById('manualAsset');
-const manualSubmit = document.getElementById('manualSubmit');
-const todoBar = document.getElementById('todoBar');
-const todoCount = document.getElementById('todoCount');
-const todoText = document.getElementById('todoText');
+  const DN_GROUPS = [
+    { key:'freebolt',   name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
+    { key:'signboard',  name:'Sign Board',            assets:['SignBoard','Sign Board'] },
+    { key:'curtain',    name:'Curtains',              assets:['Curtain'] },
+    { key:'coldroom',   name:'Cold Room',             assets:['Coldroom','Cold Room'] },
+    { key:'fridges',    name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'] },
+    { key:'apcctv',     name:'Access Points & CCTV',  assets:['Access Points','CCTV'] },
+    { key:'ac',         name:'Air Condition',         assets:['Air Condition'] },
+  ];
 
-let checklist = [];
-let groupedRows = []; // { branch, branchStatus, group, dnNotSigned, dnSigned, repIdx }
-let openBranches = new Set();
-let pendingGroupIdx = null;
+  let currentUser = '';
+  let isViewer    = false;
+  let allBranches = [];
+  let checklistData = [];
+  let currentFilter = 'all';
+  let pendingUpload = null; /* { branch, groupKey } */
+  let activityLog = [];
 
-manualToggle.onclick = () => manualPanel.classList.toggle('show');
-
-function showToast(msg, isErr){
-  toast.textContent = msg;
-  toast.className = 'toast show' + (isErr ? ' err' : '');
-  setTimeout(() => toast.classList.remove('show'), 2600);
-}
-
-async function fetchSheet(name){
-  const res = await fetch(`${APPS_URL}?sheet=${encodeURIComponent(name)}`);
-  if(!res.ok) throw new Error('HTTP '+res.status);
-  return res.json();
-}
-
-async function postAction(payload){
-  let res;
-  try{
-    res = await fetch(APPS_URL, {
-      method:'POST',
-      redirect: 'follow',
-      headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify(payload)
-    });
-  }catch(err){
-    throw new Error('Network error: ' + err.message);
-  }
-  let data = {};
-  try{ data = await res.json(); }catch(e){ /* non-JSON — treat as success */ }
-  if(data && data.error) throw new Error(data.error);
-  return data;
-}
-
-async function loadAll(){
-  branchList.innerHTML = '<div class="loading">Loading…</div>';
-  try{
-    const cl = await fetchSheet(TRACKER_SHEET);
-    checklist = cl.rows || [];
-    buildGroupedRows();
-
-    const branches = [...new Set(checklist.map(r=>(r['Branch Code']||'').trim()).filter(Boolean))].sort();
-    branchFilter.innerHTML = '<option value="ALL">All Branches</option>' +
-      branches.map(b=>`<option value="${b}">${b}</option>`).join('');
-
-    assetFilter.innerHTML = '<option value="ALL">All Assets</option>' +
-      GROUPS.map(g=>`<option value="${g.name}">${g.name}</option>`).join('');
-
-    render();
-  }catch(e){
-    branchList.innerHTML = `<div class="empty">Could not load data.<br>${e.message}</div>`;
-  }
-}
-
-function buildGroupedRows(){
-  groupedRows = [];
-  const byBranch = {};
-  checklist.forEach((r, idx) => {
-    const branch = (r['Branch Code']||'').trim();
-    const asset = (r['Asset']||'').trim();
-    if(!branch || !asset) return;
-    const group = ASSET_TO_GROUP[asset];
-    if(!group) return; // only DN-relevant assets
-    if(!byBranch[branch]) byBranch[branch] = {};
-    if(!byBranch[branch][group]) byBranch[branch][group] = { idx, row:r };
-    // prefer a row that already has a D.N. value as the representative
-    else if((r['D.N. Not Signed']||r['D.N. Signed']) && !(byBranch[branch][group].row['D.N. Not Signed']||byBranch[branch][group].row['D.N. Signed'])) {
-      byBranch[branch][group] = { idx, row:r };
+  /* ══ LOGIN ══ */
+  function doLogin() {
+    const user = document.getElementById('login-user').value;
+    const pin  = document.getElementById('login-pin').value;
+    if (!user) { showLoginError('Please select your name.'); return; }
+    /* Viewer has no PIN */
+    if (USERS[user] === null) {
+      /* no pin needed */
+    } else if (USERS[user] !== pin) {
+      showLoginError('Incorrect PIN. Please try again.'); return;
     }
-  });
+    currentUser = user;
+    isViewer    = user === 'Viewer';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('current-user-pill').textContent = isViewer ? '👁 View Only' : user;
+    loadData();
+  }
 
-  Object.keys(byBranch).sort().forEach(branch => {
-    GROUPS.forEach(g => {
-      const rep = byBranch[branch][g.name];
-      if(!rep) return;
-      groupedRows.push({
-        branch,
-        branchStatus: (rep.row['Branch Status']||'').trim(),
-        group: g.name,
-        dnNotSigned: rep.row['D.N. Not Signed'] || '',
-        dnSigned: rep.row['D.N. Signed'] || '',
-        repIdx: rep.idx
+  function togglePinField() {
+    const user = document.getElementById('login-user').value;
+    const wrap = document.getElementById('pin-wrap');
+    wrap.style.display = user === 'Viewer' ? 'none' : 'block';
+  }
+
+  function showLoginError(msg) {
+    const el = document.getElementById('login-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function signOut() {
+    currentUser = '';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('login-pin').value = '';
+    document.getElementById('login-error').style.display = 'none';
+  }
+
+  /* ══ LOAD DATA ══ */
+  async function loadData() {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('dn-table').style.display = 'none';
+    try {
+      /* Fetch branches, checklist, and activity log in parallel */
+      const [bcRes, clRes, logRes] = await Promise.all([
+        fetch(`${APPS_URL}?sheet=Branch%20Codes`).then(r=>r.json()),
+        fetch(`${APPS_URL}?sheet=Receiving%20Checklist`).then(r=>r.json()),
+        fetch(`${APPS_URL}?sheet=DN%20Upload%20Log`).then(r=>r.json()).catch(()=>({rows:[]}))
+      ]);
+
+      /* Build branch list (exclude Pending) */
+      allBranches = (bcRes.rows||[])
+        .filter(r=>r['Branch Status']!=='Pending')
+        .map(r=>({ code:r['Branch Code'], status:r['Branch Status'] }))
+        .sort((a,b)=>a.code.localeCompare(b.code));
+
+      checklistData = clRes.rows||[];
+      activityLog   = (logRes.rows||[]).slice(-50).reverse();
+
+      renderTable();
+      renderLog();
+      updateMissingPill();
+    } catch(e) {
+      document.getElementById('loading').textContent = 'Failed to load: ' + e.message;
+    }
+  }
+
+  /* ══ BUILD TABLE ══ */
+  function renderTable() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('dn-table').style.display = 'table';
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const search = document.getElementById('branch-search').value.toLowerCase();
+    const tbody  = document.getElementById('dn-tbody');
+    tbody.innerHTML = '';
+    let shown = 0;
+
+    allBranches.forEach(branch => {
+      if (search && !branch.code.toLowerCase().includes(search)) return;
+      const assets = checklistData.filter(r=>(r['Branch Code']||'').trim()===branch.code);
+      const groups = getDNGroups(assets);
+
+      /* Filter logic */
+      if (currentFilter === 'missing'  && !groups.some(g=>g.status==='missing'))  return;
+      if (currentFilter === 'unsigned' && !groups.some(g=>g.status==='unsigned')) return;
+      if (currentFilter === 'signed'   && !groups.every(g=>g.status==='signed'))  return;
+
+      shown++;
+      const statusColor = { Receiving:'#22d3ee', Live:'#4ade80', Pending:'#fbbf24' }[branch.status]||'#94a3b8';
+      const tr = document.createElement('tr');
+      tr.dataset.branch = branch.code;
+
+      let html = `
+        <td style="font-weight:700;color:#f1f5f9;">${branch.code}</td>
+        <td><span style="font-size:10px;font-weight:600;color:${statusColor};">${branch.status}</span></td>`;
+
+      groups.forEach((g,i) => {
+        html += `<td><div class="dn-cell">`;
+        if (g.status === 'signed') {
+          html += `<span class="dn-status dn-signed">✓ Signed</span>`;
+          if (g.link) html += `<a href="${g.link}" target="_blank" class="view-link">View</a>`;
+        } else if (g.status === 'unsigned') {
+          html += `<span class="dn-status dn-unsigned">📎 Uploaded</span>`;
+          if (g.link) html += `<a href="${g.link}" target="_blank" class="view-link">View</a>`;
+          html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}',this)">↑ Replace</button>`;
+        } else {
+          html += `<span class="dn-status dn-missing">Missing</span>`;
+          html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}',this)">↑ Upload</button>`;
+        }
+        html += `</div></td>`;
       });
+
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
     });
-  });
-}
 
-function dnState(gr){
-  if(gr.dnSigned) return 'Signed';
-  if(gr.dnNotSigned) return 'Awaiting';
-  return 'Missing';
-}
-
-function render(){
-  const statusVal = statusFilter.value;
-  const branchVal = branchFilter.value;
-  const dnVal = dnStatusFilter.value;
-  const assetVal = assetFilter.value;
-
-  const filtered = groupedRows.filter(gr => {
-    if(statusVal!=='ALL' && gr.branchStatus!==statusVal) return false;
-    if(branchVal!=='ALL' && gr.branch!==branchVal) return false;
-    if(assetVal!=='ALL' && gr.group!==assetVal) return false;
-    if(dnVal!=='ALL' && dnState(gr)!==dnVal) return false;
-    return true;
-  });
-
-  // to-do bubble counts missing-or-awaiting across the *currently filtered branch-status scope* (not double filtered by dnVal/assetVal, so it stays meaningful)
-  const scopeForTodo = groupedRows.filter(gr => (statusVal==='ALL'||gr.branchStatus===statusVal) && (branchVal==='ALL'||gr.branch===branchVal));
-  const missingCount = scopeForTodo.filter(gr => dnState(gr)==='Missing').length;
-  if(missingCount===0){
-    todoBar.classList.add('clear');
-    todoCount.textContent='0';
-    todoText.innerHTML = 'All delivery notes uploaded ✓';
-  } else {
-    todoBar.classList.remove('clear');
-    todoCount.textContent = missingCount;
-    todoText.innerHTML = `delivery note${missingCount===1?'':'s'} still <b>missing</b>`;
+    document.getElementById('count-label').textContent = `${shown} branches`;
   }
 
-  if(!filtered.length){ branchList.innerHTML = '<div class="empty">No matching rows.</div>'; return; }
+  function getDNGroups(assets) {
+    return DN_GROUPS.map(g => {
+      const groupAssets = assets.filter(r=>g.assets.includes((r['Asset']||'').trim()));
+      const signed   = groupAssets.find(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+      const unsigned = groupAssets.find(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
+      if (signed)   return { status:'signed',   link: signed['D.N. Signed'] };
+      if (unsigned) return { status:'unsigned',  link: unsigned['D.N. Not Signed'] };
+      return { status:'missing', link:'' };
+    });
+  }
 
-  const byBranch = {};
-  const branchOrder = [];
-  filtered.forEach(gr => {
-    if(!byBranch[gr.branch]){ byBranch[gr.branch]=[]; branchOrder.push(gr.branch); }
-    byBranch[gr.branch].push(gr);
-  });
+  function updateMissingPill() {
+    let missing = 0;
+    allBranches.forEach(b => {
+      const assets = checklistData.filter(r=>(r['Branch Code']||'').trim()===b.code);
+      getDNGroups(assets).forEach(g=>{ if(g.status==='missing') missing++; });
+    });
+    const pill = document.getElementById('missing-pill');
+    if (missing === 0) {
+      pill.textContent = '✓ All D.N.s uploaded';
+      pill.className = 'missing-pill ok';
+    } else {
+      pill.textContent = `📋 ${missing} Missing D.N.s`;
+      pill.className = 'missing-pill';
+    }
+  }
 
-  branchList.innerHTML = '';
-  branchOrder.forEach(branch => {
-    const rows = byBranch[branch];
-    const missing = rows.filter(r=>dnState(r)==='Missing').length;
-    const isOpen = openBranches.has(branch);
-    const card = document.createElement('div');
-    card.className = 'branch-card';
-    card.innerHTML = `
-      <div class="branch-pill-head" data-branch="${branch}">
-        <div class="branch-left">
-          <span class="branch-code">${branch}</span>
-          <span class="status-chip status-${rows[0].branchStatus}">${rows[0].branchStatus||'—'}</span>
-          ${missing>0 ? `<span class="pill pill-missing">${missing} missing</span>` : `<span class="pill pill-done">✓ all uploaded</span>`}
+  /* ══ FILTER ══ */
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilter();
+  }
+
+  /* ══ FILE UPLOAD ══ */
+  function triggerUpload(branch, groupKey, btn) {
+    pendingUpload = { branch, groupKey };
+    document.getElementById('file-input').click();
+  }
+
+  function handleFileSelected() {
+    const file = document.getElementById('file-input').files[0];
+    if (!file || !pendingUpload) return;
+    uploadFile(file, pendingUpload.branch, pendingUpload.groupKey);
+    document.getElementById('file-input').value = '';
+  }
+
+  async function uploadFile(file, branch, groupKey) {
+    const overlay = document.getElementById('upload-overlay');
+    const statusText = document.getElementById('upload-status-text');
+    const progressBar = document.getElementById('upload-progress');
+    overlay.style.display = 'flex';
+    statusText.textContent = 'Reading file...';
+    progressBar.style.width = '20%';
+
+    try {
+      /* Read file as base64 */
+      const base64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result.split(',')[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+
+      statusText.textContent = 'Uploading to Drive...';
+      progressBar.style.width = '50%';
+
+      const group = DN_GROUPS.find(g=>g.key===groupKey);
+      const fileName = `${branch}_${group.name.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.${file.name.split('.').pop()}`;
+
+      const payload = {
+        action:     'uploadDNFile',
+        branch,
+        groupKey,
+        groupName:  group.name,
+        assets:     group.assets,
+        fileName,
+        mimeType:   file.type,
+        base64,
+        user:       currentUser,
+        timestamp:  new Date().toLocaleString('en-GB')
+      };
+
+      statusText.textContent = 'Saving link to sheet...';
+      progressBar.style.width = '80%';
+
+      const res = await fetch(APPS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      progressBar.style.width = '100%';
+
+      if (data.error) throw new Error(data.error);
+
+      /* Update local checklist data with new link */
+      checklistData.forEach(r => {
+        if ((r['Branch Code']||'').trim()===branch && group.assets.includes((r['Asset']||'').trim())) {
+          r['D.N. Not Signed'] = data.fileUrl;
+        }
+      });
+
+      /* Add to local activity log */
+      activityLog.unshift({
+        Timestamp: new Date().toLocaleString('en-GB'),
+        User: currentUser,
+        'Branch Code': branch,
+        'D.N. Group': group.name,
+        'File Name': fileName,
+        'File URL': data.fileUrl
+      });
+
+      overlay.style.display = 'none';
+      showToast('✓ Uploaded successfully!');
+      applyFilter();
+      updateMissingPill();
+      renderLog();
+    } catch(e) {
+      overlay.style.display = 'none';
+      showToast('✗ Upload failed: ' + e.message, true);
+    }
+  }
+
+  /* ══ ACTIVITY LOG ══ */
+  function renderLog() {
+    const container = document.getElementById('activity-log');
+    if (!activityLog.length) {
+      container.innerHTML = '<p style="font-size:11px;color:#475569;">No uploads yet.</p>';
+      return;
+    }
+    container.innerHTML = activityLog.slice(0,30).map(e=>`
+      <div class="log-entry">
+        <div class="log-dot"></div>
+        <div style="flex:1;">
+          <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;">
+            <span style="font-weight:600;color:#e2e8f0;">${e['Branch Code']||''}</span>
+            <span style="color:#a78bfa;">${e['D.N. Group']||''}</span>
+            <span style="color:#94a3b8;font-size:10px;">uploaded by ${e['User']||''}</span>
+            <span class="log-ts" style="margin-left:auto;">${e['Timestamp']||''}</span>
+          </div>
+          <div style="font-size:10px;color:#475569;margin-top:2px;">${e['File Name']||''}</div>
         </div>
-        <span class="chevron" style="transform:rotate(${isOpen?'0deg':'-90deg'})">▼</span>
-      </div>
-      <div class="branch-body" style="display:${isOpen?'block':'none'};padding:0 1.1rem 1rem;">
-        <table>
-          <thead><tr><th>Asset Group</th><th>D.N. Not Signed</th><th>D.N. Signed</th></tr></thead>
-          <tbody>
-            ${rows.map(r=>{
-              const gIdx = groupedRows.indexOf(r);
-              const nsHtml = r.dnNotSigned
-                ? `<div class="dn-cell"><a class="dn-link" href="${r.dnNotSigned}" target="_blank">View D.N.</a><button class="dn-edit-btn" data-gidx="${gIdx}" data-action="upload">✎</button></div>`
-                : `<div class="dn-cell"><button class="dn-add-btn" data-gidx="${gIdx}" data-action="upload">+ Add</button></div>`;
-              const sHtml = r.dnSigned
-                ? `<div class="dn-cell"><a class="dn-link" href="${r.dnSigned}" target="_blank">View Signed</a></div>`
-                : `<span class="dn-none">None</span>`;
-              return `<tr><td><span class="asset-pill">${r.group}</span></td><td>${nsHtml}</td><td>${sHtml}</td></tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>`;
-    branchList.appendChild(card);
-  });
-}
-
-branchList.addEventListener('click', (e) => {
-  const head = e.target.closest('.branch-pill-head');
-  if(head && !e.target.closest('[data-action]')){
-    const b = head.dataset.branch;
-    if(openBranches.has(b)) openBranches.delete(b); else openBranches.add(b);
-    render();
-    return;
+      </div>`).join('');
   }
-  const target = e.target.closest('[data-action="upload"]');
-  if(!target) return;
-  pendingGroupIdx = parseInt(target.dataset.gidx, 10);
-  hiddenFile.value = '';
-  hiddenFile.click();
-});
 
-statusFilter.onchange = render;
-branchFilter.onchange = render;
-dnStatusFilter.onchange = render;
-assetFilter.onchange = render;
-document.getElementById('refreshBtn').onclick = loadAll;
-
-function toBase64(file){
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = () => rej(new Error('Read failed'));
-    r.readAsDataURL(file);
-  });
-}
-
-hiddenFile.onchange = async () => {
-  const file = hiddenFile.files[0];
-  if(!file || pendingGroupIdx === null) return;
-  const gr = groupedRows[pendingGroupIdx];
-  const checklistRow = checklist[gr.repIdx];
-  const branch = gr.branch;
-  const asset = (checklistRow['Asset']||'').trim(); // actual asset name behind the group
-  try{
-    const base64 = await toBase64(file);
-    console.log('Uploading:', { branch, asset, group: gr.group });
-    await postAction({
-      action: 'uploadDN',
-      sheet: TRACKER_SHEET,
-      branch, asset,
-      field: 'D.N. Not Signed',
-      fileName: file.name,
-      mimeType: file.type || 'application/octet-stream',
-      fileData: base64,
-      user: 'Kamal',
-      timestamp: new Date().toLocaleString('en-GB')
-    });
-    showToast(`✓ Uploaded for ${branch} / ${gr.group}`);
-    await new Promise(res => setTimeout(res, 2000));
-    await loadAll();
-  }catch(err){
-    showToast('Upload failed: ' + err.message, true);
+  /* ══ TOAST ══ */
+  let toastTimer;
+  function showToast(msg, error=false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.borderColor = error ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)';
+    t.style.color = error ? '#f87171' : '#4ade80';
+    t.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.style.opacity='0', 3500);
   }
-};
-
-manualSubmit.onclick = async () => {
-  const branch = manualBranch.value.trim().toUpperCase();
-  const asset = manualAsset.value.trim();
-  if(!branch || !asset){ showToast('Enter both branch and asset.', true); return; }
-  manualSubmit.disabled = true; manualSubmit.textContent = 'Adding…';
-  try{
-    const existing = checklist.find(r=>(r['Branch Code']||'').trim()===branch);
-    const existingStatus = existing ? (existing['Branch Status']||'Receiving') : 'Receiving';
-    await postAction({
-      action: 'addManualAsset',
-      sheet: TRACKER_SHEET,
-      branch, asset,
-      branchStatus: existingStatus,
-      user: 'Kamal',
-      timestamp: new Date().toLocaleString('en-GB')
-    });
-    manualBranch.value=''; manualAsset.value='';
-    manualPanel.classList.remove('show');
-    showToast('Row added — saving…');
-    await new Promise(res => setTimeout(res, 2000));
-    await loadAll();
-  }catch(e){
-    showToast('Could not add row: ' + e.message, true);
-  }
-  manualSubmit.disabled = false; manualSubmit.textContent = 'Add row';
-};
-
-loadAll();
-setInterval(loadAll, 5 * 60 * 1000); // refresh every 5 minutes
 </script>
 </body>
 </html>
