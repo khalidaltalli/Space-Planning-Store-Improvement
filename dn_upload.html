@@ -461,7 +461,7 @@
       });
 
       overlay.style.display = 'none';
-      showToast('✓ Uploaded successfully!');
+      showToast('✓ Uploaded! ' + (pollData.debug ? '| ' + pollData.debug.split('rowsUpdated:')[1] + ' rows updated' : ''));
       applyFilter();
       updateMissingPill();
       renderLog();
