@@ -73,7 +73,7 @@ function readRows(sheet) {
 
 /* Work Hub tab definitions (auto-created on first use) */
 var WORK_TABS = {
-  'My Tasks':         ['ID','Branch Code','Title','Category','Priority','Status','Due Date','Created','Updated'],
+  'My Tasks':         ['ID','Title','Status','Note','Due Date','Created','Updated','Completed Date'],
   'Layout Work':       ['ID','Branch Code','Item','Status','Notes','ETA','Created','Updated'],
   'Receiving Work':    ['ID','Branch Code','Asset','Status','Notes','ETA','Created','Updated'],
   'Notes':             ['ID','Branch Code','Note','Created'],
