@@ -399,8 +399,10 @@
       const group = DN_GROUPS.find(g=>g.key===groupKey);
       const fileName = `${branch}_${group.name.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.${file.name.split('.').pop()}`;
 
+      const uploadId = 'UP_' + Date.now();
       const payload = {
         action:     'uploadDNFile',
+        uploadId,
         branch,
         groupKey,
         groupName:  group.name,
@@ -412,24 +414,39 @@
         timestamp:  new Date().toLocaleString('en-GB')
       };
 
-      statusText.textContent = 'Saving link to sheet...';
+      statusText.textContent = 'Saving to Drive...';
       progressBar.style.width = '80%';
 
-      const res = await fetch(APPS_URL, {
+      /* Use no-cors POST — can't read response directly */
+      await fetch(APPS_URL, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
+
+      /* Poll GET to retrieve the result by uploadId */
+      statusText.textContent = 'Confirming upload...';
+      progressBar.style.width = '90%';
+      let fileUrl = null;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await new Promise(r => setTimeout(r, 1500));
+        try {
+          const pollRes = await fetch(`${APPS_URL}?action=getUploadResult&uploadId=${uploadId}`);
+          const pollData = await pollRes.json();
+          if (pollData.fileUrl) { fileUrl = pollData.fileUrl; break; }
+          if (pollData.error)   throw new Error(pollData.error);
+        } catch(pe) { /* keep polling */ }
+      }
+
+      if (!fileUrl) throw new Error('Upload timed out — please refresh and check if it worked.');
 
       progressBar.style.width = '100%';
-
-      if (data.error) throw new Error(data.error);
 
       /* Update local checklist data with new link */
       checklistData.forEach(r => {
         if ((r['Branch Code']||'').trim()===branch && group.assets.includes((r['Asset']||'').trim())) {
-          r['D.N. Not Signed'] = data.fileUrl;
+          r['D.N. Not Signed'] = fileUrl;
         }
       });
 
