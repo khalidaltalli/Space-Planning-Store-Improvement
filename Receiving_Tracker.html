@@ -2077,12 +2077,9 @@
     const SOFT_ASSETS  =new Set(['Bin Stickers','Cleaning Supplies','First Aid Kit','Stationery','File Drawer','Captains Chairs','Handshake Cabinet','Consumables']);
 
     function defaultOwner(asset){
-      /* Eissa = not yet ordered (fridges/shelves), Kamal = if Eissa ordered
-         Dalal = not yet ordered (soft assets), Mahyoub = if Dalal ordered
-         Default to Eissa for anything else */
-      if(FRIDGE_ASSETS.has(asset)) return 'Eissa';
-      if(SOFT_ASSETS.has(asset))   return 'Dalal';
-      return 'Eissa';
+      if(FRIDGE_ASSETS.has(asset)) return 'Procurement';
+      if(SOFT_ASSETS.has(asset))   return 'Ops';
+      return 'Procurement';
     }
 
     function calcDaysOutstanding(dateStr){
@@ -2197,6 +2194,27 @@
       container._outstanding=outstanding;
     }
 
+    function toggleOutOwnerManual(){
+      const sel=document.getElementById('out-owner');
+      const manual=document.getElementById('out-owner-manual');
+      manual.style.display=sel.value==='Other'?'block':'none';
+    }
+    function toggleOutActionManual(){
+      const sel=document.getElementById('out-next-action');
+      const manual=document.getElementById('out-next-action-manual');
+      manual.style.display=sel.value==='Other'?'block':'none';
+    }
+    function getOutOwner(){
+      const sel=document.getElementById('out-owner');
+      if(sel.value==='Other') return document.getElementById('out-owner-manual').value.trim()||'Other';
+      return sel.value;
+    }
+    function getOutNextAction(){
+      const sel=document.getElementById('out-next-action');
+      if(sel.value==='Other') return document.getElementById('out-next-action-manual').value.trim()||'Other';
+      return sel.value;
+    }
+
     function openEditOutstanding(branch, cardId, idx){
       const container=document.getElementById('out_'+cardId);
       const o=container?._outstanding?.[idx];
@@ -2205,8 +2223,30 @@
       document.getElementById('out-edit-branch').value=branch;
       document.getElementById('out-edit-asset').value=o.asset;
       document.getElementById('out-edit-label').textContent=o.asset+' — '+o.status;
-      document.getElementById('out-owner').value=o.owner||'Eissa';
-      document.getElementById('out-next-action').value=o.nextAction||'Waiting Delivery';
+      /* Owner */
+      const ownerSel=document.getElementById('out-owner');
+      const ownerManual=document.getElementById('out-owner-manual');
+      const knownOwners=['Ops','Procurement','Other'];
+      if(knownOwners.includes(o.owner||'')){
+        ownerSel.value=o.owner;
+        ownerManual.style.display='none';
+      } else {
+        ownerSel.value='Other';
+        ownerManual.value=o.owner||'';
+        ownerManual.style.display='block';
+      }
+      /* Next Action */
+      const actSel=document.getElementById('out-next-action');
+      const actManual=document.getElementById('out-next-action-manual');
+      const knownActions=['Waiting Procurement Update','Waiting Delivery','Waiting Store Confirmation','Waiting DN','Need Replacement','Escalated','Completed','Other'];
+      if(knownActions.includes(o.nextAction||'')){
+        actSel.value=o.nextAction;
+        actManual.style.display='none';
+      } else {
+        actSel.value='Other';
+        actManual.value=o.nextAction||'';
+        actManual.style.display='block';
+      }
       document.getElementById('out-eta').value=o.eta||'';
       document.getElementById('out-escalation').value=o.esc||'No';
       document.getElementById('out-remarks').value=o.remarks||'';
@@ -2217,8 +2257,8 @@
       const id         = document.getElementById('out-edit-id').value.trim();
       const branch     = document.getElementById('out-edit-branch').value.trim();
       const asset      = document.getElementById('out-edit-asset').value.trim();
-      const owner      = document.getElementById('out-owner').value;
-      const nextAction = document.getElementById('out-next-action').value;
+      const owner      = getOutOwner();
+      const nextAction = getOutNextAction();
       const eta        = document.getElementById('out-eta').value;
       const esc        = document.getElementById('out-escalation').value;
       const remarks    = document.getElementById('out-remarks').value.trim();
@@ -2328,10 +2368,38 @@
       const critRec=critAssets.filter(r=>r['Asset Status']==='Received').length;
       const critPct=Math.round(critRec/critTotal*100);
 
-      /* DN completion */
-      const dnAssets=assets.filter(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
-      const dnNeeded=assets.filter(r=>['Received','Delivered'].includes(r['Asset Status'])).length||1;
-      const dnPct=Math.round(dnAssets.length/dnNeeded*100);
+      /* DN completion — based on 7 D.N. groups:
+         1. Freebolt & Heavy Rack
+         2. Sign Board
+         3. Curtains
+         4. Cold Room
+         5. Fridges & Freezers (1/2/3 door)
+         6. Access Points & CCTV
+         7. Air Condition
+      */
+      const DN_GROUP_ASSETS = ['Freebolt','Heavy Rack','Heavyrack','SignBoard','Sign Board','Curtain','Coldroom','Cold Room',
+        '1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer',
+        'Access Points','CCTV','Air Condition'];
+      /* Check one representative per group — a group is "signed" if ANY asset in it has a signed DN */
+      const DN_GROUPS = [
+        { name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
+        { name:'Sign Board',            assets:['SignBoard','Sign Board'] },
+        { name:'Curtains',              assets:['Curtain'] },
+        { name:'Cold Room',             assets:['Coldroom','Cold Room'] },
+        { name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'] },
+        { name:'Access Points & CCTV',  assets:['Access Points','CCTV'] },
+        { name:'Air Condition',         assets:['Air Condition'] },
+      ];
+      const dnGroupResults = DN_GROUPS.map(g => {
+        const groupAssets = assets.filter(r=>g.assets.includes((r['Asset']||'').trim()));
+        const hasSigned   = groupAssets.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+        const hasUnsigned = groupAssets.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
+        const exists      = groupAssets.length > 0;
+        return { name:g.name, exists, hasSigned, hasUnsigned };
+      }).filter(g=>g.exists);
+      const dnSigned = dnGroupResults.filter(g=>g.hasSigned).length;
+      const dnTotal  = dnGroupResults.length || 1;
+      const dnPct    = Math.round(dnSigned/dnTotal*100);
 
       /* Procurement */
       const procs=procCache[branch]||[];
@@ -2344,9 +2412,14 @@
       const outItems=container?._outstanding||[];
       const outLines=outItems.filter(o=>o.nextAction!=='Completed').map(o=>`  • ${o.asset} — Owner: ${o.owner} — Next Action: ${o.nextAction}${o.eta?' — ETA: '+o.eta:''}`).join('\n')||'  • No outstanding actions.';
 
-      /* Missing DNs */
-      const missDN=assets.filter(r=>['Received','Delivered'].includes(r['Asset Status'])&&!(r['D.N. Signed']&&r['D.N. Signed'].startsWith('http')));
-      const dnLines=missDN.length? missDN.map(r=>`  • ${r['Asset']||''} — Missing Signed D.N.`).join('\n'):'  • All D.N. complete.';
+      /* Missing DNs — by the 7 D.N. groups */
+      const missingDNGroups = dnGroupResults.filter(g=>!g.hasSigned);
+      const dnLines = missingDNGroups.length
+        ? missingDNGroups.map(g=>{
+            const status = g.hasUnsigned ? 'D.N. uploaded — awaiting signature' : 'D.N. missing';
+            return `  • ${g.name} — ${status}`;
+          }).join('\n')
+        : '  • All 7 D.N. groups complete.';
 
       /* Actions by owner removed per request */
 
@@ -2383,13 +2456,6 @@ ${outLines}
 MISSING / PENDING D.N.S
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${dnLines}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NEXT STEPS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • Continue follow-up until all assets and D.N.s are completed.
-  • Escalate any items outstanding for more than 7 days.
-  • Confirm ETA updates from suppliers where applicable.
 
 Best regards,
 ${currentUser||'Khalid'}`;
@@ -2453,14 +2519,16 @@ ${currentUser||'Khalid'}`;
         </div>
         <div class="form-row">
           <div><label class="form-label">Responsible Owner</label>
-            <select id="out-owner" class="form-select">
-              <option>Eissa</option><option>Kamal</option><option>Dalal</option><option>Mahyoub</option><option>Other</option>
-            </select></div>
+            <select id="out-owner" class="form-select" onchange="toggleOutOwnerManual()">
+              <option>Ops</option><option>Procurement</option><option>Other</option>
+            </select>
+            <input id="out-owner-manual" class="form-input" placeholder="Enter owner name..." style="margin-top:4px;display:none;" /></div>
           <div><label class="form-label">Next Action</label>
-            <select id="out-next-action" class="form-select">
+            <select id="out-next-action" class="form-select" onchange="toggleOutActionManual()">
               <option>Waiting Procurement Update</option><option>Waiting Delivery</option><option>Waiting Store Confirmation</option>
-              <option>Waiting DN</option><option>Need Replacement</option><option>Escalated</option><option>Completed</option>
-            </select></div>
+              <option>Waiting DN</option><option>Need Replacement</option><option>Escalated</option><option>Completed</option><option>Other</option>
+            </select>
+            <input id="out-next-action-manual" class="form-input" placeholder="Enter custom action..." style="margin-top:4px;display:none;" /></div>
         </div>
         <div class="form-row">
           <div><label class="form-label">ETA</label>
