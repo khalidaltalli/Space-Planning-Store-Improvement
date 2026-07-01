@@ -399,75 +399,48 @@
       const group = DN_GROUPS.find(g=>g.key===groupKey);
       const fileName = `${branch}_${group.name.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.${file.name.split('.').pop()}`;
 
-      const uploadId = 'UP_' + Date.now();
-      const payload = {
-        action:     'uploadDNFile',
-        uploadId,
-        branch,
-        groupKey,
-        groupName:  group.name,
-        assets:     group.assets,
-        fileName,
-        mimeType:   file.type,
-        base64,
-        user:       currentUser,
-        timestamp:  new Date().toLocaleString('en-GB')
-      };
-
       statusText.textContent = 'Saving to Drive...';
-      progressBar.style.width = '80%';
+      progressBar.style.width = '50%';
 
-      /* Step 1 — upload file via no-cors POST */
-      await fetch(APPS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      /* Step 2 — poll until Apps Script finishes and returns the file URL */
-      statusText.textContent = 'Waiting for Drive...';
-      progressBar.style.width = '88%';
-      let fileUrl = null;
-      for (let attempt = 0; attempt < 20; attempt++) {
-        await new Promise(r => setTimeout(r, 2000));
-        statusText.textContent = `Confirming... (${attempt+1}/20)`;
-        try {
-          const pollRes = await fetch(`${APPS_URL}?action=getUploadResult&uploadId=${uploadId}`);
-          const pollData = await pollRes.json();
-          if (pollData.fileUrl) { fileUrl = pollData.fileUrl; break; }
-          if (pollData.error)   throw new Error(pollData.error);
-        } catch(pe) { /* keep polling */ }
-      }
-
-      if (!fileUrl) {
-        overlay.style.display = 'none';
-        showToast('⚠ File saved to Drive but link not confirmed — refreshing...', false);
-        setTimeout(()=>loadData(), 2000);
-        return;
-      }
-
-      progressBar.style.width = '94%';
-
-      /* Step 3 — write link to sheet as a SEPARATE no-cors POST */
-      statusText.textContent = 'Writing to sheet...';
-      await fetch(APPS_URL, {
+      /* Step 1 — fire upload no-cors */
+      fetch(APPS_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action:    'writeDNLink',
+          action:    'uploadDNFile',
           branch,
-          assets:    group.assets,
           groupName: group.name,
-          fileUrl,
+          assets:    group.assets,
+          fileName,
+          mimeType:  file.type,
+          base64,
           user:      currentUser,
           timestamp: new Date().toLocaleString('en-GB')
         })
       });
 
-      /* Small delay to let sheet write complete */
-      await new Promise(r => setTimeout(r, 1500));
+      /* Step 2 — wait 5s for Drive to process */
+      for (let i = 1; i <= 5; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        progressBar.style.width = (50 + i * 8) + '%';
+        statusText.textContent = `Processing... ${i}/5`;
+      }
+
+      /* Step 3 — check DN Upload Log to get the file URL back */
+      statusText.textContent = 'Retrieving link...';
+      let fileUrl = null;
+      for (let attempt = 0; attempt < 8; attempt++) {
+        await new Promise(r => setTimeout(r, 1500));
+        try {
+          const logRes  = await fetch(`${APPS_URL}?sheet=DN%20Upload%20Log`);
+          const logData = await logRes.json();
+          const rows    = (logData.rows || []).reverse();
+          const match   = rows.find(r => r['Branch Code'] === branch && r['D.N. Group'] === group.name);
+          if (match && match['File URL']) { fileUrl = match['File URL']; break; }
+        } catch(pe) { /* keep trying */ }
+      }
+
       progressBar.style.width = '100%';
 
       progressBar.style.width = '100%';
@@ -490,7 +463,7 @@
       });
 
       overlay.style.display = 'none';
-      showToast('✓ Uploaded! ' + (pollData.debug ? '| ' + pollData.debug.split('rowsUpdated:')[1] + ' rows updated' : ''));
+      showToast('✓ D.N. uploaded and link saved!');
       applyFilter();
       updateMissingPill();
       renderLog();
