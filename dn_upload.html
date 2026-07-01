@@ -183,7 +183,7 @@
 <div id="toast"></div>
 
 <script>
-  const APPS_URL = 'https://script.google.com/macros/s/AKfycbyXMNhT-y0fQlFGG20lx_fD-47N39O5BvUl9QfMukrEyP0jnl8ckGCyS_ZUOphGfZ2Pww/exec';
+  const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
 
   const USERS = { 'Kamal': '1234', 'Ahmed Khalil': '1234', 'Khalid': '6969', 'Viewer': null };
 
@@ -313,10 +313,10 @@
         } else if (g.status === 'unsigned') {
           html += `<span class="dn-status dn-unsigned">📎 Uploaded</span>`;
           if (g.link) html += `<a href="${g.link}" target="_blank" class="view-link">View</a>`;
-          html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}',this)">↑ Replace</button>`;
+          if (!isViewer) html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}',this)">↑ Replace</button>`;
         } else {
           html += `<span class="dn-status dn-missing">Missing</span>`;
-          html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}',this)">↑ Upload</button>`;
+          if (!isViewer) html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}',this)">↑ Upload</button>`;
         }
         html += `</div></td>`;
       });
