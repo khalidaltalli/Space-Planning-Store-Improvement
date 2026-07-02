@@ -115,7 +115,7 @@
   <div id="page-tracker">
     <div class="header" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;">
       <div style="display:flex;align-items:center;">
-        <img src="logo.png" style="height:60px;object-fit:contain;" alt="Logo" />
+        <a href="index.html"><img src="logo.png" style="height:60px;object-fit:contain;" alt="Logo" /></a>
       </div>
       <div style="text-align:center;">
         <h1 style="font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.3px;">New Store Asset Receiving</h1>
@@ -148,12 +148,16 @@
           All Branches
           <span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:#64748b;">▼</span>
         </button>
-        <div id="branch-multiselect-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;min-width:200px;max-height:260px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
-          <div style="padding:6px 8px;border-bottom:0.5px solid rgba(255,255,255,0.07);display:flex;gap:6px;">
+        <div id="branch-multiselect-list" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.15);border-radius:8px;min-width:220px;max-height:300px;display:none;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+          <div style="padding:6px 8px;border-bottom:0.5px solid rgba(255,255,255,0.07);">
+            <input id="branch-search-input" placeholder="🔍 Search branch..." oninput="filterBranchList()"
+              style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:5px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;" />
+          </div>
+          <div style="padding:4px 8px 4px;border-bottom:0.5px solid rgba(255,255,255,0.07);display:flex;gap:6px;">
             <button onclick="selectAllBranches(true)" style="flex:1;font-size:10px;padding:3px 6px;border-radius:4px;background:rgba(34,211,238,0.1);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
             <button onclick="selectAllBranches(false)" style="flex:1;font-size:10px;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
           </div>
-          <div id="branch-checkbox-list" style="padding:4px 0;"></div>
+          <div id="branch-checkbox-list" style="padding:4px 0;overflow-y:auto;flex:1;"></div>
         </div>
       </div>
     </div>
@@ -447,7 +451,28 @@
 
     function toggleBranchDropdown() {
       const list = document.getElementById('branch-multiselect-list');
-      list.style.display = list.style.display === 'none' ? 'block' : 'none';
+      const isOpen = list.style.display === 'flex';
+      list.style.display = isOpen ? 'none' : 'flex';
+      if (!isOpen) {
+        /* Clear search when opening */
+        const si = document.getElementById('branch-search-input');
+        if (si) { si.value = ''; filterBranchList(); si.focus(); }
+      }
+    }
+
+    function filterBranchList() {
+      const q = (document.getElementById('branch-search-input')?.value || '').toLowerCase().trim();
+      const items = document.querySelectorAll('#branch-checkbox-list label');
+      if (q) {
+        /* Unselect all and show only matches */
+        items.forEach(label => {
+          const code = label.textContent.trim().toLowerCase();
+          const match = code.includes(q);
+          label.style.display = match ? '' : 'none';
+        });
+      } else {
+        items.forEach(label => label.style.display = '');
+      }
     }
 
     /* Close dropdown when clicking outside */
