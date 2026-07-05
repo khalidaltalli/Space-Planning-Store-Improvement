@@ -2390,19 +2390,6 @@
       logActivity(branch,'Weekly Follow-up','','','',branch);
     }
 
-    function copyFollowup(){
-      /* Copy as plain text from the rendered HTML */
-      const el=document.getElementById('wfu-html');
-      const range=document.createRange();
-      range.selectNodeContents(el);
-      const sel=window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-      document.execCommand('copy');
-      sel.removeAllRanges();
-      showSaveToast('Copied to clipboard!');
-    }
-
     function buildFollowupHTML(branch){
       const branchStatus=trackerBranches.find(b=>b.code===branch)?.status||'—';
       const assets=trackerData.filter(r=>(r['Branch Code']||'').trim()===branch);
@@ -2456,21 +2443,25 @@
         {name:'Access Points & CCTV', assets:['Access Points','CCTV']},
         {name:'Air Condition',        assets:['Air Condition']},
       ];
-      const dnRows=DN_GE.map(g=>{
-        const ga=assets.filter(r=>g.assets.includes((r['Asset']||'').trim()));
+      /* ── DN rows — skip None status assets, skip fully signed groups ── */
+      const dnRowsFiltered=DN_GE.map(g=>{
+        const ga=assets.filter(r=>g.assets.includes((r['Asset']||'').trim())&&r['Asset Status']&&r['Asset Status']!=='None');
         if(!ga.length) return null;
-        const signed  =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
-        const unsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
-        const status=signed
-          ?`<span style="color:#27ae60;font-weight:bold;">✓ Signed</span>`
-          :unsigned
+        const signed  =ga.every(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+        if(signed) return null; /* all signed — skip */
+        const anySigned  =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+        const anyUnsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
+        const status=anySigned
+          ?`<span style="color:#e67e22;font-weight:bold;">📎 Partially Signed</span>`
+          :anyUnsigned
             ?`<span style="color:#e67e22;font-weight:bold;">📎 Uploaded — Awaiting Signature</span>`
             :`<span style="color:#c0392b;font-weight:bold;">✗ Missing</span>`;
         return [g.name, status];
       }).filter(Boolean);
+      const allDNComplete = dnRowsFiltered.length === 0;
 
       const statusLine=branchStatus==='Live'
-        ?'The branch is already live; however, the initial asset receiving process is still not complete due to the pending items listed below.'
+        ?'The initial asset receiving process is still not complete due to the pending items listed below.'
         :'The branch is currently in Receiving status. The following items are still pending.';
 
       const p=(t,style='')=>`<p style="margin:8px 0;${style}">${t}</p>`;
@@ -2486,13 +2477,12 @@
         ${pendingRows.length ? makeTable(['Asset','Priority','Status'],pendingRows) : p('No pending assets.','color:#27ae60;')}
         ${h('Qty Shortages:')}
         ${shortageRows.length ? makeTable(['Item','Required','Received','Shortage'],shortageRows,['','text-align:center;','text-align:center;','text-align:center;']) : p('No qty shortages.','color:#27ae60;')}
-        ${h('Pending Delivery Notes:')}
-        ${dnRows.length ? makeTable(['D.N. Group','Status'],dnRows) : p('All D.N.s complete.','color:#27ae60;')}
+        ${!allDNComplete ? h('Pending Delivery Notes:') + makeTable(['D.N. Group','Status'],dnRowsFiltered) : ''}
         ${p('Please find attached:')}
         <ul style="margin:4px 0 12px 20px;color:#1a1a1a;">
           <li>Branch Status Report</li>
           <li>Pending Assets Report</li>
-          <li>Pending Delivery Notes Report</li>
+          ${!allDNComplete?'<li>Pending Delivery Notes Report</li>':''}
         </ul>
         ${p('Kindly review the attached reports and provide an update on the remaining items.')}
         ${p('<strong>Area Manager and Store Manager:</strong> If any of the above assets have been received at the branch, please inform us as soon as possible so we can update our receiving records and complete the receiving process.')}
@@ -2502,177 +2492,24 @@
         ${p('Best regards,')}
         ${p(`<strong>${currentUser||'Khalid'}</strong>`)}`;
     }
-      const branchStatus=trackerBranches.find(b=>b.code===branch)?.status||'—';
-      const assets=trackerData.filter(r=>(r['Branch Code']||'').trim()===branch);
-      const fq=qtyData[branch]||{};
-      const today=new Date().toLocaleDateString('en-GB');
 
-      /* ── Pending assets (Not Received + Delivered) ── */
-      const pendingAssets=assets.filter(r=>r['Asset Status']==='Not Received'||r['Asset Status']==='Delivered')
-        .sort((a,b)=>{
-          const po={Essential:0,Critical:1,High:2,Medium:3,Low:4};
-          return (po[a['Priority']]??5)-(po[b['Priority']]??5)||(a['Asset']||'').localeCompare(b['Asset']||'');
-        });
-
-      /* Build ASCII table helper */
-      function asciiTable(headers, rows){
-        const cols=headers.map((h,i)=>Math.max(h.length,...rows.map(r=>(r[i]||'').length)));
-        const sep='+'+cols.map(c=>'-'.repeat(c+2)).join('+')+'+';
-        const row=r=>('|'+r.map((v,i)=>' '+(v||'').padEnd(cols[i])+' ').join('|')+'|');
-        return [sep, row(headers), sep, ...rows.map(row), sep].join('\n');
-      }
-
-      /* Pending assets table */
-      const pendingRows=pendingAssets.map(r=>[r['Asset']||'',r['Priority']||'',r['Asset Status']||'']);
-      const pendingTable=pendingRows.length
-        ? asciiTable(['Asset','Priority','Status'],pendingRows)
-        : '  (No pending assets)';
-
-      /* ── Shortage table ── */
-      const QTY_ITEMS_E=[
-        {label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'},
-        {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
-        {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
-        {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
-        {label:'3D Fridge',  req:'3D Fridge Req',   rec:'3D Fridge Rec'},
-        {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
-        {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
-        {label:'3D Freezer', req:'3D Freezer Req',  rec:'3D Freezer Rec'},
-      ];
-      const shortageRows=QTY_ITEMS_E.map(item=>{
-        const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;
-        return req>0&&diff<0?[item.label,String(req),String(rec),String(diff)]:null;
-      }).filter(Boolean);
-      const shortageTable=shortageRows.length
-        ? asciiTable(['Item','Required','Received','Shortage'],shortageRows)
-        : '  (No shortages)';
-
-      /* ── DN Status table ── */
-      const DN_GROUPS_E=[
-        {name:'Freebolt & Heavy Rack',assets:['Freebolt','Heavy Rack','Heavyrack']},
-        {name:'Sign Board',           assets:['SignBoard','Sign Board']},
-        {name:'Curtains',             assets:['Curtain']},
-        {name:'Cold Room',            assets:['Coldroom','Cold Room']},
-        {name:'Fridges & Freezers',   assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer']},
-        {name:'Access Points & CCTV', assets:['Access Points','CCTV']},
-        {name:'Air Condition',        assets:['Air Condition']},
-      ];
-      const dnRows=DN_GROUPS_E.map(g=>{
-        const ga=assets.filter(r=>g.assets.includes((r['Asset']||'').trim()));
-        if(!ga.length) return null;
-        const signed  =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
-        const unsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
-        const status=signed?'Signed':unsigned?'Uploaded — Awaiting Signature':'Missing';
-        return [g.name,status];
-      }).filter(Boolean);
-      const dnTable=dnRows.length
-        ? asciiTable(['D.N. Group','Status'],dnRows)
-        : '  (No DN data)';
-
-      /* ── Status intro line ── */
-      const statusLine=branchStatus==='Live'
-        ? 'The branch is already live; however, the initial asset receiving process is still not complete due to the pending items listed below.'
-        : 'The branch is currently in Receiving status. The following items are still pending.';
+    function copyFollowup(){
+      const el=document.getElementById('wfu-html');
+      const range=document.createRange();
+      range.selectNodeContents(el);
+      const sel=window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('copy');
+      sel.removeAllRanges();
+      showSaveToast('Copied to clipboard!');
+    }
 
     function getReportBranches() {
       return [...document.querySelectorAll('#monthly-report-modal input[type=checkbox]:checked')].map(c=>c.value);
     }
+
+
   </script>
-  <!-- ══ PROCUREMENT MODAL ══ -->
-  <div id="proc-modal" class="modal-overlay">
-    <div class="modal-box">
-      <h3 id="proc-modal-title">📦 Add Procurement Request</h3>
-      <div class="modal-scroll">
-        <input type="hidden" id="proc-edit-id" />
-        <input type="hidden" id="proc-edit-branch" />
-        <div class="form-row">
-          <div><label class="form-label">Asset Group</label>
-            <select id="proc-asset-group" class="form-select" onchange="procGroupChange()">
-              <option>Fridges & Freezers</option><option>Shelves</option><option>Soft Assets</option><option>Other</option>
-            </select></div>
-          <div><label class="form-label">Request Owner</label>
-            <select id="proc-owner" class="form-select">
-              <option>Eissa</option><option>Dalal</option><option>Other</option>
-            </select></div>
-        </div>
-        <div class="form-row">
-          <div><label class="form-label">Request Number</label>
-            <input id="proc-req-no" class="form-input" placeholder="e.g. PR-2025-001" /></div>
-          <div><label class="form-label">Request Date</label>
-            <input id="proc-req-date" type="date" class="form-input" /></div>
-        </div>
-        <div class="form-row">
-          <div><label class="form-label">Status</label>
-            <select id="proc-status" class="form-select">
-              <option>Requested</option><option>PO Created</option><option>In Transit</option><option>Delivered</option>
-            </select></div>
-          <div><label class="form-label">ETA</label>
-            <input id="proc-eta" type="date" class="form-input" /></div>
-        </div>
-        <div class="form-row full"><label class="form-label">Remarks</label>
-          <textarea id="proc-remarks" class="form-input" rows="2" placeholder="Optional remarks..."></textarea></div>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);">
-        <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="closeModal('proc-modal')">Cancel</button>
-        <button class="btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" onclick="saveProcurement()">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ OUTSTANDING EDIT MODAL ══ -->
-  <div id="out-modal" class="modal-overlay">
-    <div class="modal-box" style="width:500px;">
-      <h3>⚡ Edit Outstanding Action</h3>
-      <div class="modal-scroll">
-        <input type="hidden" id="out-edit-id" />
-        <input type="hidden" id="out-edit-branch" />
-        <input type="hidden" id="out-edit-asset" />
-        <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 12px;margin-bottom:10px;">
-          <span id="out-edit-label" style="font-size:12px;color:#e2e8f0;font-weight:600;"></span>
-        </div>
-        <div class="form-row">
-          <div><label class="form-label">Responsible Owner</label>
-            <select id="out-owner" class="form-select" onchange="toggleOutOwnerManual()">
-              <option>Ops</option><option>Procurement</option><option>Other</option>
-            </select>
-            <input id="out-owner-manual" class="form-input" placeholder="Enter owner name..." style="margin-top:4px;display:none;" /></div>
-          <div><label class="form-label">Next Action</label>
-            <select id="out-next-action" class="form-select" onchange="toggleOutActionManual()">
-              <option>Waiting Procurement Update</option><option>Waiting Delivery</option><option>Waiting Store Confirmation</option>
-              <option>Waiting DN</option><option>Need Replacement</option><option>Escalated</option><option>Completed</option><option>Other</option>
-            </select>
-            <input id="out-next-action-manual" class="form-input" placeholder="Enter custom action..." style="margin-top:4px;display:none;" /></div>
-        </div>
-        <div class="form-row">
-          <div><label class="form-label">ETA</label>
-            <input id="out-eta" type="date" class="form-input" /></div>
-          <div><label class="form-label">Escalation Required</label>
-            <select id="out-escalation" class="form-select">
-              <option value="Yes">Yes</option><option value="No">No</option>
-            </select></div>
-        </div>
-        <div class="form-row full"><label class="form-label">Remarks</label>
-          <textarea id="out-remarks" class="form-input" rows="2"></textarea></div>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);">
-        <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="closeModal('out-modal')">Cancel</button>
-        <button class="btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="saveOutstanding()">Save</button>
-      </div>
-    </div>
-  </div>
-
-      <!-- ══ WEEKLY FOLLOW-UP MODAL ══ -->
-  <div id="wfu-modal" class="modal-overlay">
-    <div class="modal-box" style="width:660px;max-height:90vh;">
-      <h3>📧 Weekly Follow-up — <span id="wfu-branch-label"></span></h3>
-      <div class="modal-scroll" style="flex:1;overflow-y:auto;background:#fff;border-radius:8px;padding:0;">
-        <div id="wfu-html" style="padding:24px 28px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);">
-        <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="closeModal('wfu-modal')">Close</button>
-        <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="copyFollowup()">📋 Copy</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
