@@ -2402,106 +2402,111 @@
       const branchStatus=trackerBranches.find(b=>b.code===branch)?.status||'—';
       const assets=trackerData.filter(r=>(r['Branch Code']||'').trim()===branch);
       const fq=qtyData[branch]||{};
-      const total=assets.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length||1;
-      const received=assets.filter(r=>r['Asset Status']==='Received').length;
-      const delivered=assets.filter(r=>r['Asset Status']==='Delivered').length;
-      const notRec=assets.filter(r=>r['Asset Status']==='Not Received').length;
-      const pct=Math.round(received/total*100);
-
-      /* Critical completion */
-      const critAssets=assets.filter(r=>['Critical','Essential'].includes(r['Priority']));
-      const critTotal=critAssets.length||1;
-      const critRec=critAssets.filter(r=>r['Asset Status']==='Received').length;
-      const critPct=Math.round(critRec/critTotal*100);
-
-      /* DN completion — based on 7 D.N. groups:
-         1. Freebolt & Heavy Rack
-         2. Sign Board
-         3. Curtains
-         4. Cold Room
-         5. Fridges & Freezers (1/2/3 door)
-         6. Access Points & CCTV
-         7. Air Condition
-      */
-      const DN_GROUP_ASSETS = ['Freebolt','Heavy Rack','Heavyrack','SignBoard','Sign Board','Curtain','Coldroom','Cold Room',
-        '1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer',
-        'Access Points','CCTV','Air Condition'];
-      /* Check one representative per group — a group is "signed" if ANY asset in it has a signed DN */
-      const DN_GROUPS = [
-        { name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
-        { name:'Sign Board',            assets:['SignBoard','Sign Board'] },
-        { name:'Curtains',              assets:['Curtain'] },
-        { name:'Cold Room',             assets:['Coldroom','Cold Room'] },
-        { name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'] },
-        { name:'Access Points & CCTV',  assets:['Access Points','CCTV'] },
-        { name:'Air Condition',         assets:['Air Condition'] },
-      ];
-      const dnGroupResults = DN_GROUPS.map(g => {
-        const groupAssets = assets.filter(r=>g.assets.includes((r['Asset']||'').trim()));
-        const hasSigned   = groupAssets.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
-        const hasUnsigned = groupAssets.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
-        const exists      = groupAssets.length > 0;
-        return { name:g.name, exists, hasSigned, hasUnsigned };
-      }).filter(g=>g.exists);
-      const dnSigned = dnGroupResults.filter(g=>g.hasSigned).length;
-      const dnTotal  = dnGroupResults.length || 1;
-      const dnPct    = Math.round(dnSigned/dnTotal*100);
-
-      /* Procurement */
-      const procs=procCache[branch]||[];
-      const procLines=procs.length
-        ? procs.map(p=>`  • ${p['Asset Group']}: Request No. ${p['Request Number']||'N/A'} — ${p['Status']||'—'} — ETA: ${p['ETA']||'N/A'}`).join('\n')
-        : '  • No procurement requests recorded.';
-
-      /* Outstanding */
-      const container=document.getElementById('out_tc_'+branch.replace(/[^a-zA-Z0-9]/g,'_'));
-      const outItems=container?._outstanding||[];
-      const outLines=outItems.filter(o=>o.nextAction!=='Completed').map(o=>`  • ${o.asset} — Owner: ${o.owner} — Next Action: ${o.nextAction}${o.eta?' — ETA: '+o.eta:''}`).join('\n')||'  • No outstanding actions.';
-
-      /* Missing DNs — by the 7 D.N. groups */
-      const missingDNGroups = dnGroupResults.filter(g=>!g.hasSigned);
-      const dnLines = missingDNGroups.length
-        ? missingDNGroups.map(g=>{
-            const status = g.hasUnsigned ? 'D.N. uploaded — awaiting signature' : 'D.N. missing';
-            return `  • ${g.name} — ${status}`;
-          }).join('\n')
-        : '  • All 7 D.N. groups complete.';
-
-      /* Actions by owner removed per request */
-
       const today=new Date().toLocaleDateString('en-GB');
 
-      return `Subject: Weekly Receiving Update — ${branch}
+      /* ── Pending assets (Not Received + Delivered) ── */
+      const pendingAssets=assets.filter(r=>r['Asset Status']==='Not Received'||r['Asset Status']==='Delivered')
+        .sort((a,b)=>{
+          const po={Essential:0,Critical:1,High:2,Medium:3,Low:4};
+          return (po[a['Priority']]??5)-(po[b['Priority']]??5)||(a['Asset']||'').localeCompare(b['Asset']||'');
+        });
 
-Date: ${today}
+      /* Build ASCII table helper */
+      function asciiTable(headers, rows){
+        const cols=headers.map((h,i)=>Math.max(h.length,...rows.map(r=>(r[i]||'').length)));
+        const sep='+'+cols.map(c=>'-'.repeat(c+2)).join('+')+'+';
+        const row=r=>('|'+r.map((v,i)=>' '+(v||'').padEnd(cols[i])+' ').join('|')+'|');
+        return [sep, row(headers), sep, ...rows.map(row), sep].join('\n');
+      }
+
+      /* Pending assets table */
+      const pendingRows=pendingAssets.map(r=>[r['Asset']||'',r['Priority']||'',r['Asset Status']||'']);
+      const pendingTable=pendingRows.length
+        ? asciiTable(['Asset','Priority','Status'],pendingRows)
+        : '  (No pending assets)';
+
+      /* ── Shortage table ── */
+      const QTY_ITEMS_E=[
+        {label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'},
+        {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
+        {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+        {label:'3D Fridge',  req:'3D Fridge Req',   rec:'3D Fridge Rec'},
+        {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
+        {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+        {label:'3D Freezer', req:'3D Freezer Req',  rec:'3D Freezer Rec'},
+      ];
+      const shortageRows=QTY_ITEMS_E.map(item=>{
+        const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;
+        return req>0&&diff<0?[item.label,String(req),String(rec),String(diff)]:null;
+      }).filter(Boolean);
+      const shortageTable=shortageRows.length
+        ? asciiTable(['Item','Required','Received','Shortage'],shortageRows)
+        : '  (No shortages)';
+
+      /* ── DN Status table ── */
+      const DN_GROUPS_E=[
+        {name:'Freebolt & Heavy Rack',assets:['Freebolt','Heavy Rack','Heavyrack']},
+        {name:'Sign Board',           assets:['SignBoard','Sign Board']},
+        {name:'Curtains',             assets:['Curtain']},
+        {name:'Cold Room',            assets:['Coldroom','Cold Room']},
+        {name:'Fridges & Freezers',   assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer']},
+        {name:'Access Points & CCTV', assets:['Access Points','CCTV']},
+        {name:'Air Condition',        assets:['Air Condition']},
+      ];
+      const dnRows=DN_GROUPS_E.map(g=>{
+        const ga=assets.filter(r=>g.assets.includes((r['Asset']||'').trim()));
+        if(!ga.length) return null;
+        const signed  =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+        const unsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
+        const status=signed?'Signed':unsigned?'Uploaded — Awaiting Signature':'Missing';
+        return [g.name,status];
+      }).filter(Boolean);
+      const dnTable=dnRows.length
+        ? asciiTable(['D.N. Group','Status'],dnRows)
+        : '  (No DN data)';
+
+      /* ── Status intro line ── */
+      const statusLine=branchStatus==='Live'
+        ? 'The branch is already live; however, the initial asset receiving process is still not complete due to the pending items listed below.'
+        : 'The branch is currently in Receiving status. The following items are still pending.';
+
+      return `Subject: Asset Receiving Follow-up — ${branch} — ${today}
 
 Dear Team,
 
-Please find below the weekly receiving update for ${branch}.
+I would like to follow up on the asset receiving status for ${branch}.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BRANCH STATUS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • Current Status:            ${branchStatus}
-  • Receiving Completion:      ${pct}%
-  • Critical Asset Completion: ${critPct}%
-  • D.N. Completion:           ${dnPct}%
-  • Assets: ${received} Received | ${delivered} Delivered | ${notRec} Not Received
+${statusLine}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROCUREMENT REQUESTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${procLines}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTSTANDING ASSETS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${outLines}
+Current Pending Assets:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MISSING / PENDING D.N.S
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${dnLines}
+${pendingTable}
+
+
+Qty Shortages:
+
+${shortageTable}
+
+
+Pending Delivery Notes:
+
+${dnTable}
+
+
+Please find attached:
+  • Branch Status Report
+  • Pending Assets Report
+  • Pending Delivery Notes Report
+
+Kindly review the attached reports and provide an update on the remaining items.
+
+Area Manager and Store Manager: If any of the above assets have been received at the branch, please inform us as soon as possible so we can update our receiving records and complete the receiving process.
+
+If any support or clarification is required from our side, please let me know.
+
+Thank you for your support.
 
 Best regards,
 ${currentUser||'Khalid'}`;
