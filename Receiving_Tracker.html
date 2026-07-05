@@ -2510,6 +2510,19 @@
     }
 
 
-  </script>
+  </script>  <!-- ══ WEEKLY FOLLOW-UP MODAL ══ -->
+  <div id="wfu-modal" class="modal-overlay">
+    <div class="modal-box" style="width:660px;max-height:90vh;">
+      <h3>📧 Weekly Follow-up — <span id="wfu-branch-label"></span></h3>
+      <div class="modal-scroll" style="flex:1;overflow-y:auto;background:#fff;border-radius:8px;padding:0;">
+        <div id="wfu-html" style="padding:24px 28px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);">
+        <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="closeModal('wfu-modal')">Close</button>
+        <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="copyFollowup()">📋 Copy</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
