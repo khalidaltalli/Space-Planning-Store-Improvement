@@ -2385,20 +2385,123 @@
     ══════════════════════════════════════════════════════ */
     function openWeeklyFollowup(branch){
       document.getElementById('wfu-branch-label').textContent=branch;
-      const text=buildFollowupText(branch);
-      document.getElementById('wfu-text').value=text;
+      document.getElementById('wfu-html').innerHTML=buildFollowupHTML(branch);
       document.getElementById('wfu-modal').style.display='flex';
       logActivity(branch,'Weekly Follow-up','','','',branch);
     }
 
     function copyFollowup(){
-      const ta=document.getElementById('wfu-text');
-      ta.select();
+      /* Copy as plain text from the rendered HTML */
+      const el=document.getElementById('wfu-html');
+      const range=document.createRange();
+      range.selectNodeContents(el);
+      const sel=window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
       document.execCommand('copy');
+      sel.removeAllRanges();
       showSaveToast('Copied to clipboard!');
     }
 
-    function buildFollowupText(branch){
+    function buildFollowupHTML(branch){
+      const branchStatus=trackerBranches.find(b=>b.code===branch)?.status||'—';
+      const assets=trackerData.filter(r=>(r['Branch Code']||'').trim()===branch);
+      const fq=qtyData[branch]||{};
+      const today=new Date().toLocaleDateString('en-GB');
+
+      /* ── Table style ── */
+      const tbl='width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px;';
+      const th='padding:7px 10px;background:#1a3a5c;color:#fff;text-align:left;border:1px solid #ccc;font-weight:bold;';
+      const td='padding:6px 10px;border:1px solid #ccc;';
+      const priColor={Essential:'#c0392b',Critical:'#c0392b',High:'#e67e22',Medium:'#f39c12',Low:'#27ae60'};
+
+      function makeTable(headers, rows, colStyles=[]){
+        const head='<thead><tr>'+headers.map(h=>`<th style="${th}">${h}</th>`).join('')+'</tr></thead>';
+        const body='<tbody>'+rows.map((r,ri)=>`<tr style="background:${ri%2===0?'#fff':'#f7f9fc'};">`+r.map((c,ci)=>`<td style="${td}${colStyles[ci]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
+        return `<table style="${tbl}">${head}${body}</table>`;
+      }
+
+      /* ── Pending assets ── */
+      const pendingAssets=assets.filter(r=>r['Asset Status']==='Not Received'||r['Asset Status']==='Delivered')
+        .sort((a,b)=>{const po={Essential:0,Critical:1,High:2,Medium:3,Low:4};return(po[a['Priority']]??5)-(po[b['Priority']]??5)||(a['Asset']||'').localeCompare(b['Asset']||'');});
+      const pendingRows=pendingAssets.map(r=>[
+        r['Asset']||'',
+        `<span style="color:${priColor[r['Priority']]||'#555'};font-weight:bold;">${r['Priority']||'—'}</span>`,
+        r['Asset Status']||''
+      ]);
+
+      /* ── Shortages ── */
+      const QTY_E=[
+        {label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'},
+        {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
+        {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
+        {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
+        {label:'3D Fridge',  req:'3D Fridge Req',   rec:'3D Fridge Rec'},
+        {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
+        {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
+        {label:'3D Freezer', req:'3D Freezer Req',  rec:'3D Freezer Rec'},
+      ];
+      const shortageRows=QTY_E.map(item=>{
+        const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;
+        return req>0&&diff<0?[item.label,String(req),String(rec),`<span style="color:#c0392b;font-weight:bold;">${diff}</span>`]:null;
+      }).filter(Boolean);
+
+      /* ── DN Status ── */
+      const DN_GE=[
+        {name:'Freebolt & Heavy Rack',assets:['Freebolt','Heavy Rack','Heavyrack']},
+        {name:'Sign Board',           assets:['SignBoard','Sign Board']},
+        {name:'Curtains',             assets:['Curtain']},
+        {name:'Cold Room',            assets:['Coldroom','Cold Room']},
+        {name:'Fridges & Freezers',   assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer']},
+        {name:'Access Points & CCTV', assets:['Access Points','CCTV']},
+        {name:'Air Condition',        assets:['Air Condition']},
+      ];
+      const dnRows=DN_GE.map(g=>{
+        const ga=assets.filter(r=>g.assets.includes((r['Asset']||'').trim()));
+        if(!ga.length) return null;
+        const signed  =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+        const unsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
+        const status=signed
+          ?`<span style="color:#27ae60;font-weight:bold;">✓ Signed</span>`
+          :unsigned
+            ?`<span style="color:#e67e22;font-weight:bold;">📎 Uploaded — Awaiting Signature</span>`
+            :`<span style="color:#c0392b;font-weight:bold;">✗ Missing</span>`;
+        return [g.name, status];
+      }).filter(Boolean);
+
+      const statusLine=branchStatus==='Live'
+        ?'The branch is already live; however, the initial asset receiving process is still not complete due to the pending items listed below.'
+        :'The branch is currently in Receiving status. The following items are still pending.';
+
+      const p=(t,style='')=>`<p style="margin:8px 0;${style}">${t}</p>`;
+      const h=(t)=>`<p style="margin:14px 0 4px;font-weight:bold;font-size:13px;color:#1a3a5c;">${t}</p>`;
+
+      return `
+        ${p(`Subject: <strong>Asset Receiving Follow-up — ${branch} — ${today}</strong>`,'font-size:14px;')}
+        <hr style="border:none;border-top:1px solid #ddd;margin:12px 0;" />
+        ${p('Dear Team,')}
+        ${p(`I would like to follow up on the asset receiving status for <strong>${branch}</strong>.`)}
+        ${p(statusLine)}
+        ${h('Current Pending Assets:')}
+        ${pendingRows.length ? makeTable(['Asset','Priority','Status'],pendingRows) : p('No pending assets.','color:#27ae60;')}
+        ${h('Qty Shortages:')}
+        ${shortageRows.length ? makeTable(['Item','Required','Received','Shortage'],shortageRows,['','text-align:center;','text-align:center;','text-align:center;']) : p('No qty shortages.','color:#27ae60;')}
+        ${h('Pending Delivery Notes:')}
+        ${dnRows.length ? makeTable(['D.N. Group','Status'],dnRows) : p('All D.N.s complete.','color:#27ae60;')}
+        ${p('Please find attached:')}
+        <ul style="margin:4px 0 12px 20px;color:#1a1a1a;">
+          <li>Branch Status Report</li>
+          <li>Pending Assets Report</li>
+          <li>Pending Delivery Notes Report</li>
+        </ul>
+        ${p('Kindly review the attached reports and provide an update on the remaining items.')}
+        ${p('<strong>Area Manager and Store Manager:</strong> If any of the above assets have been received at the branch, please inform us as soon as possible so we can update our receiving records and complete the receiving process.')}
+        ${p('If any support or clarification is required from our side, please let me know.')}
+        ${p('Thank you for your support.')}
+        <br/>
+        ${p('Best regards,')}
+        ${p(`<strong>${currentUser||'Khalid'}</strong>`)}`;
+    }
       const branchStatus=trackerBranches.find(b=>b.code===branch)?.status||'—';
       const assets=trackerData.filter(r=>(r['Branch Code']||'').trim()===branch);
       const fq=qtyData[branch]||{};
@@ -2470,47 +2573,6 @@
       const statusLine=branchStatus==='Live'
         ? 'The branch is already live; however, the initial asset receiving process is still not complete due to the pending items listed below.'
         : 'The branch is currently in Receiving status. The following items are still pending.';
-
-      return `Subject: Asset Receiving Follow-up — ${branch} — ${today}
-
-Dear Team,
-
-I would like to follow up on the asset receiving status for ${branch}.
-
-${statusLine}
-
-
-Current Pending Assets:
-
-${pendingTable}
-
-
-Qty Shortages:
-
-${shortageTable}
-
-
-Pending Delivery Notes:
-
-${dnTable}
-
-
-Please find attached:
-  • Branch Status Report
-  • Pending Assets Report
-  • Pending Delivery Notes Report
-
-Kindly review the attached reports and provide an update on the remaining items.
-
-Area Manager and Store Manager: If any of the above assets have been received at the branch, please inform us as soon as possible so we can update our receiving records and complete the receiving process.
-
-If any support or clarification is required from our side, please let me know.
-
-Thank you for your support.
-
-Best regards,
-${currentUser||'Khalid'}`;
-    }
 
     function getReportBranches() {
       return [...document.querySelectorAll('#monthly-report-modal input[type=checkbox]:checked')].map(c=>c.value);
@@ -2599,12 +2661,12 @@ ${currentUser||'Khalid'}`;
     </div>
   </div>
 
-  <!-- ══ WEEKLY FOLLOW-UP MODAL ══ -->
+      <!-- ══ WEEKLY FOLLOW-UP MODAL ══ -->
   <div id="wfu-modal" class="modal-overlay">
-    <div class="modal-box" style="width:620px;">
+    <div class="modal-box" style="width:660px;max-height:90vh;">
       <h3>📧 Weekly Follow-up — <span id="wfu-branch-label"></span></h3>
-      <div class="modal-scroll">
-        <textarea id="wfu-text" style="width:100%;min-height:420px;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:10px;border-radius:6px;font-family:'DM Mono',monospace;line-height:1.7;resize:vertical;"></textarea>
+      <div class="modal-scroll" style="flex:1;overflow-y:auto;background:#fff;border-radius:8px;padding:0;">
+        <div id="wfu-html" style="padding:24px 28px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);">
         <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="closeModal('wfu-modal')">Close</button>
