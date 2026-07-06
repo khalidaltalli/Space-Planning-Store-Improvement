@@ -587,6 +587,7 @@
     } else {
       qtyEl.innerHTML = '<div style="font-size:11px;color:#475569;">No qty data.</div>';
     }
+    document.getElementById('modal-followup-status').value = fu.status || 'None';
     document.getElementById('modal-schedule-note').textContent = `Schedule: ${FOLLOWUP_SCHEDULE[b.status]||'—'}`;
 
     /* Notes — last note preview + view all button */
