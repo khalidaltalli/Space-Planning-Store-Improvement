@@ -66,7 +66,14 @@
     /* ── Activity Log ── */
     .log-wrap { padding: 0 1.5rem 2rem; }
     .log-title { font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; padding-top: 1rem; border-top: 0.5px solid rgba(255,255,255,0.06); }
-    .log-entry { display: flex; gap: 10px; padding: 7px 0; border-bottom: 0.5px solid rgba(255,255,255,0.04); font-size: 11px; }
+    .log-date-group { margin-bottom: 8px; border: 0.5px solid rgba(255,255,255,0.06); border-radius: 8px; overflow: hidden; }
+    .log-date-header { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; background: rgba(255,255,255,0.03); cursor: pointer; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.4px; user-select: none; }
+    .log-date-header:hover { background: rgba(255,255,255,0.05); }
+    .log-date-body { padding: 4px 0; }
+    .log-date-count { font-size: 10px; background: rgba(167,139,250,0.15); color: #a78bfa; padding: 1px 7px; border-radius: 8px; font-weight: 600; }
+    .log-chevron { font-size: 10px; color: #475569; transition: transform 0.2s; }
+    .log-entry { display: flex; gap: 10px; padding: 7px 12px; border-bottom: 0.5px solid rgba(255,255,255,0.04); font-size: 11px; }
+    .log-entry:last-child { border-bottom: none; }
     .log-dot { width: 7px; height: 7px; border-radius: 50%; background: #a78bfa; margin-top: 3px; flex-shrink: 0; }
     .log-ts { color: #475569; white-space: nowrap; }
 
@@ -88,6 +95,7 @@
           <option value="">Select your name</option>
           <option value="Kamal">Kamal</option>
           <option value="Ahmed Khalil">Ahmed Khalil</option>
+          <option value="Azhar">Azhar</option>
           <option value="Khalid">Khalid</option>
           <option value="Viewer">Viewer (View Only)</option>
         </select>
@@ -169,7 +177,7 @@
 <script>
   const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
 
-  const USERS = { 'Kamal': '1234', 'Ahmed Khalil': '1234', 'Khalid': '6969', 'Viewer': null };
+  const USERS = { 'Kamal': '1234', 'Ahmed Khalil': '1234', 'Azhar': '0000', 'Khalid': '6969', 'Viewer': null };
 
   const DN_GROUPS = [
     { key:'freebolt',   name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
@@ -397,19 +405,65 @@
       container.innerHTML = '<p style="font-size:11px;color:#475569;">No uploads yet.</p>';
       return;
     }
-    container.innerHTML = activityLog.slice(0,30).map(e=>`
-      <div class="log-entry">
-        <div class="log-dot"></div>
-        <div style="flex:1;">
-          <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;">
-            <span style="font-weight:600;color:#e2e8f0;">${e['Branch Code']||''}</span>
-            <span style="color:#a78bfa;">${e['D.N. Group']||''}</span>
-            <span style="color:#94a3b8;font-size:10px;">uploaded by ${e['User']||''}</span>
-            <span class="log-ts" style="margin-left:auto;">${e['Timestamp']||''}</span>
+
+    /* Group by date */
+    const groups = {};
+    activityLog.slice(0, 60).forEach(e => {
+      const ts   = e['Timestamp'] || '';
+      /* Extract date part dd/mm/yyyy from timestamp */
+      const date = ts.split(',')[0].trim() || ts.split(' ')[0] || 'Unknown';
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(e);
+    });
+
+    const today     = new Date().toLocaleDateString('en-GB');
+    const yesterday = new Date(Date.now()-86400000).toLocaleDateString('en-GB');
+
+    container.innerHTML = Object.entries(groups).map(([date, entries], gi) => {
+      const label = date === today ? `Today — ${date}` : date === yesterday ? `Yesterday — ${date}` : date;
+      const isOpen = gi === 0; /* first group open by default */
+      const groupId = 'log-group-' + gi;
+
+      const entriesHtml = entries.map(e => {
+        const hasLink = e['File URL'] && e['File URL'].startsWith('http');
+        return `<div class="log-entry">
+          <div class="log-dot"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;">
+              <span style="font-weight:600;color:#e2e8f0;">${e['Branch Code']||''}</span>
+              <span style="color:#a78bfa;">${e['D.N. Group']||''}</span>
+              <span style="color:#94a3b8;font-size:10px;">by ${e['User']||''}</span>
+              <span style="color:#475569;font-size:10px;margin-left:auto;">${(e['Timestamp']||'').split(',')[1]?.trim()||''}</span>
+            </div>
+            <div style="font-size:10px;color:#475569;margin-top:2px;display:flex;align-items:center;gap:8px;">
+              <span>${e['File Name']||''}</span>
+              ${hasLink ? `<a href="${e['File URL']}" target="_blank" style="font-size:10px;padding:1px 8px;border-radius:4px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;text-decoration:none;flex-shrink:0;">👁 View</a>` : ''}
+            </div>
           </div>
-          <div style="font-size:10px;color:#475569;margin-top:2px;">${e['File Name']||''}</div>
+        </div>`;
+      }).join('');
+
+      return `<div class="log-date-group">
+        <div class="log-date-header" onclick="toggleLogGroup('${groupId}',this)">
+          <span>${label}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="log-date-count">${entries.length} upload${entries.length!==1?'s':''}</span>
+            <span class="log-chevron" style="transform:${isOpen?'rotate(0deg)':'rotate(-90deg)'}">▼</span>
+          </div>
         </div>
-      </div>`).join('');
+        <div id="${groupId}" class="log-date-body" style="display:${isOpen?'block':'none'};">
+          ${entriesHtml}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleLogGroup(id, header) {
+    const body    = document.getElementById(id);
+    const chevron = header.querySelector('.log-chevron');
+    const isOpen  = body.style.display !== 'none';
+    body.style.display    = isOpen ? 'none' : 'block';
+    chevron.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
   }
 
   /* ══ TOAST ══ */
