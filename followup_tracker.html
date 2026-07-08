@@ -281,21 +281,30 @@
   let currentUser  = sessionStorage.getItem('followup_user') || '';
   let isViewer     = false;
 
-  async function loadUsersFU() {
-    try {
-      const r = await fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json());
-      usersDataFU = (r.rows||[]).filter(u=>u['Name']);
-    } catch(e){ usersDataFU=[]; }
-    if(!usersDataFU.length) usersDataFU=[
-      {Name:'Khalid',PIN:'6969','Followup Tracker':'Editor'},
-      {Name:'Azhar', PIN:'0000','Followup Tracker':'Editor'},
-      {Name:'Eissa', PIN:'1234','Followup Tracker':'Editor'},
-      {Name:'Viewer',PIN:'',   'Followup Tracker':'Viewer'},
-    ];
+  const FALLBACK_USERS_FU = [
+    {Name:'Khalid',PIN:'6969','Followup Tracker':'Editor'},
+    {Name:'Azhar', PIN:'0000','Followup Tracker':'Editor'},
+    {Name:'Eissa', PIN:'1234','Followup Tracker':'Editor'},
+    {Name:'Viewer',PIN:'',   'Followup Tracker':'Viewer'},
+  ];
+
+  function populateFUDropdown() {
     const sel = document.getElementById('login-name');
     sel.innerHTML = '<option value="">Select name</option>' +
       usersDataFU.map(u=>`<option value="${u['Name']}">${u['Name']}</option>`).join('');
-    /* Auto-login from session */
+  }
+
+  async function loadUsersFU() {
+    usersDataFU = FALLBACK_USERS_FU;
+    populateFUDropdown();
+    try {
+      const r = await Promise.race([
+        fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json()),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000))
+      ]);
+      const fromSheet=(r.rows||[]).filter(u=>u['Name']);
+      if(fromSheet.length){ usersDataFU=fromSheet; populateFUDropdown(); }
+    } catch(e){ /* keep fallback */ }
     if(currentUser){
       const u=usersDataFU.find(x=>x['Name']===currentUser);
       if(u){ applyLoginFU(u); return; }
