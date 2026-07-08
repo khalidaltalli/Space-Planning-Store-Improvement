@@ -721,7 +721,52 @@
         });
       });
 
-      /* Qty section */
+      /* ══════════════════════════════════════════
+         QTY SECTION
+      ══════════════════════════════════════════ */
+      const fqBranch=qtyData[branch.code]||{};
+      const qtyWrap=document.createElement('div');
+      qtyWrap.style.cssText='border-top:0.5px solid rgba(255,255,255,0.07);';
+      qtyWrap.innerHTML=`
+        <div onclick="const w=this.nextElementSibling;w.style.display=w.style.display==='none'?'block':'none';this.querySelector('.qi').style.transform=w.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1.25rem;cursor:pointer;background:rgba(255,255,255,0.02);">
+          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">Fridges & Shelves Quantities</span>
+          <span class="qi" style="color:#64748b;font-size:11px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
+        </div>
+        <div style="display:none;padding:0 1.25rem 0.75rem;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead><tr>
+              <th style="text-align:left;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:140px;">Item</th>
+              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:200px;">Req / Rec</th>
+              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:110px;">Status</th>
+            </tr></thead>
+            <tbody id="${cardId}_qty"></tbody>
+          </table>
+        </div>`;
+      const qtyTbody=qtyWrap.querySelector('tbody');
+      QTY_ITEMS.forEach((item,i)=>{
+        const req=parseInt(fqBranch[item.req]||0)||0,rec2=parseInt(fqBranch[item.rec]||0)||0,diff=rec2-req;
+        const c=req<=0?'#475569':rec2===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
+        const lbl=req<=0?'-':rec2===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
+        const safeId=(branch.code+'_'+item.label).replace(/[^a-zA-Z0-9]/g,'_');
+        const tr=document.createElement('tr');
+        tr.style.background=i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
+        tr.innerHTML=`
+          <td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,0.1);">${item.label}</td>
+          <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);">
+            <span style="font-family:'DM Mono',monospace;font-size:11px;color:${c};">
+              <input type="number" min="0" value="${req||''}" placeholder="0" id="req_${safeId}" style="width:55px;background:#0f1117;border:0.5px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
+              <span style="font-size:9px;color:#64748b;"> Req — </span>
+              <input type="number" min="0" value="${rec2||''}" placeholder="0" id="rec_${safeId}" style="width:55px;background:#0f1117;border:0.5px solid ${c}40;color:${c};font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
+              <span style="font-size:9px;color:#64748b;"> Rec</span>
+              <button onclick="saveQtyRow('${branch.code}','${item.req}','${item.rec}','req_${safeId}','rec_${safeId}','${cardId}')" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:4px;">Save</button>
+            </span>
+            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec2/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>
+          </td>
+          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span style="font-size:11px;color:${c};font-weight:600;">${lbl}</span></td>`;
+        qtyTbody.appendChild(tr);
+      });
+      card.appendChild(qtyWrap);
+
       /* ══════════════════════════════════════════
          PROCUREMENT REQUESTS SECTION
       ══════════════════════════════════════════ */
