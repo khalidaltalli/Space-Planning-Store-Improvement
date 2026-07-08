@@ -314,22 +314,33 @@
     let usersData  = [];
     let currentUser = sessionStorage.getItem('tracker_user') || '';
 
-    async function loadUsers() {
-      try {
-        const r = await fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json());
-        usersData = (r.rows||[]).filter(u=>u['Name']);
-      } catch(e) { usersData = []; }
-      /* Fallback if sheet empty */
-      if(!usersData.length) usersData = [
-        {Name:'Khalid',PIN:'6969','Receiving Tracker':'Editor'},
-        {Name:'Azhar', PIN:'0000','Receiving Tracker':'Editor'},
-        {Name:'Eissa', PIN:'1234','Receiving Tracker':'Editor'},
-        {Name:'Dalal', PIN:'8520','Receiving Tracker':'Editor'},
-        {Name:'Viewer',PIN:'',   'Receiving Tracker':'Viewer'},
-      ];
+    const FALLBACK_USERS = [
+      {Name:'Khalid',PIN:'6969','Receiving Tracker':'Editor'},
+      {Name:'Azhar', PIN:'0000','Receiving Tracker':'Editor'},
+      {Name:'Eissa', PIN:'1234','Receiving Tracker':'Editor'},
+      {Name:'Dalal', PIN:'8520','Receiving Tracker':'Editor'},
+      {Name:'Viewer',PIN:'',   'Receiving Tracker':'Viewer'},
+    ];
+
+    function populateLoginDropdown() {
       const sel = document.getElementById('login-name');
       sel.innerHTML = '<option value="">Select your name...</option>' +
         usersData.map(u=>`<option value="${u['Name']}">${u['Name']}</option>`).join('');
+    }
+
+    async function loadUsers() {
+      /* Show fallback immediately so login is usable even if fetch is slow */
+      usersData = FALLBACK_USERS;
+      populateLoginDropdown();
+      /* Try to load from sheet in background */
+      try {
+        const r = await Promise.race([
+          fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json()),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000))
+        ]);
+        const fromSheet = (r.rows||[]).filter(u=>u['Name']);
+        if(fromSheet.length){ usersData=fromSheet; populateLoginDropdown(); }
+      } catch(e){ /* keep fallback */ }
       /* Auto-login if session exists */
       if(currentUser){
         const u=usersData.find(u=>u['Name']===currentUser);
