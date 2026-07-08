@@ -177,22 +177,32 @@
   let currentUser  = '';
   let isViewer     = false;
 
-  async function loadUsersDN() {
-    try {
-      const r = await fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json());
-      usersDataDN = (r.rows||[]).filter(u=>u['Name']);
-    } catch(e){ usersDataDN=[]; }
-    if(!usersDataDN.length) usersDataDN=[
-      {Name:'Kamal',       PIN:'1234', 'D.N. Upload':'Editor'},
-      {Name:'Ahmed Khalil',PIN:'1234', 'D.N. Upload':'Editor'},
-      {Name:'Azhar',       PIN:'0000', 'D.N. Upload':'Editor'},
-      {Name:'Khalid',      PIN:'6969', 'D.N. Upload':'Editor'},
-      {Name:'Viewer',      PIN:'',     'D.N. Upload':'Viewer'},
-    ];
+  const FALLBACK_USERS_DN = [
+    {Name:'Kamal',       PIN:'1234', 'D.N. Upload':'Editor'},
+    {Name:'Ahmed Khalil',PIN:'1234', 'D.N. Upload':'Editor'},
+    {Name:'Azhar',       PIN:'0000', 'D.N. Upload':'Editor'},
+    {Name:'Khalid',      PIN:'6969', 'D.N. Upload':'Editor'},
+    {Name:'Viewer',      PIN:'',     'D.N. Upload':'Viewer'},
+  ];
+
+  function populateDNDropdown() {
     const sel = document.getElementById('login-user');
     sel.innerHTML = '<option value="">Select your name</option>' +
       usersDataDN.map(u=>`<option value="${u['Name']}">${u['Name']}</option>`).join('');
     togglePinField();
+  }
+
+  async function loadUsersDN() {
+    usersDataDN = FALLBACK_USERS_DN;
+    populateDNDropdown();
+    try {
+      const r = await Promise.race([
+        fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json()),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000))
+      ]);
+      const fromSheet=(r.rows||[]).filter(u=>u['Name']);
+      if(fromSheet.length){ usersDataDN=fromSheet; populateDNDropdown(); }
+    } catch(e){ /* keep fallback */ }
   }
 
   function togglePinField() {
@@ -215,6 +225,7 @@
     document.getElementById('current-user-pill').textContent=isViewer?'👁 View Only':name;
     loadData();
   }
+  const DN_GROUPS = [
     { key:'freebolt',   name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
     { key:'signboard',  name:'Sign Board',            assets:['SignBoard','Sign Board'] },
     { key:'curtain',    name:'Curtains',              assets:['Curtain'] },
@@ -224,31 +235,10 @@
     { key:'ac',         name:'Air Condition',         assets:['Air Condition'] },
   ];
 
-  let currentUser = '';
-  let isViewer    = false;
   let allBranches = [];
   let checklistData = [];
   let currentFilter = 'all';
   let activityLog = [];
-
-  /* ══ LOGIN ══ */
-  function doLogin() {
-    const user = document.getElementById('login-user').value;
-    const pin  = document.getElementById('login-pin').value;
-    if (!user) { showLoginError('Please select your name.'); return; }
-    /* Viewer has no PIN */
-    if (USERS[user] === null) {
-      /* no pin needed */
-    } else if (USERS[user] !== pin) {
-      showLoginError('Incorrect PIN. Please try again.'); return;
-    }
-    currentUser = user;
-    isViewer    = user === 'Viewer';
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('current-user-pill').textContent = isViewer ? '👁 View Only' : user;
-    loadData();
-  }
 
   function togglePinField() {
     const user = document.getElementById('login-user').value;
