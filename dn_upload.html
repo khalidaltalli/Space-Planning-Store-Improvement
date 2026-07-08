@@ -92,12 +92,7 @@
       <div style="margin-bottom:10px;">
         <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;">Name</label>
         <select id="login-user" class="form-input" onchange="togglePinField()">
-          <option value="">Select your name</option>
-          <option value="Kamal">Kamal</option>
-          <option value="Ahmed Khalil">Ahmed Khalil</option>
-          <option value="Azhar">Azhar</option>
-          <option value="Khalid">Khalid</option>
-          <option value="Viewer">Viewer (View Only)</option>
+          <option value="">Loading...</option>
         </select>
       </div>
       <div id="pin-wrap" style="margin-bottom:14px;">
@@ -177,9 +172,49 @@
 <script>
   const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
 
-  const USERS = { 'Kamal': '1234', 'Ahmed Khalil': '1234', 'Azhar': '0000', 'Khalid': '6969', 'Viewer': null };
+  const PAGE_KEY_DN = 'D.N. Upload';
+  let usersDataDN  = [];
+  let currentUser  = '';
+  let isViewer     = false;
 
-  const DN_GROUPS = [
+  async function loadUsersDN() {
+    try {
+      const r = await fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json());
+      usersDataDN = (r.rows||[]).filter(u=>u['Name']);
+    } catch(e){ usersDataDN=[]; }
+    if(!usersDataDN.length) usersDataDN=[
+      {Name:'Kamal',       PIN:'1234', 'D.N. Upload':'Editor'},
+      {Name:'Ahmed Khalil',PIN:'1234', 'D.N. Upload':'Editor'},
+      {Name:'Azhar',       PIN:'0000', 'D.N. Upload':'Editor'},
+      {Name:'Khalid',      PIN:'6969', 'D.N. Upload':'Editor'},
+      {Name:'Viewer',      PIN:'',     'D.N. Upload':'Viewer'},
+    ];
+    const sel = document.getElementById('login-user');
+    sel.innerHTML = '<option value="">Select your name</option>' +
+      usersDataDN.map(u=>`<option value="${u['Name']}">${u['Name']}</option>`).join('');
+    togglePinField();
+  }
+
+  function togglePinField() {
+    const user = document.getElementById('login-user').value;
+    const u    = usersDataDN.find(x=>x['Name']===user);
+    document.getElementById('pin-wrap').style.display = (u && !u['PIN']) ? 'none' : 'block';
+  }
+
+  function doLogin() {
+    const name = document.getElementById('login-user').value;
+    const pin  = document.getElementById('login-pin').value;
+    if(!name) return;
+    const user = usersDataDN.find(u=>u['Name']===name);
+    if(!user){ showLoginError('User not found.'); return; }
+    if(user['PIN'] && user['PIN']!==pin){ showLoginError('Incorrect PIN. Please try again.'); document.getElementById('login-pin').value=''; return; }
+    currentUser = name;
+    isViewer    = (user[PAGE_KEY_DN]||'').toLowerCase()==='viewer' || !user['PIN'];
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('current-user-pill').textContent=isViewer?'👁 View Only':name;
+    loadData();
+  }
     { key:'freebolt',   name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
     { key:'signboard',  name:'Sign Board',            assets:['SignBoard','Sign Board'] },
     { key:'curtain',    name:'Curtains',              assets:['Curtain'] },
@@ -467,7 +502,8 @@
     chevron.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
   }
 
-  /* ══ TOAST ══ */
+  /* ══ BOOT ══ */
+  window.addEventListener('DOMContentLoaded', ()=>{ loadUsersDN(); });
   let toastTimer;
   function showToast(msg, error=false) {
     const t = document.getElementById('toast');
