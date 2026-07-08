@@ -131,11 +131,7 @@
     <h2>📋 Follow-up Tracker</h2>
     <p>Space Planning & Store Improvement</p>
     <select id="login-name" class="login-select" onchange="toggleLoginPin()">
-      <option value="">Select name</option>
-      <option value="Khalid">Khalid</option>
-      <option value="Azhar">Azhar</option>
-      <option value="Eissa">Eissa</option>
-      <option value="Viewer">Viewer</option>
+      <option value="">Loading...</option>
     </select>
     <div id="pin-wrap">
       <input type="password" id="login-pin" class="login-pin" maxlength="4" placeholder="••••"
@@ -280,10 +276,69 @@
 
 <script>
   const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
-  const PINS = { Khalid:'6969', Azhar:'0000', Eissa:'1234', Viewer: null };
+  const PAGE_KEY_FU = 'Followup Tracker';
+  let usersDataFU  = [];
+  let currentUser  = sessionStorage.getItem('followup_user') || '';
+  let isViewer     = false;
+
+  async function loadUsersFU() {
+    try {
+      const r = await fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json());
+      usersDataFU = (r.rows||[]).filter(u=>u['Name']);
+    } catch(e){ usersDataFU=[]; }
+    if(!usersDataFU.length) usersDataFU=[
+      {Name:'Khalid',PIN:'6969','Followup Tracker':'Editor'},
+      {Name:'Azhar', PIN:'0000','Followup Tracker':'Editor'},
+      {Name:'Eissa', PIN:'1234','Followup Tracker':'Editor'},
+      {Name:'Viewer',PIN:'',   'Followup Tracker':'Viewer'},
+    ];
+    const sel = document.getElementById('login-name');
+    sel.innerHTML = '<option value="">Select name</option>' +
+      usersDataFU.map(u=>`<option value="${u['Name']}">${u['Name']}</option>`).join('');
+    /* Auto-login from session */
+    if(currentUser){
+      const u=usersDataFU.find(x=>x['Name']===currentUser);
+      if(u){ applyLoginFU(u); return; }
+    }
+  }
+
+  function toggleLoginPin() {
+    const name = document.getElementById('login-name').value;
+    const u    = usersDataFU.find(x=>x['Name']===name);
+    document.getElementById('pin-wrap').style.display = (u && !u['PIN']) ? 'none' : 'block';
+  }
+
+  function submitLogin() {
+    const name = document.getElementById('login-name').value;
+    const pin  = document.getElementById('login-pin').value;
+    if(!name) return;
+    const user = usersDataFU.find(u=>u['Name']===name);
+    if(!user){ document.getElementById('login-error').style.display='block'; return; }
+    if(user['PIN'] && user['PIN']!==pin){
+      document.getElementById('login-error').style.display='block';
+      document.getElementById('login-pin').value=''; return;
+    }
+    applyLoginFU(user);
+  }
+
+  function applyLoginFU(user){
+    currentUser = user['Name'];
+    isViewer    = (user[PAGE_KEY_FU]||'').toLowerCase()==='viewer' || !user['PIN'];
+    sessionStorage.setItem('followup_user', currentUser);
+    document.getElementById('login-overlay').style.display='none';
+    document.getElementById('app').style.display='block';
+    const badge=document.getElementById('user-badge');
+    badge.textContent=isViewer?'👁 Viewer':currentUser;
+    badge.className='user-badge badge-'+currentUser.toLowerCase();
+    loadData();
+  }
+
+  function signOut(){
+    sessionStorage.removeItem('followup_user');
+    location.reload();
+  }
 
   const DN_GROUPS = [
-    { name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
     { name:'Sign Board',            assets:['SignBoard','Sign Board'] },
     { name:'Curtains',              assets:['Curtain'] },
     { name:'Cold Room',             assets:['Coldroom','Cold Room'] },
@@ -305,10 +360,8 @@
 
   const FOLLOWUP_SCHEDULE = { Live:'Sun & Wed', Receiving:'Monday' };
 
-  let currentUser = sessionStorage.getItem('followup_user') || '';
-  let isViewer    = false;
   let currentFilter = 'all';
-  let currentBranch = null; /* branch code open in modal */
+  let currentBranch = null;
 
   /* ── Data ── */
   let branches    = [];
@@ -316,37 +369,6 @@
   let procData    = {};
   let qtyData     = {};
   let followupData= {};
-
-  /* ══ LOGIN ══ */
-  function toggleLoginPin() {
-    const user = document.getElementById('login-name').value;
-    document.getElementById('pin-wrap').style.display = user === 'Viewer' ? 'none' : 'block';
-  }
-
-  function submitLogin() {
-    const name = document.getElementById('login-name').value;
-    const pin  = document.getElementById('login-pin').value;
-    if (!name) return;
-    if (PINS[name] !== null && PINS[name] !== pin) {
-      document.getElementById('login-error').style.display = 'block';
-      document.getElementById('login-pin').value = '';
-      return;
-    }
-    currentUser = name;
-    isViewer    = name === 'Viewer';
-    sessionStorage.setItem('followup_user', name);
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    const badge = document.getElementById('user-badge');
-    badge.textContent = isViewer ? '👁 Viewer' : name;
-    badge.className = 'user-badge badge-' + name.toLowerCase();
-    loadData();
-  }
-
-  function signOut() {
-    sessionStorage.removeItem('followup_user');
-    location.reload();
-  }
 
   /* ══ DATA ══ */
   async function loadData() {
@@ -687,15 +709,7 @@
   }
 
   /* ══ BOOT ══ */
-  if(currentUser&&PINS[currentUser]!==undefined){
-    isViewer=currentUser==='Viewer';
-    document.getElementById('login-overlay').style.display='none';
-    document.getElementById('app').style.display='block';
-    const badge=document.getElementById('user-badge');
-    badge.textContent=isViewer?'👁 Viewer':currentUser;
-    badge.className='user-badge badge-'+currentUser.toLowerCase();
-    loadData();
-  }
+  window.addEventListener('DOMContentLoaded', ()=>{ loadUsersFU(); });
 </script>
 </body>
 </html>
