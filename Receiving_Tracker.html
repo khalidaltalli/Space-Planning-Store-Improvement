@@ -94,10 +94,7 @@
       <div style="margin-bottom:1rem;text-align:left;">
         <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:6px;">Who are you?</label>
         <select id="login-name" style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:13px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;">
-          <option value="">Select your name...</option>
-          <option value="Khalid">Khalid</option>
-          <option value="Azhar">Azhar</option>
-          <option value="Eissa">Eissa</option>
+          <option value="">Loading users...</option>
         </select>
       </div>
       <div style="margin-bottom:1.25rem;text-align:left;">
@@ -313,30 +310,56 @@
     const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
 
     /* ── User Session ── */
-    const PINS = { Khalid:'6969', Azhar:'0000', Eissa:'1234' };
+    const PAGE_KEY = 'Receiving Tracker';
+    let usersData  = [];
     let currentUser = sessionStorage.getItem('tracker_user') || '';
 
+    async function loadUsers() {
+      try {
+        const r = await fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json());
+        usersData = (r.rows||[]).filter(u=>u['Name']);
+      } catch(e) { usersData = []; }
+      /* Fallback if sheet empty */
+      if(!usersData.length) usersData = [
+        {Name:'Khalid',PIN:'6969','Receiving Tracker':'Editor'},
+        {Name:'Azhar', PIN:'0000','Receiving Tracker':'Editor'},
+        {Name:'Eissa', PIN:'1234','Receiving Tracker':'Editor'},
+        {Name:'Dalal', PIN:'8520','Receiving Tracker':'Editor'},
+        {Name:'Viewer',PIN:'',   'Receiving Tracker':'Viewer'},
+      ];
+      const sel = document.getElementById('login-name');
+      sel.innerHTML = '<option value="">Select your name...</option>' +
+        usersData.map(u=>`<option value="${u['Name']}">${u['Name']}</option>`).join('');
+      /* Auto-login if session exists */
+      if(currentUser){
+        const u=usersData.find(u=>u['Name']===currentUser);
+        if(u){ applyLogin(u); return; }
+      }
+    }
+
     function submitLogin() {
-      const name=document.getElementById('login-name').value;
-      const pin=document.getElementById('login-pin').value;
+      const name = document.getElementById('login-name').value;
+      const pin  = document.getElementById('login-pin').value;
       if(!name){alert('Please select your name.');return;}
-      if(pin!==PINS[name]){document.getElementById('login-error').style.display='block';document.getElementById('login-pin').value='';return;}
-      currentUser=name;
-      sessionStorage.setItem('tracker_user',name);
+      const user = usersData.find(u=>u['Name']===name);
+      if(!user){document.getElementById('login-error').style.display='block';return;}
+      if(user['PIN'] && user['PIN']!==pin){
+        document.getElementById('login-error').style.display='block';
+        document.getElementById('login-pin').value='';return;
+      }
+      applyLogin(user);
+    }
+
+    function applyLogin(user){
+      currentUser=user['Name'];
+      sessionStorage.setItem('tracker_user',currentUser);
       document.getElementById('login-overlay').style.display='none';
       const badge=document.getElementById('user-badge');
-      if(badge){badge.textContent=name;badge.className='user-badge badge-'+name.toLowerCase();badge.style.display='inline-block';}
+      if(badge){badge.textContent=currentUser;badge.className='user-badge badge-'+currentUser.toLowerCase();badge.style.display='inline-block';}
       loadTracker();
     }
 
-    window.addEventListener('DOMContentLoaded',()=>{
-      if(currentUser&&PINS[currentUser]){
-        document.getElementById('login-overlay').style.display='none';
-        const badge=document.getElementById('user-badge');
-        if(badge){badge.textContent=currentUser;badge.className='user-badge badge-'+currentUser.toLowerCase();badge.style.display='inline-block';}
-        loadTracker();
-      }
-    });
+    window.addEventListener('DOMContentLoaded', ()=>{ loadUsers(); });
 
     let qtyData       = {};
     let sections      = [];
@@ -688,47 +711,6 @@
       });
 
       /* Qty section */
-      const fqBranch=qtyData[branch.code]||{};
-      const qtyWrap=document.createElement('div');
-      qtyWrap.style.cssText='border-top:0.5px solid rgba(255,255,255,0.07);';
-      qtyWrap.innerHTML=`
-        <div onclick="const w=this.nextElementSibling;w.style.display=w.style.display==='none'?'block':'none';this.querySelector('.qi').style.transform=w.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1.25rem;cursor:pointer;background:rgba(255,255,255,0.02);">
-          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">Fridges & Shelves Quantities</span>
-          <span class="qi" style="color:#64748b;font-size:11px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
-        </div>
-        <div style="display:none;padding:0 1.25rem 0.75rem;overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:12px;">
-            <thead><tr>
-              <th style="text-align:left;padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:140px;">Item</th>
-              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:200px;">Req / Rec</th>
-              <th style="padding:8px 10px;color:#f1f5f9;font-weight:700;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.4);min-width:110px;">Status</th>
-            </tr></thead>
-            <tbody id="${cardId}_qty"></tbody>
-          </table>
-        </div>`;
-      const qtyTbody=qtyWrap.querySelector('tbody');
-      QTY_ITEMS.forEach((item,i)=>{
-        const req=parseInt(fqBranch[item.req]||0)||0,rec2=parseInt(fqBranch[item.rec]||0)||0,diff=rec2-req;
-        const c=req<=0?'#475569':rec2===0?'#fbbf24':diff>0?'#22d3ee':diff<0?'#f87171':'#4ade80';
-        const lbl=req<=0?'-':rec2===0?'Not Received':diff>0?`+${diff} Extra`:diff<0?`${diff} Shortage`:'✓ Exact';
-        const safeId=(branch.code+'_'+item.label).replace(/[^a-zA-Z0-9]/g,'_');
-        const tr=document.createElement('tr');
-        tr.style.background=i%2===0?'rgba(255,255,255,0.02)':'rgba(255,255,255,0.05)';
-        tr.innerHTML=`
-          <td style="padding:8px 10px;font-weight:500;border-bottom:0.5px solid rgba(255,255,255,0.1);">${item.label}</td>
-          <td style="padding:8px 10px;border-bottom:0.5px solid rgba(255,255,255,0.1);">
-            <span style="font-family:'DM Mono',monospace;font-size:11px;color:${c};">
-              <input type="number" min="0" value="${req||''}" placeholder="0" id="req_${safeId}" style="width:55px;background:#0f1117;border:0.5px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
-              <span style="font-size:9px;color:#64748b;"> Req — </span>
-              <input type="number" min="0" value="${rec2||''}" placeholder="0" id="rec_${safeId}" style="width:55px;background:#0f1117;border:0.5px solid ${c}40;color:${c};font-size:11px;padding:2px 4px;border-radius:4px;text-align:left;font-family:'DM Mono',monospace;" />
-              <span style="font-size:9px;color:#64748b;"> Rec</span>
-              <button onclick="saveQtyRow('${branch.code}','${item.req}','${item.rec}','req_${safeId}','rec_${safeId}','${cardId}')" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(74,222,128,0.1);border:0.5px solid rgba(74,222,128,0.3);color:#4ade80;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:4px;">Save</button>
-            </span>
-            <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;margin-top:3px;"><div style="height:100%;width:${Math.min(req>0?rec2/req*100:0,100)}%;background:${c};border-radius:3px;"></div></div>
-          </td>
-          <td style="padding:8px 10px;text-align:center;border-bottom:0.5px solid rgba(255,255,255,0.1);"><span style="font-size:11px;color:${c};font-weight:600;">${lbl}</span></td>`;
-        qtyTbody.appendChild(tr);
-      });
       card.appendChild(qtyWrap);
 
       /* ══════════════════════════════════════════
