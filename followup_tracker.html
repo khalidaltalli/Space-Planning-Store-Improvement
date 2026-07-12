@@ -789,7 +789,7 @@
     const dnRowsF=DN_GROUPS.map(g=>{
       const ga=assets.filter(r=>g.assets.includes((r['Asset']||'').trim())&&r['Asset Status']&&r['Asset Status']!=='None');
       if(!ga.length) return null;
-      const signed=ga.every(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+      const signed   =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
       if(signed) return null;
       const anyUnsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
       const status=anyUnsigned?`<span style="color:#e67e22;font-weight:bold;">📎 Uploaded — Awaiting Signature</span>`:`<span style="color:#c0392b;font-weight:bold;">✗ Missing</span>`;
