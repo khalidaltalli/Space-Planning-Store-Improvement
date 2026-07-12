@@ -396,6 +396,7 @@
         fetch(`${APPS_URL}?sheet=Procurement%20Tracking`).then(r=>r.json()).catch(()=>({rows:[]})),
         fetch(`${APPS_URL}?sheet=Fridge%20%26%20Shelf%20Quantities`).then(r=>r.json()).catch(()=>({rows:[]})),
       ]);
+      loadEmailThreads().catch(()=>{});
 
       branches = (bcRes.rows||[])
         .filter(r=>['Receiving','Live','Completed'].includes(r['Branch Status']))
@@ -724,10 +725,36 @@
   }
 
   /* ══ FOLLOW-UP EMAIL ══ */
+  let emailThreads = {}; /* branchCode -> {to, cc, subject, threadId} */
+
+  async function loadEmailThreads() {
+    try {
+      const r = await fetch(`${APPS_URL}?sheet=Email%20Threads`).then(res=>res.json());
+      emailThreads = {};
+      (r.rows||[]).forEach(row=>{
+        const b=(row['Branch Code']||'').trim();
+        if(b) emailThreads[b]={ to:row['To']||'', cc:row['CC']||'', subject:row['Subject']||'', threadId:row['Thread ID']||'', lastSent:row['Last Sent']||'' };
+      });
+    } catch(e){ emailThreads={}; }
+  }
+
   function openFollowupEmail(){
     if(!currentBranch) return;
-    /* Build same HTML email as receiving tracker */
-    const branch   = currentBranch;
+    const branch = currentBranch;
+    document.getElementById('fu-email-branch').textContent = branch;
+    /* Pre-fill saved recipients */
+    const saved = emailThreads[branch]||{};
+    document.getElementById('fu-to').value      = saved.to      ||'';
+    document.getElementById('fu-cc').value      = saved.cc      ||'';
+    document.getElementById('fu-subject').value = saved.subject ||`Asset Receiving Follow-up — ${branch}`;
+    document.getElementById('fu-send-status').textContent='';
+    const hasThread=!!(saved.threadId);
+    document.getElementById('fu-subject').readOnly=hasThread;
+    document.getElementById('fu-subject').style.opacity=hasThread?'0.6':'1';
+    const threadStatus=document.getElementById('fu-thread-status');
+    threadStatus.textContent=hasThread?`🔗 Will reply to existing thread — Last sent: ${saved.lastSent||'unknown'}`:'📨 First email — new thread will be created';
+    threadStatus.style.color=hasThread?'#4ade80':'#fbbf24';
+    /* Build email HTML */
     const assets   = checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
     const fq       = qtyData[branch]||{};
     const branchStatus = branches.find(b=>b.code===branch)?.status||'—';
@@ -803,6 +830,47 @@
     const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
     document.execCommand('copy');sel.removeAllRanges();
     showToast('Copied to clipboard!');
+  }
+
+  async function sendFollowupEmailFU(){
+    const branch  = currentBranch;
+    const to      = document.getElementById('fu-to').value.trim();
+    const cc      = document.getElementById('fu-cc').value.trim();
+    const subject = document.getElementById('fu-subject').value.trim();
+    const htmlBody= document.getElementById('fu-email-html').innerHTML;
+    const saved   = emailThreads[branch]||{};
+    const btn     = document.getElementById('fu-send-btn');
+    const status  = document.getElementById('fu-send-status');
+    const sig     = {'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
+
+    if(!to)     { status.textContent='⚠ Please enter a To address.'; status.style.color='#f87171'; return; }
+    if(!subject){ status.textContent='⚠ Please enter a subject.';    status.style.color='#f87171'; return; }
+
+    const fullHtml = htmlBody + `<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
+
+    btn.disabled=true; btn.textContent='Sending...';
+    status.textContent='Generating PDF and sending...'; status.style.color='#64748b';
+
+    try {
+      const res  = await fetch(APPS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        action:'sendFollowupEmail', branch, to, cc, subject, htmlBody:fullHtml,
+        threadId:saved.threadId||'', user:currentUser||'Khalid', timestamp:new Date().toLocaleString('en-GB')
+      })});
+      const data = await res.json();
+      if(data.error) throw new Error(data.error);
+      /* Update local cache */
+      emailThreads[branch]={ to, cc, subject, threadId:data.threadId||saved.threadId||'', lastSent:new Date().toLocaleString('en-GB') };
+      document.getElementById('fu-subject').readOnly=true;
+      document.getElementById('fu-subject').style.opacity='0.6';
+      document.getElementById('fu-thread-status').textContent=`🔗 Thread created — Last sent: ${emailThreads[branch].lastSent}`;
+      document.getElementById('fu-thread-status').style.color='#4ade80';
+      status.textContent='✓ Email sent with PDF attached!'; status.style.color='#4ade80';
+      btn.textContent='✉️ Send'; btn.disabled=false;
+      showToast('Email sent!');
+    } catch(e){
+      status.textContent='✗ Failed: '+e.message; status.style.color='#f87171';
+      btn.textContent='✉️ Send'; btn.disabled=false;
+    }
   }
 
   /* ══ REPORT PDFs — identical to receiving tracker ══ */
@@ -898,14 +966,34 @@
 
 <!-- ══ EMAIL MODAL ══ -->
 <div id="fu-email-modal" class="modal-overlay" style="z-index:300;">
-  <div class="modal-box" style="width:680px;max-height:90vh;">
+  <div class="modal-box" style="width:700px;max-height:92vh;">
     <h3>📧 Follow-up Email — <span id="fu-email-branch"></span></h3>
-    <div style="flex:1;overflow-y:auto;background:#fff;border-radius:8px;margin-bottom:0.75rem;">
+    <!-- Fields -->
+    <div style="display:grid;gap:6px;margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
+        <label class="form-label" style="margin:0;">To</label>
+        <input id="fu-to" class="form-input" placeholder="manager@example.com" />
+      </div>
+      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
+        <label class="form-label" style="margin:0;">CC</label>
+        <input id="fu-cc" class="form-input" placeholder="optional@example.com" />
+      </div>
+      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
+        <label class="form-label" style="margin:0;">Subject</label>
+        <input id="fu-subject" class="form-input" placeholder="Asset Receiving Follow-up — BRANCH" />
+      </div>
+    </div>
+    <div style="font-size:10px;color:#64748b;margin-bottom:4px;" id="fu-thread-status"></div>
+    <!-- Preview -->
+    <div style="font-size:10px;color:#64748b;margin-bottom:4px;">Email Preview:</div>
+    <div style="flex:1;overflow-y:auto;background:#fff;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);max-height:360px;">
       <div id="fu-email-html" style="padding:20px 24px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);">
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);align-items:center;flex-wrap:wrap;">
+      <span id="fu-send-status" style="font-size:11px;color:#64748b;margin-right:auto;"></span>
       <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('fu-email-modal').style.display='none'">Close</button>
       <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="copyFollowupEmail()">📋 Copy</button>
+      <button class="btn" id="fu-send-btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="sendFollowupEmailFU()">✉️ Send</button>
     </div>
   </div>
 </div>
