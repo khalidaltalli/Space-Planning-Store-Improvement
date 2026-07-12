@@ -847,30 +847,52 @@
     if(!subject){ status.textContent='⚠ Please enter a subject.';    status.style.color='#f87171'; return; }
 
     const fullHtml = htmlBody + `<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
+    const sendId   = 'SEND_' + Date.now();
 
     btn.disabled=true; btn.textContent='Sending...';
-    status.textContent='Generating PDF and sending...'; status.style.color='#64748b';
+    status.textContent='Sending email + generating PDF...'; status.style.color='#64748b';
 
-    try {
-      const res  = await fetch(APPS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        action:'sendFollowupEmail', branch, to, cc, subject, htmlBody:fullHtml,
-        threadId:saved.threadId||'', user:currentUser||'Khalid', timestamp:new Date().toLocaleString('en-GB')
-      })});
-      const data = await res.json();
-      if(data.error) throw new Error(data.error);
-      /* Update local cache */
-      emailThreads[branch]={ to, cc, subject, threadId:data.threadId||saved.threadId||'', lastSent:new Date().toLocaleString('en-GB') };
-      document.getElementById('fu-subject').readOnly=true;
-      document.getElementById('fu-subject').style.opacity='0.6';
-      document.getElementById('fu-thread-status').textContent=`🔗 Thread created — Last sent: ${emailThreads[branch].lastSent}`;
-      document.getElementById('fu-thread-status').style.color='#4ade80';
-      status.textContent='✓ Email sent with PDF attached!'; status.style.color='#4ade80';
-      btn.textContent='✉️ Send'; btn.disabled=false;
-      showToast('Email sent!');
-    } catch(e){
-      status.textContent='✗ Failed: '+e.message; status.style.color='#f87171';
-      btn.textContent='✉️ Send'; btn.disabled=false;
+    /* Step 1 — fire no-cors POST */
+    fetch(APPS_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        action:'sendFollowupEmail', sendId, branch, to, cc, subject,
+        htmlBody:fullHtml, threadId:saved.threadId||'',
+        user:currentUser||'Khalid', timestamp:new Date().toLocaleString('en-GB')
+      })
+    });
+
+    /* Step 2 — poll GET for result */
+    status.textContent='Waiting for email to send...';
+    let result = null;
+    for(let i=0; i<20; i++){
+      await new Promise(r=>setTimeout(r,2000));
+      status.textContent=`Waiting... (${(i+1)*2}s)`;
+      try {
+        const pollRes  = await fetch(`${APPS_URL}?action=getSendResult&sendId=${sendId}`);
+        const pollData = await pollRes.json();
+        if(pollData.success||pollData.error){ result=pollData; break; }
+      } catch(e){ /* keep polling */ }
     }
+
+    btn.textContent='✉️ Send'; btn.disabled=false;
+
+    if(!result){
+      status.textContent='⚠ Email sent but confirmation timed out — check your Gmail Sent folder.';
+      status.style.color='#fbbf24';
+      return;
+    }
+    if(result.error){ status.textContent='✗ Failed: '+result.error; status.style.color='#f87171'; return; }
+
+    /* Update local cache */
+    emailThreads[branch]={ to, cc, subject, threadId:result.threadId||saved.threadId||'', lastSent:new Date().toLocaleString('en-GB') };
+    document.getElementById('fu-subject').readOnly=true;
+    document.getElementById('fu-subject').style.opacity='0.6';
+    document.getElementById('fu-thread-status').textContent=`🔗 Thread created — Last sent: ${emailThreads[branch].lastSent}`;
+    document.getElementById('fu-thread-status').style.color='#4ade80';
+    status.textContent='✓ Email sent with PDF attached!'; status.style.color='#4ade80';
+    showToast('Email sent!');
   }
 
   /* ══ REPORT PDFs — identical to receiving tracker ══ */
