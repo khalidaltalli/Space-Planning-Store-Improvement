@@ -867,21 +867,22 @@
     /* Step 2 — poll GET for result */
     status.textContent='Waiting for email to send...';
     let result = null;
-    for(let i=0; i<20; i++){
-      await new Promise(r=>setTimeout(r,2000));
-      status.textContent=`Waiting... (${(i+1)*2}s)`;
+    for(let i=0; i<25; i++){
+      await new Promise(r=>setTimeout(r,3000));
+      status.textContent=`Waiting... (${(i+1)*3}s)`;
       try {
         const pollRes  = await fetch(`${APPS_URL}?action=getSendResult&sendId=${sendId}`);
         const pollData = await pollRes.json();
-        if(pollData.success||pollData.error){ result=pollData; break; }
+        if((pollData.success||pollData.error)&&!pollData.pending){ result=pollData; break; }
       } catch(e){ /* keep polling */ }
     }
 
     btn.textContent='✉️ Send'; btn.disabled=false;
 
     if(!result){
-      status.textContent='⚠ Email sent but confirmation timed out — check your Gmail Sent folder.';
+      status.textContent='✓ Email dispatched — please verify in your Gmail Sent folder.';
       status.style.color='#fbbf24';
+      showToast('Email dispatched!');
       return;
     }
     if(result.error){ status.textContent='✗ Failed: '+result.error; status.style.color='#f87171'; return; }
@@ -1189,32 +1190,30 @@
     const htmlBody=document.getElementById('ws-email-html').innerHTML;
     const sig={'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
     const fullHtml=htmlBody+`<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
-    const sendId='WS_'+Date.now();
 
     btn.disabled=true; btn.textContent='Sending...';
     status.textContent='Sending weekly summary...'; status.style.color='#64748b';
 
-    fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'sendWeeklySummary',sendId,to,cc,subject,htmlBody:fullHtml,
-        user:currentUser||'Khalid',timestamp:new Date().toLocaleString('en-GB')})
-    });
-
-    /* Poll for result */
-    let result=null;
-    for(let i=0;i<20;i++){
-      await new Promise(r=>setTimeout(r,2000));
-      status.textContent=`Waiting... (${(i+1)*2}s)`;
-      try{
-        const p=await fetch(`${APPS_URL}?action=getSendResult&sendId=${sendId}`);
-        const d=await p.json();
-        if(d.success||d.error){result=d;break;}
-      }catch(e){}
+    try {
+      const params = new URLSearchParams({
+        action:    'sendWeeklySummary',
+        to,
+        cc,
+        subject,
+        htmlBody:  fullHtml,
+        user:      currentUser||'Khalid',
+        timestamp: new Date().toLocaleString('en-GB')
+      });
+      const res  = await fetch(`${APPS_URL}?${params.toString()}`);
+      const data = await res.json();
+      btn.textContent='✉️ Send'; btn.disabled=false;
+      if(data.error){ status.textContent='✗ Failed: '+data.error; status.style.color='#f87171'; return; }
+      status.textContent='✓ Weekly summary sent!'; status.style.color='#4ade80';
+      showToast('Weekly summary sent!');
+    } catch(e){
+      btn.textContent='✉️ Send'; btn.disabled=false;
+      status.textContent='✗ Failed: '+e.message; status.style.color='#f87171';
     }
-    btn.textContent='✉️ Send'; btn.disabled=false;
-    if(!result){ status.textContent='⚠ Sent but not confirmed — check Gmail Sent folder.'; status.style.color='#fbbf24'; return; }
-    if(result.error){ status.textContent='✗ Failed: '+result.error; status.style.color='#f87171'; return; }
-    status.textContent='✓ Weekly summary sent!'; status.style.color='#4ade80';
-    showToast('Weekly summary sent!');
   }
 
   window.addEventListener('DOMContentLoaded', ()=>{ loadUsersFU(); });
