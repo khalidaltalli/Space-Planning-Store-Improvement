@@ -1294,75 +1294,97 @@
     });
     y+=26;
 
-    /* ── PIE CHART — centered above bar chart, both left half ── */
-    const priCounts={Essential:0,High:0,Medium:0,Low:0};
-    assetList.forEach(a=>{if(priCounts[a.priority]!==undefined)priCounts[a.priority]++;});
-    const pieSegments=[
-      {label:'Essential',count:priCounts.Essential,color:[185,28,28]},
-      {label:'High',      count:priCounts.High,     color:[194,65,12]},
-      {label:'Medium',    count:priCounts.Medium,   color:[161,98,7]},
-      {label:'Low',       count:priCounts.Low,      color:[22,163,74]},
-    ].filter(s=>s.count>0);
-    const pieTotal=pieSegments.reduce((s,p)=>s+p.count,0)||1;
-    const pieR=22, pieCX=50, pieCY=y+pieR+6;
-
-    /* Draw pie */
-    let angle=-Math.PI/2;
-    pieSegments.forEach(s=>{
-      const sweep=(s.count/pieTotal)*2*Math.PI;
-      const steps=Math.max(4,Math.round(sweep*12));
-      doc.setFillColor(...s.color);
-      for(let i=0;i<steps;i++){
-        const a1=angle+(i/steps)*sweep,a2=angle+((i+1)/steps)*sweep;
-        doc.triangle(pieCX,pieCY,pieCX+pieR*Math.cos(a1),pieCY+pieR*Math.sin(a1),pieCX+pieR*Math.cos(a2),pieCY+pieR*Math.sin(a2),'F');
-      }
-      angle+=sweep;
+    /* ── CHART 1: Missing by Section ── */
+    const sectionMap={};
+    assetList.forEach(a=>{
+      a.branches.forEach(b=>{
+        const rows=checklist.filter(r=>(r['Branch Code']||'').trim()===b.code&&(r['Asset']||'').trim()===a.asset);
+        rows.forEach(r=>{
+          const sec=(r['Section']||'Other').trim();
+          if(!sectionMap[sec]) sectionMap[sec]={missing:0,received:0,total:0};
+          sectionMap[sec].missing++;
+        });
+      });
     });
-    /* Donut hole */
-    doc.setFillColor(255,255,255);
-    for(let i=0;i<36;i++){
-      const a1=(i/36)*2*Math.PI,a2=((i+1)/36)*2*Math.PI;
-      doc.triangle(pieCX,pieCY,pieCX+pieR*0.48*Math.cos(a1),pieCY+pieR*0.48*Math.sin(a1),pieCX+pieR*0.48*Math.cos(a2),pieCY+pieR*0.48*Math.sin(a2),'F');
-    }
-    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Priority',pieCX,y+2,{align:'center'});
-    doc.text('Breakdown',pieCX,y+7,{align:'center'});
-
-    /* Legend — below pie */
-    const legY=pieCY+pieR+4;
-    pieSegments.forEach((s,i)=>{
-      const lx=10+i*24;
-      doc.setFillColor(...s.color);doc.roundedRect(lx,legY,4,4,1,1,'F');
-      doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
-      doc.text(s.label+': '+s.count,lx+5,legY+3.5);
+    /* Also count received per section */
+    checklist.forEach(r=>{
+      const b=(r['Branch Code']||'').trim();
+      if(!activeBranches.find(ab=>ab.code===b)) return;
+      const sec=(r['Section']||'Other').trim();
+      const st=(r['Asset Status']||'').trim();
+      if(!sectionMap[sec]) sectionMap[sec]={missing:0,received:0,total:0};
+      if(st==='Received') sectionMap[sec].received++;
+      if(st&&st!=='None') sectionMap[sec].total++;
     });
 
-    /* ── TOP 8 BAR CHART — right of pie ── */
-    const barSectionX=pieCX+pieR+18;
-    const barSectionW=pageW-barSectionX-10;
+    const sections=Object.entries(sectionMap)
+      .filter(([,v])=>v.missing>0)
+      .sort(([,a],[,b])=>b.missing-a.missing);
+    const maxMissing=sections[0]?.[1]?.missing||1;
+    const maxTotal=Math.max(...sections.map(([,v])=>v.total))||1;
+
+    const chartW=pageW-20, chartX=10;
+    const labelW2=45, barAreaW=chartW-labelW2-16;
+
+    /* ─ Chart 1 box ─ */
+    const c1H=sections.length*8+18;
+    doc.setFillColor(250,251,253);doc.roundedRect(chartX,y,chartW,c1H,2,2,'F');
+    doc.setDrawColor(...CLR.border);doc.setLineWidth(0.4);doc.roundedRect(chartX,y,chartW,c1H,2,2,'S');
     doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Top 8 Most Missing',barSectionX,y+6);
-    const top8=assetList.slice(0,8);
-    const maxCount=top8[0]?.branches.length||1;
-    const barH=6,barGap=3;
-    const barStart=y+10;
-    top8.forEach((a,i)=>{
-      const pc=priColor[a.priority]||CLR.grey;
-      const barAreaW=barSectionW-22;
-      const barW=Math.max(1,(a.branches.length/maxCount)*barAreaW);
-      const rowY=barStart+i*(barH+barGap);
-      const rowBg=i%2===0?[255,255,255]:[249,250,251];
-      doc.setFillColor(...rowBg);doc.rect(barSectionX,rowY-0.5,barSectionW,barH+1,'F');
-      const lbl=a.asset.length>18?a.asset.substring(0,17)+'…':a.asset;
-      doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(15,23,42);
-      doc.text(lbl,barSectionX,rowY+4);
-      doc.setFillColor(225,228,232);doc.roundedRect(barSectionX+42,rowY+0.5,barAreaW,barH-1,1,1,'F');
-      doc.setFillColor(...pc);doc.roundedRect(barSectionX+42,rowY+0.5,barW,barH-1,1,1,'F');
+    doc.text('Missing Assets by Section',chartX+4,y+7);
+    doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
+    doc.text('Total missing (Not Received + Delivered)',chartX+chartW-4,y+7,{align:'right'});
+    let cy=y+12;
+    sections.forEach(([sec,v],i)=>{
+      const barW=Math.max(1,(v.missing/maxMissing)*barAreaW);
+      const rowBg=i%2===0?[255,255,255]:[248,250,252];
+      doc.setFillColor(...rowBg);doc.rect(chartX+1,cy,chartW-2,7,'F');
       doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      doc.text(a.branches.length+'/'+total,barSectionX+barSectionW-2,rowY+4,{align:'right'});
+      const lbl=sec.length>16?sec.substring(0,15)+'…':sec;
+      doc.text(lbl,chartX+3,cy+5);
+      doc.setFillColor(225,228,232);doc.roundedRect(chartX+labelW2,cy+1,barAreaW,5,1,1,'F');
+      doc.setFillColor(...CLR.red);doc.roundedRect(chartX+labelW2,cy+1,barW,5,1,1,'F');
+      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      doc.text(String(v.missing),chartX+labelW2+barAreaW+2,cy+5);
+      cy+=8;
     });
+    y+=c1H+6;
 
-    y=legY+8;
+    /* ─ Chart 2 box ─ */
+    const c2H=sections.length*8+18;
+    doc.setFillColor(250,251,253);doc.roundedRect(chartX,y,chartW,c2H,2,2,'F');
+    doc.setDrawColor(...CLR.border);doc.setLineWidth(0.4);doc.roundedRect(chartX,y,chartW,c2H,2,2,'S');
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+    doc.text('Received vs Not Received — by Section',chartX+4,y+7);
+    /* legend */
+    doc.setFillColor(...CLR.green);doc.roundedRect(chartX+chartW-50,y+3,5,4,1,1,'F');
+    doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
+    doc.text('Received',chartX+chartW-44,y+7);
+    doc.setFillColor(...CLR.red);doc.roundedRect(chartX+chartW-26,y+3,5,4,1,1,'F');
+    doc.text('Missing',chartX+chartW-20,y+7);
+    cy=y+12;
+    sections.forEach(([sec,v],i)=>{
+      const total2=v.total||1;
+      const recW=(v.received/total2)*barAreaW;
+      const misW=(v.missing/total2)*barAreaW;
+      const rowBg=i%2===0?[255,255,255]:[248,250,252];
+      doc.setFillColor(...rowBg);doc.rect(chartX+1,cy,chartW-2,7,'F');
+      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      const lbl=sec.length>16?sec.substring(0,15)+'…':sec;
+      doc.text(lbl,chartX+3,cy+5);
+      /* track */
+      doc.setFillColor(225,228,232);doc.roundedRect(chartX+labelW2,cy+1,barAreaW,5,1,1,'F');
+      /* received bar */
+      if(recW>0){doc.setFillColor(...CLR.green);doc.roundedRect(chartX+labelW2,cy+1,recW,5,1,1,'F');}
+      /* missing stacked */
+      if(misW>0){doc.setFillColor(...CLR.red);doc.roundedRect(chartX+labelW2+recW,cy+1,Math.min(misW,barAreaW-recW),5,0,0,'F');}
+      /* pct label */
+      const recPct=Math.round(v.received/total2*100);
+      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      doc.text(recPct+'%',chartX+labelW2+barAreaW+2,cy+5);
+      cy+=8;
+    });
+    y+=c2H+6;
 
     /* ── PAGE 2+: ASSET CARDS — multiple per page ── */
     /* Each asset: navy header (name + priority + count) + severity bar + branch count label */
