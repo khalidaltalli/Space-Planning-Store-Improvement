@@ -1262,18 +1262,17 @@
       doc.text(today,pageW-10,pageH-3,{align:'right'});
     }
 
+    /* ── PAGE 1 ── */
     dH('Asset Report'); let y=24;
 
-    /* KPI cards */
+    /* KPI cards — 3 only (no Top Gap) */
     const critCount=assetList.filter(a=>a.priority==='Essential'||a.priority==='Critical').length;
-    const topAsset=assetList[0];
     const kpis=[
       {label:'Active Branches',value:total,color:CLR.accent},
       {label:'Assets With Gaps',value:assetList.length,color:CLR.red},
       {label:'Essential/Critical',value:critCount,color:[185,28,28]},
-      {label:'Top Gap',value:topAsset?topAsset.branches.length+' branches':'—',color:CLR.red}
     ];
-    const kw=(pageW-20)/4;
+    const kw=(pageW-20)/3;
     kpis.forEach((k,i)=>{
       const x=10+i*kw;
       doc.setFillColor(...CLR.card);doc.roundedRect(x,y,kw-3,20,2,2,'F');
@@ -1281,86 +1280,126 @@
       doc.setFillColor(...k.color);doc.roundedRect(x,y,kw-3,2,1,1,'F');
       doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
       doc.text(k.label.toUpperCase(),x+(kw-3)/2,y+8,{align:'center'});
-      doc.setFontSize(String(k.value).length>7?9:14);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
+      doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
       doc.text(String(k.value),x+(kw-3)/2,y+17,{align:'center'});
     });
     y+=26;
 
-    /* Priority pills */
+    /* ── PIE CHART — priority breakdown ── */
     const priCounts={Essential:0,High:0,Medium:0,Low:0};
     assetList.forEach(a=>{if(priCounts[a.priority]!==undefined)priCounts[a.priority]++;});
-    const pills=[
-      {label:'Essential',count:priCounts.Essential,bg:[254,226,226],color:[185,28,28]},
-      {label:'High',count:priCounts.High,bg:[255,237,213],color:[194,65,12]},
-      {label:'Medium',count:priCounts.Medium,bg:[254,249,195],color:[161,98,7]},
-      {label:'Low',count:priCounts.Low,bg:[220,252,231],color:[22,163,74]},
-    ];
-    const pw=(pageW-20)/4;
-    pills.forEach((p,i)=>{
-      const x=10+i*pw;
-      doc.setFillColor(...p.bg);doc.roundedRect(x,y,pw-4,10,2,2,'F');
-      doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...p.color);
-      doc.text(p.label+': '+p.count,x+(pw-4)/2,y+6.5,{align:'center'});
-    });
-    y+=16;
+    const pieSegments=[
+      {label:'Essential',count:priCounts.Essential,color:[185,28,28]},
+      {label:'High',      count:priCounts.High,     color:[194,65,12]},
+      {label:'Medium',    count:priCounts.Medium,   color:[161,98,7]},
+      {label:'Low',       count:priCounts.Low,      color:[22,163,74]},
+    ].filter(s=>s.count>0);
+    const pieTotal=pieSegments.reduce((s,p)=>s+p.count,0)||1;
+    const pieR=18, pieCX=pageW/4, pieCY=y+pieR+4;
 
-    /* Top 15 bar chart — text in black */
-    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Top 15 Most Missing Assets',10,y);y+=6;
-    const top15=assetList.slice(0,15);
-    const maxCount=top15[0]?.branches.length||1;
-    const barH=6,barGap=1.5,labelW=62,barMaxW=pageW-20-labelW-20;
-    top15.forEach((a,i)=>{
+    /* Draw pie */
+    let angle=-Math.PI/2;
+    pieSegments.forEach(s=>{
+      const sweep=(s.count/pieTotal)*2*Math.PI;
+      const steps=Math.max(4,Math.round(sweep*12));
+      doc.setFillColor(...s.color);
+      for(let i=0;i<steps;i++){
+        const a1=angle+(i/steps)*sweep, a2=angle+((i+1)/steps)*sweep;
+        doc.triangle(pieCX,pieCY,pieCX+pieR*Math.cos(a1),pieCY+pieR*Math.sin(a1),pieCX+pieR*Math.cos(a2),pieCY+pieR*Math.sin(a2),'F');
+      }
+      angle+=sweep;
+    });
+    /* Donut hole */
+    doc.setFillColor(255,255,255);
+    for(let i=0;i<36;i++){
+      const a1=(i/36)*2*Math.PI, a2=((i+1)/36)*2*Math.PI;
+      doc.triangle(pieCX,pieCY,pieCX+pieR*0.5*Math.cos(a1),pieCY+pieR*0.5*Math.sin(a1),pieCX+pieR*0.5*Math.cos(a2),pieCY+pieR*0.5*Math.sin(a2),'F');
+    }
+    doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+    doc.text('Priority',pieCX,pieCY-pieR-3,{align:'center'});
+    doc.text('Breakdown',pieCX,pieCY-pieR+1,{align:'center'});
+
+    /* Legend */
+    pieSegments.forEach((s,i)=>{
+      const lx=pieCX+pieR+8, ly=pieCY-pieR+i*9;
+      doc.setFillColor(...s.color);doc.roundedRect(lx,ly,5,5,1,1,'F');
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
+      doc.text(s.label+': '+s.count+' ('+Math.round(s.count/pieTotal*100)+'%)',lx+7,ly+4);
+    });
+
+    /* ── TOP 8 BAR CHART ── */
+    const barSectionX=pageW/2+2;
+    const barSectionW=pageW-barSectionX-10;
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+    doc.text('Top 8 Most Missing',barSectionX,pieCY-pieR-2);
+    const top8=assetList.slice(0,8);
+    const maxCount=top8[0]?.branches.length||1;
+    const barH=6, barGap=2.5;
+    const barStart=pieCY-pieR+4;
+    top8.forEach((a,i)=>{
       const pc=priColor[a.priority]||CLR.grey;
-      const barW=Math.max(2,(a.branches.length/maxCount)*barMaxW);
+      const barW=Math.max(1,(a.branches.length/maxCount)*(barSectionW-22));
+      const rowY=barStart+i*(barH+barGap);
       const rowBg=i%2===0?[255,255,255]:[249,250,251];
-      doc.setFillColor(...rowBg);doc.rect(10,y-0.5,pageW-20,barH+1.5,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42); /* black label */
-      const label=a.asset.length>24?a.asset.substring(0,23)+'…':a.asset;
-      doc.text(label,10,y+4.5);
-      doc.setFillColor(225,228,232);doc.roundedRect(10+labelW,y+0.5,barMaxW,barH-1,1,1,'F');
-      doc.setFillColor(...pc);doc.roundedRect(10+labelW,y+0.5,barW,barH-1,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42); /* black count */
-      doc.text(a.branches.length+'/'+total,10+labelW+barMaxW+2,y+4.5);
-      y+=barH+barGap;
+      doc.setFillColor(...rowBg);doc.rect(barSectionX,rowY-0.5,barSectionW,barH+1,'F');
+      const lbl=a.asset.length>16?a.asset.substring(0,15)+'…':a.asset;
+      doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(15,23,42);
+      doc.text(lbl,barSectionX,rowY+4);
+      doc.setFillColor(225,228,232);doc.roundedRect(barSectionX+40,rowY+0.5,barSectionW-22-40,barH-1,1,1,'F');
+      doc.setFillColor(...pc);doc.roundedRect(barSectionX+40,rowY+0.5,barW,barH-1,1,1,'F');
+      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      doc.text(a.branches.length+'/'+total,barSectionX+barSectionW-3,rowY+4,{align:'right'});
     });
 
-    /* ── PAGE 2+: ASSET DETAIL — 3-column branch grid ── */
-    assetList.forEach(a=>{
+    y=pieCY+pieR+10;
+
+    /* ── PAGE 2+: ASSET CARDS — multiple per page ── */
+    /* Each asset: navy header (name + priority + count) + severity bar + branch count label */
+    /* Fit as many as possible — each card is ~22mm tall */
+    const cardH=22, cols=3, cw=(pageW-20-(cols-1)*3)/cols;
+    let col=0;
+    let pageStarted=false;
+
+    assetList.forEach((a,ai)=>{
       if(!a.branches.length) return;
-      doc.addPage(); dH('Asset Detail'); y=24;
+      /* New page when needed */
+      if(!pageStarted || col===0&&y+cardH>pageH-12){
+        doc.addPage(); dH('Asset Detail'); y=24; pageStarted=true; col=0;
+      }
+      const x=10+col*(cw+3);
       const pc=priColor[a.priority]||CLR.grey;
-      doc.setFillColor(...CLR.navy);doc.roundedRect(10,y,pageW-20,14,2,2,'F');
-      doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-      doc.text(a.asset,14,y+9);
-      doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
-      doc.text(a.priority||'',pageW/2,y+9,{align:'center'});
-      doc.setTextColor(255,160,160);
-      doc.text(a.branches.length+' / '+total+' branches',pageW-14,y+9,{align:'right'});
-      y+=18;
-      /* severity bar */
       const sevPct=Math.round(a.branches.length/total*100);
-      doc.setFillColor(220,225,232);doc.roundedRect(10,y,pageW-20,5,1,1,'F');
-      doc.setFillColor(...pc);doc.roundedRect(10,y,(pageW-20)*sevPct/100,5,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42); /* black */
-      doc.text(sevPct+'% of branches',pageW-10,y+4,{align:'right'});
-      y+=10;
-      /* 3-column branch grid */
-      const cols3=3, cw3=(pageW-20)/cols3, rh=7;
-      a.branches.forEach((b,i)=>{
-        const col=i%cols3, row=Math.floor(i/cols3);
-        if(col===0&&i>0&&y+row*rh>pageH-20){/* handled by page overflow below */}
-        const cellX=10+col*cw3, cellY=y+row*rh;
-        if(cellY+rh>pageH-12){doc.addPage();dH('Asset Detail (cont.)');y=24;/* reset - simplified */}
-        const bgC=b.status==='Not Received'?[254,226,226]:[254,243,199];
-        doc.setFillColor(...bgC);doc.roundedRect(cellX,cellY,cw3-2,rh-1,1,1,'F');
-        doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-        doc.text(b.code,cellX+3,cellY+4.5);
-      });
+
+      /* Card background */
+      doc.setFillColor(...CLR.card);doc.roundedRect(x,y,cw,cardH,2,2,'F');
+      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.roundedRect(x,y,cw,cardH,2,2,'S');
+
+      /* Color accent top bar */
+      doc.setFillColor(...pc);doc.roundedRect(x,y,cw,2,1,1,'F');
+
+      /* Asset name */
+      const name=a.asset.length>18?a.asset.substring(0,17)+'…':a.asset;
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      doc.text(name,x+3,y+8);
+
+      /* Priority pill */
+      doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...pc);
+      doc.text(a.priority||'',x+cw-3,y+8,{align:'right'});
+
+      /* Severity bar */
+      doc.setFillColor(220,225,232);doc.roundedRect(x+3,y+10,cw-6,3,1,1,'F');
+      doc.setFillColor(...pc);doc.roundedRect(x+3,y+10,(cw-6)*sevPct/100,3,1,1,'F');
+
+      /* Branch count */
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      doc.text(a.branches.length+'/'+total+' branches ('+sevPct+'%)',x+cw/2,y+18,{align:'center'});
+
+      col++;
+      if(col>=cols){ col=0; y+=cardH+3; }
     });
 
     const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
-    doc.save(`Asset_Report_${week.replace(/,?\s/g,'_')}_${today.replace(/\//g,'-')}.pdf`);
+    doc.save('Asset_Report_'+week.split(',').join('').split(' ').join('_')+'_'+today.split('/').join('-')+'.pdf');
     showToast('Asset Report PDF downloaded!');
   }
 
