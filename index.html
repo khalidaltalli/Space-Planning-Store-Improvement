@@ -3,207 +3,519 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Team Platforms</title>
+  <title>D.N. Upload — Space Planning</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: #0f1117;
-      color: #e2e8f0;
-      min-height: 100vh;
-      padding: 1.5rem;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f1117; color: #e2e8f0; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
 
     /* ── Header ── */
-    .header {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 14px;
-      margin-bottom: 2.25rem;
-      padding: 0.5rem 0 1.5rem;
-      border-bottom: 0.5px solid rgba(255,255,255,0.08);
-    }
-    .header-left { display:flex; align-items:center; justify-content:center; }
-    .header-left img { height:120px; object-fit:contain; }
-    .header-center h1 { font-size:26px; font-weight:700; color:#fff; letter-spacing:-0.3px; }
-    .header-center p  { font-size:12px; color:#64748b; margin-top:5px; }
-    .header-right { position:absolute; top:0.5rem; right:0; display:flex; align-items:center; gap:8px; }
+    .header { background: #1a1f2e; border-bottom: 0.5px solid rgba(255,255,255,0.07); padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .header-title { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+    .header-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .missing-pill { font-size: 11px; padding: 4px 12px; border-radius: 20px; background: rgba(248,113,113,0.12); border: 0.5px solid rgba(248,113,113,0.3); color: #f87171; font-weight: 600; }
+    .missing-pill.ok { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: #4ade80; }
+    .user-pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: rgba(34,211,238,0.1); border: 0.5px solid rgba(34,211,238,0.2); color: #22d3ee; }
 
-    .live-badge {
-      display:flex; align-items:center; gap:6px; font-size:11px; color:#22d3ee;
-      background:rgba(34,211,238,0.08); border:0.5px solid rgba(34,211,238,0.2);
-      padding:5px 12px; border-radius:20px;
-    }
-    .live-dot { width:6px; height:6px; border-radius:50%; background:#22d3ee; animation:pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    /* ── Login ── */
+    .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+    .login-card { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 2rem; width: 320px; }
+    .login-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 0.25rem; }
+    .login-card p { font-size: 12px; color: #64748b; margin-bottom: 1.5rem; }
+    .login-error { font-size: 11px; color: #f87171; margin-top: 8px; display: none; }
 
-    /* ── Section ── */
-    .section-label {
-      font-size:11px; color:#64748b; font-weight:700; text-transform:uppercase;
-      letter-spacing:0.6px; margin-bottom:0.85rem; display:flex; align-items:center; gap:8px;
-    }
-    .section-label::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.06); }
+    /* ── Filters ── */
+    .filters { padding: 0.75rem 1.5rem; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
+    .filter-btn { font-size: 11px; padding: 4px 12px; border-radius: 20px; border: 0.5px solid rgba(255,255,255,0.1); background: transparent; color: #94a3b8; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+    .filter-btn.active { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.3); color: #22d3ee; }
+    .filter-btn.red.active { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.3); color: #f87171; }
+    .search-input { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 11px; padding: 5px 10px; border-radius: 6px; font-family: 'DM Sans', sans-serif; width: 180px; }
+    .search-input:focus { outline: none; border-color: rgba(34,211,238,0.3); }
 
-    /* ── Card grid ── */
-    .grid {
-      display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap:14px;
-      margin-bottom:2.25rem;
-    }
+    /* ── Table ── */
+    .table-wrap { padding: 1rem 1.5rem; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; border-bottom: 0.5px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    tbody tr { border-bottom: 0.5px solid rgba(255,255,255,0.04); transition: background 0.1s; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 8px 10px; vertical-align: middle; }
 
-    .card {
-      background:#1a1f2e;
-      border:0.5px solid rgba(255,255,255,0.07);
-      border-radius:12px;
-      padding:1.25rem;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      text-decoration:none;
-      color:inherit;
-      transition: border-color 0.15s, transform 0.15s, background 0.15s;
-      position:relative;
-      overflow:hidden;
-    }
-    .card::before {
-      content:'';
-      position:absolute; top:0; left:0; width:3px; height:100%;
-      background: var(--accent, #22d3ee);
-      opacity:0.7;
-    }
-    .card:hover {
-      border-color: rgba(255,255,255,0.16);
-      background:#1e2433;
-      transform: translateY(-2px);
-    }
+    /* ── DN Cell ── */
+    .dn-cell { display: flex; align-items: center; gap: 6px; }
+    .dn-status { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+    .dn-signed   { background: rgba(74,222,128,0.12); color: #4ade80; }
+    .dn-unsigned { background: rgba(251,191,36,0.12); color: #fbbf24; }
+    .dn-missing  { background: rgba(248,113,113,0.12); color: #f87171; }
+    .upload-btn { font-size: 10px; padding: 2px 8px; border-radius: 5px; background: rgba(167,139,250,0.1); border: 0.5px solid rgba(167,139,250,0.25); color: #a78bfa; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+    .upload-btn:hover { background: rgba(167,139,250,0.18); }
+    .upload-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .view-link { font-size: 10px; color: #22d3ee; text-decoration: none; }
+    .view-link:hover { text-decoration: underline; }
+    .progress-mini { height: 3px; border-radius: 2px; background: rgba(255,255,255,0.06); margin-top: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 2px; background: #22d3ee; transition: width 0.3s; }
 
-    .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-    .card-icon {
-      width:38px; height:38px; border-radius:9px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:18px;
-      background: color-mix(in srgb, var(--accent, #22d3ee) 14%, transparent);
-      border: 0.5px solid color-mix(in srgb, var(--accent, #22d3ee) 30%, transparent);
-      flex-shrink:0;
-    }
-    .card-status {
-      font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px;
-      padding:3px 9px; border-radius:10px; white-space:nowrap;
-    }
-    .status-live  { background:rgba(74,222,128,0.1);  color:#4ade80; }
-    .status-view  { background:rgba(100,116,139,0.12); color:#94a3b8; }
-    .status-beta  { background:rgba(251,191,36,0.1);  color:#fbbf24; }
+    /* ── Toast ── */
+    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1a1f2e; border: 0.5px solid rgba(74,222,128,0.3); color: #4ade80; font-size: 12px; padding: 8px 16px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 300; }
 
-    .card-name { font-size:15px; font-weight:700; color:#f1f5f9; letter-spacing:-0.1px; }
-    .card-desc { font-size:12px; color:#94a3b8; line-height:1.5; flex:1; }
+    /* ── Forms ── */
+    .form-input { width: 100%; background: #0f1117; border: 0.5px solid rgba(255,255,255,0.12); color: #e2e8f0; font-size: 12px; padding: 8px 10px; border-radius: 6px; font-family: 'DM Sans', sans-serif; }
+    .form-input:focus { outline: none; border-color: rgba(34,211,238,0.4); }
+    .btn { font-size: 12px; padding: 7px 16px; border-radius: 7px; border: 0.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #e2e8f0; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all 0.15s; }
+    .btn-primary { background: rgba(167,139,250,0.1); border-color: rgba(167,139,250,0.3); color: #a78bfa; }
 
-    .card-open {
-      font-size:11px; font-weight:600; color: var(--accent, #22d3ee);
-      display:flex; align-items:center; gap:5px; margin-top:2px;
-    }
-    .card-open .arrow { transition: transform 0.15s; }
-    .card:hover .card-open .arrow { transform: translateX(3px); }
+    /* ── Activity Log ── */
+    .log-wrap { padding: 0 1.5rem 2rem; }
+    .log-title { font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.75rem; padding-top: 1rem; border-top: 0.5px solid rgba(255,255,255,0.06); }
+    .log-date-group { margin-bottom: 8px; border: 0.5px solid rgba(255,255,255,0.06); border-radius: 8px; overflow: hidden; }
+    .log-date-header { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; background: rgba(255,255,255,0.03); cursor: pointer; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.4px; user-select: none; }
+    .log-date-header:hover { background: rgba(255,255,255,0.05); }
+    .log-date-body { padding: 4px 0; }
+    .log-date-count { font-size: 10px; background: rgba(167,139,250,0.15); color: #a78bfa; padding: 1px 7px; border-radius: 8px; font-weight: 600; }
+    .log-chevron { font-size: 10px; color: #475569; transition: transform 0.2s; }
+    .log-entry { display: flex; gap: 10px; padding: 7px 12px; border-bottom: 0.5px solid rgba(255,255,255,0.04); font-size: 11px; }
+    .log-entry:last-child { border-bottom: none; }
+    .log-dot { width: 7px; height: 7px; border-radius: 50%; background: #a78bfa; margin-top: 3px; flex-shrink: 0; }
+    .log-ts { color: #475569; white-space: nowrap; }
 
-    @media (max-width: 480px) {
-      .header-left img { height:80px; }
-      .header-right { position:static; margin-top:4px; justify-content:center; }
-    }
+    /* hide file input */
+    input[type=file] { display: none; }
   </style>
 </head>
 <body>
 
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-card">
+      <h2>📎 D.N. Upload</h2>
+      <p>Space Planning & Store Improvement</p>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;">Name</label>
+        <select id="login-user" class="form-input" onchange="togglePinField()">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+      <div id="pin-wrap" style="margin-bottom:14px;">
+        <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;">PIN</label>
+        <input id="login-pin" type="password" class="form-input" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="doLogin()">Sign In</button>
+      <div id="login-error" class="login-error">Incorrect PIN. Please try again.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app" style="display:none;">
+
+  <!-- Header -->
   <div class="header">
-    <div class="header-left">
-      <!-- Swap src for your team logo, or remove this img tag -->
-      <img src="logo.png" alt="Logo" onerror="this.style.display='none'" />
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="index.html" style="display:flex;align-items:center;text-decoration:none;">
+        <img src="logo.png" style="height:60px;object-fit:contain;" alt="Logo" />
+      </a>
+      <div>
+        <div class="header-title">D.N. Upload Portal</div>
+        <div class="header-sub">Space Planning & Store Improvement</div>
+      </div>
     </div>
-    <div class="header-center">
-      <h1>Team Platforms</h1>
-      <p>Space Planning &amp; Store Improvement</p>
-    </div>
-    <div class="header-right">
-      <div class="live-badge"><div class="live-dot"></div> All Systems Up</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="missing-pill" class="missing-pill">Loading...</span>
+      <span id="current-user-pill" class="user-pill"></span>
+      <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="loadData()">↻ Refresh</button>
+      <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="signOut()">Sign Out</button>
     </div>
   </div>
 
-  <!-- ════════════════════════════════════════════════════════
-       SECTION: Asset Receiving
-       To add a new platform: copy one <a class="card">...</a>
-       block, change href / icon / name / description / status.
-
-       --accent accepts any hex color, e.g. #22d3ee, #a78bfa, #4ade80
-       status classes: status-live | status-view | status-beta
-       ════════════════════════════════════════════════════════ -->
-  <div class="section-label">Asset Receiving</div>
-  <div class="grid" id="grid-1">
-
-    <a class="card" style="--accent:#22d3ee" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/Receiving_Tracker.html" target="_blank">
-      <div class="card-top">
-        <div class="card-icon">📦</div>
-        <span class="card-status status-live">Live</span>
-      </div>
-      <div class="card-name">Receiving Tracker</div>
-      <div class="card-desc">Track and update asset status per branch — receiving checklist, D.N. links, notes, and fridge/shelf quantities.</div>
-      <div class="card-open">Open platform <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" style="--accent:#94a3b8" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/Receiving_Dashboard.html" target="_blank">
-      <div class="card-top">
-        <div class="card-icon">👁️</div>
-        <span class="card-status status-view">View Only</span>
-      </div>
-      <div class="card-name">Receiving Dashboard</div>
-      <div class="card-desc">Read-only view of the same receiving data, for stakeholders who shouldn't edit anything.</div>
-      <div class="card-open">Open platform <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" style="--accent:#a78bfa" href="#">
-      <div class="card-top">
-        <div class="card-icon">🏗️</div>
-        <span class="card-status status-beta">Beta</span>
-      </div>
-      <div class="card-name">New Stores Expansion</div>
-      <div class="card-desc">Track upcoming store openings, construction milestones, and rollout timelines.</div>
-      <div class="card-open">Open platform <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" style="--accent:#34d399" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/Stores_Info.html" target="_blank">
-      <div class="card-top">
-        <div class="card-icon">🏬</div>
-        <span class="card-status status-live">Live</span>
-      </div>
-      <div class="card-name">Stores Info</div>
-      <div class="card-desc">Reference details for every branch — addresses, contacts, layout links, and key info.</div>
-      <div class="card-open">Open platform <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" style="--accent:#fbbf24" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/dn_upload.html" target="_blank">
-      <div class="card-top">
-        <div class="card-icon">📄</div>
-        <span class="card-status status-live">Live</span>
-      </div>
-      <div class="card-name">D.N. Upload</div>
-      <div class="card-desc">Upload and manage delivery notes — attach signed and unsigned D.N. documents per branch and asset.</div>
-      <div class="card-open">Open platform <span class="arrow">→</span></div>
-    </a>
-
-    <a class="card" style="--accent:#fb923c" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/followup_tracker.html" target="_blank">
-      <div class="card-top">
-        <div class="card-icon">🔔</div>
-        <span class="card-status status-live">Live</span>
-      </div>
-      <div class="card-name">Follow-up Tracker</div>
-      <div class="card-desc">Track and manage open follow-up items across branches — log issues, assign actions, and monitor resolution.</div>
-      <div class="card-open">Open platform <span class="arrow">→</span></div>
-    </a>
-
+  <!-- Filters -->
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn red" onclick="setFilter('missing',this)">Missing Only</button>
+    <button class="filter-btn" onclick="setFilter('unsigned',this)">Unsigned</button>
+    <button class="filter-btn" onclick="setFilter('signed',this)">Signed</button>
+    <input class="search-input" id="branch-search" placeholder="Search branch..." oninput="applyFilter()" />
+    <span id="count-label" style="font-size:11px;color:#475569;margin-left:auto;"></span>
   </div>
 
+  <!-- Table -->
+  <div class="table-wrap">
+    <div id="loading" style="text-align:center;padding:3rem;color:#475569;font-size:13px;">Loading branches...</div>
+    <table id="dn-table" style="display:none;">
+      <thead>
+        <tr>
+          <th style="min-width:120px;">Branch</th>
+          <th style="min-width:80px;">Status</th>
+          <th>Freebolt & Heavy Rack</th>
+          <th>Sign Board</th>
+          <th>Curtains</th>
+          <th>Cold Room</th>
+          <th>Fridges & Freezers</th>
+          <th>Access Points & CCTV</th>
+          <th>Air Condition</th>
+        </tr>
+      </thead>
+      <tbody id="dn-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Activity Log -->
+  <div class="log-wrap">
+    <div class="log-title">📋 Upload Activity Log</div>
+    <div id="activity-log"><p style="font-size:11px;color:#475569;">Loading...</p></div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
+
+  const PAGE_KEY_DN = 'D.N. Upload';
+  let usersDataDN  = [];
+  let currentUser  = '';
+  let isViewer     = false;
+
+  const FALLBACK_USERS_DN = [
+    {Name:'Kamal',       PIN:'1234', 'D.N. Upload':'Editor'},
+    {Name:'Ahmed Khalil',PIN:'1234', 'D.N. Upload':'Editor'},
+    {Name:'Azhar',       PIN:'0000', 'D.N. Upload':'Editor'},
+    {Name:'Khalid',      PIN:'6969', 'D.N. Upload':'Editor'},
+    {Name:'Viewer',      PIN:'',     'D.N. Upload':'Viewer'},
+  ];
+
+  function populateDNDropdown() {
+    const sel = document.getElementById('login-user');
+    sel.innerHTML = '<option value="">Select your name</option>' +
+      usersDataDN.map(u=>`<option value="${u['Name']}">${u['Name']}</option>`).join('');
+    togglePinField();
+  }
+
+  async function loadUsersDN() {
+    usersDataDN = FALLBACK_USERS_DN;
+    populateDNDropdown();
+    try {
+      const r = await Promise.race([
+        fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json()),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000))
+      ]);
+      const fromSheet=(r.rows||[]).filter(u=>u['Name']);
+      if(fromSheet.length){ usersDataDN=fromSheet; populateDNDropdown(); }
+    } catch(e){ /* keep fallback */ }
+  }
+
+  function togglePinField() {
+    const user = document.getElementById('login-user').value;
+    const u    = usersDataDN.find(x=>x['Name']===user);
+    document.getElementById('pin-wrap').style.display = (u && !u['PIN']) ? 'none' : 'block';
+  }
+
+  function doLogin() {
+    const name = document.getElementById('login-user').value;
+    const pin  = document.getElementById('login-pin').value;
+    if(!name) return;
+    const user = usersDataDN.find(u=>u['Name']===name);
+    if(!user){ showLoginError('User not found.'); return; }
+    if(user['PIN'] && user['PIN']!==pin){ showLoginError('Incorrect PIN. Please try again.'); document.getElementById('login-pin').value=''; return; }
+    currentUser = name;
+    isViewer    = (user[PAGE_KEY_DN]||'').toLowerCase()==='viewer' || !user['PIN'];
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('current-user-pill').textContent=isViewer?'👁 View Only':name;
+    loadData();
+  }
+  const DN_GROUPS = [
+    { key:'freebolt',   name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
+    { key:'signboard',  name:'Sign Board',            assets:['SignBoard','Sign Board'] },
+    { key:'curtain',    name:'Curtains',              assets:['Curtain'] },
+    { key:'coldroom',   name:'Cold Room',             assets:['Coldroom','Cold Room'] },
+    { key:'fridges',    name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'] },
+    { key:'apcctv',     name:'Access Points & CCTV',  assets:['Access Points','CCTV'] },
+    { key:'ac',         name:'Air Condition',         assets:['Air Condition'] },
+  ];
+
+  let allBranches = [];
+  let checklistData = [];
+  let currentFilter = 'all';
+  let activityLog = [];
+
+  function togglePinField() {
+    const user = document.getElementById('login-user').value;
+    const wrap = document.getElementById('pin-wrap');
+    wrap.style.display = user === 'Viewer' ? 'none' : 'block';
+  }
+
+  function showLoginError(msg) {
+    const el = document.getElementById('login-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function signOut() {
+    currentUser = '';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('login-pin').value = '';
+    document.getElementById('login-error').style.display = 'none';
+  }
+
+  /* ══ LOAD DATA ══ */
+  async function loadData() {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('dn-table').style.display = 'none';
+    try {
+      /* Fetch branches, checklist, and activity log in parallel */
+      const [bcRes, clRes, logRes] = await Promise.all([
+        fetch(`${APPS_URL}?sheet=Branch%20Codes`).then(r=>r.json()),
+        fetch(`${APPS_URL}?sheet=Receiving%20Checklist`).then(r=>r.json()),
+        fetch(`${APPS_URL}?sheet=DN%20Upload%20Log`).then(r=>r.json()).catch(()=>({rows:[]}))
+      ]);
+
+      /* Build branch list (exclude Pending) */
+      allBranches = (bcRes.rows||[])
+        .filter(r=>r['Branch Status']!=='Pending')
+        .map(r=>({ code:r['Branch Code'], status:r['Branch Status'] }))
+        .sort((a,b)=>a.code.localeCompare(b.code));
+
+      checklistData = clRes.rows||[];
+      activityLog   = (logRes.rows||[]).slice(-50).reverse();
+
+      renderTable();
+      renderLog();
+      updateMissingPill();
+    } catch(e) {
+      document.getElementById('loading').textContent = 'Failed to load: ' + e.message;
+    }
+  }
+
+  /* ══ BUILD TABLE ══ */
+  function renderTable() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('dn-table').style.display = 'table';
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const search = document.getElementById('branch-search').value.toLowerCase();
+    const tbody  = document.getElementById('dn-tbody');
+    tbody.innerHTML = '';
+    let shown = 0;
+
+    allBranches.forEach(branch => {
+      if (search && !branch.code.toLowerCase().includes(search)) return;
+      const assets = checklistData.filter(r=>(r['Branch Code']||'').trim()===branch.code);
+      const groups = getDNGroups(assets);
+
+      /* Filter logic */
+      if (currentFilter === 'missing'  && !groups.some(g=>g.status==='missing'))  return;
+      if (currentFilter === 'unsigned' && !groups.some(g=>g.status==='unsigned')) return;
+      if (currentFilter === 'signed'   && !groups.every(g=>g.status==='signed'))  return;
+
+      shown++;
+      const statusColor = { Receiving:'#22d3ee', Live:'#4ade80', Pending:'#fbbf24' }[branch.status]||'#94a3b8';
+      const tr = document.createElement('tr');
+      tr.dataset.branch = branch.code;
+
+      let html = `
+        <td style="font-weight:700;color:#f1f5f9;">${branch.code}</td>
+        <td><span style="font-size:10px;font-weight:600;color:${statusColor};">${branch.status}</span></td>`;
+
+      groups.forEach((g,i) => {
+        html += `<td><div class="dn-cell">`;
+        if (g.status === 'signed') {
+          html += `<span class="dn-status dn-signed">✓ Signed</span>`;
+          if (g.link) html += `<a href="${g.link}" target="_blank" class="view-link">View</a>`;
+        } else if (g.status === 'unsigned') {
+          html += `<span class="dn-status dn-unsigned">📎 Uploaded</span>`;
+          if (g.link) html += `<a href="${g.link}" target="_blank" class="view-link">View</a>`;
+          if (!isViewer) html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}')">＋ Link</button>`;
+        } else {
+          html += `<span class="dn-status dn-missing">Missing</span>`;
+          if (!isViewer) html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}')">＋ Add Link</button>`;
+        }
+        html += `</div></td>`;
+      });
+
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('count-label').textContent = `${shown} branches`;
+  }
+
+  function getDNGroups(assets) {
+    return DN_GROUPS.map(g => {
+      const groupAssets = assets.filter(r=>g.assets.includes((r['Asset']||'').trim()));
+      const signed   = groupAssets.find(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+      const unsigned = groupAssets.find(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
+      if (signed)   return { status:'signed',   link: signed['D.N. Signed'] };
+      if (unsigned) return { status:'unsigned',  link: unsigned['D.N. Not Signed'] };
+      return { status:'missing', link:'' };
+    });
+  }
+
+  function updateMissingPill() {
+    let missing = 0;
+    allBranches.forEach(b => {
+      const assets = checklistData.filter(r=>(r['Branch Code']||'').trim()===b.code);
+      getDNGroups(assets).forEach(g=>{ if(g.status==='missing') missing++; });
+    });
+    const pill = document.getElementById('missing-pill');
+    if (missing === 0) {
+      pill.textContent = '✓ All D.N.s uploaded';
+      pill.className = 'missing-pill ok';
+    } else {
+      pill.textContent = `📋 ${missing} Missing D.N.s`;
+      pill.className = 'missing-pill';
+    }
+  }
+
+  /* ══ FILTER ══ */
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilter();
+  }
+
+  /* ══ FILE UPLOAD ══ */
+  function triggerUpload(branch, groupKey) {
+    const group = DN_GROUPS.find(g=>g.key===groupKey);
+    const link  = prompt(`Paste the Google Drive link for:\n${branch} — ${group.name}`);
+    if (!link || !link.trim()) return;
+    if (!link.startsWith('http')) { showToast('✗ Invalid link — must start with http', true); return; }
+    saveDNLink(branch, group, link.trim());
+  }
+
+  async function saveDNLink(branch, group, fileUrl) {
+    const timestamp = new Date().toLocaleString('en-GB');
+    /* Write to sheet */
+    await fetch(APPS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action:    'writeDNLink',
+        branch,
+        assets:    group.assets,
+        groupName: group.name,
+        fileName:  'Manual link entry',
+        fileUrl,
+        user:      currentUser,
+        timestamp
+      })
+    });
+    /* Update local data immediately */
+    checklistData.forEach(r => {
+      if ((r['Branch Code']||'').trim()===branch && group.assets.includes((r['Asset']||'').trim())) {
+        r['D.N. Not Signed'] = fileUrl;
+      }
+    });
+    activityLog.unshift({
+      Timestamp: timestamp, User: currentUser,
+      'Branch Code': branch, 'D.N. Group': group.name,
+      'File Name': 'Manual link', 'File URL': fileUrl
+    });
+    showToast('✓ Link saved!');
+    applyFilter();
+    updateMissingPill();
+    renderLog();
+  }
+
+  /* ══ ACTIVITY LOG ══ */
+  function renderLog() {
+    const container = document.getElementById('activity-log');
+    if (!activityLog.length) {
+      container.innerHTML = '<p style="font-size:11px;color:#475569;">No uploads yet.</p>';
+      return;
+    }
+
+    /* Group by date — extract dd/mm/yyyy from various timestamp formats */
+    const groups = {};
+    activityLog.slice(0, 60).forEach(e => {
+      const ts = e['Timestamp'] || '';
+      let date = '';
+      /* Format 1: dd/mm/yyyy, hh:mm or dd/mm/yyyy hh:mm */
+      const gbMatch = ts.match(/^(\d{1,2}\/\d{1,2}\/\d{4})/);
+      if (gbMatch) {
+        date = gbMatch[1];
+      } else {
+        /* Format 2: JS default "Mon Dec 07 2026 ..." — convert to dd/mm/yyyy */
+        const d = new Date(ts);
+        if (!isNaN(d)) {
+          date = d.toLocaleDateString('en-GB');
+        } else {
+          date = ts.split(',')[0].trim() || 'Unknown';
+        }
+      }
+      if (!date) date = 'Unknown';
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(e);
+    });
+
+    const today     = new Date().toLocaleDateString('en-GB');
+    const yesterday = new Date(Date.now()-86400000).toLocaleDateString('en-GB');
+
+    container.innerHTML = Object.entries(groups).map(([date, entries], gi) => {
+      const label = date === today ? `Today — ${date}` : date === yesterday ? `Yesterday — ${date}` : date;
+      const isOpen = gi === 0; /* first group open by default */
+      const groupId = 'log-group-' + gi;
+
+      const entriesHtml = entries.map(e => {
+        const hasLink = e['File URL'] && e['File URL'].startsWith('http');
+        return `<div class="log-entry">
+          <div class="log-dot"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;">
+              <span style="font-weight:600;color:#e2e8f0;">${e['Branch Code']||''}</span>
+              <span style="color:#a78bfa;">${e['D.N. Group']||''}</span>
+              <span style="color:#94a3b8;font-size:10px;">by ${e['User']||''}</span>
+              <span style="color:#475569;font-size:10px;margin-left:auto;">${(()=>{ const ts=e['Timestamp']||''; const m=ts.match(/\d{1,2}:\d{2}/); return m?m[0]:''; })()}</span>
+            </div>
+            <div style="font-size:10px;color:#475569;margin-top:2px;display:flex;align-items:center;gap:8px;">
+              <span>${e['File Name']||''}</span>
+              ${hasLink ? `<a href="${e['File URL']}" target="_blank" style="font-size:10px;padding:1px 8px;border-radius:4px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;text-decoration:none;flex-shrink:0;">👁 View</a>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div class="log-date-group">
+        <div class="log-date-header" onclick="toggleLogGroup('${groupId}',this)">
+          <span>${label}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="log-date-count">${entries.length} upload${entries.length!==1?'s':''}</span>
+            <span class="log-chevron" style="transform:${isOpen?'rotate(0deg)':'rotate(-90deg)'}">▼</span>
+          </div>
+        </div>
+        <div id="${groupId}" class="log-date-body" style="display:${isOpen?'block':'none'};">
+          ${entriesHtml}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleLogGroup(id, header) {
+    const body    = document.getElementById(id);
+    const chevron = header.querySelector('.log-chevron');
+    const isOpen  = body.style.display !== 'none';
+    body.style.display    = isOpen ? 'none' : 'block';
+    chevron.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
+  }
+
+  /* ══ BOOT ══ */
+  window.addEventListener('DOMContentLoaded', ()=>{ loadUsersDN(); });
+  let toastTimer;
+  function showToast(msg, error=false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.borderColor = error ? 'rgba(248,113,113,0.3)' : 'rgba(74,222,128,0.3)';
+    t.style.color = error ? '#f87171' : '#4ade80';
+    t.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.style.opacity='0', 3500);
+  }
+</script>
 </body>
 </html>
