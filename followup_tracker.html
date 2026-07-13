@@ -1025,17 +1025,26 @@
     const sig={'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
     const DASHBOARD_URL='https://khalidaltalli.github.io/Space-Planning-Store-Improvement/Receiving_Dashboard.html';
     const top3=assetList.slice(0,3);
-    const priEmoji={Essential:'🔴',Critical:'🔴',High:'🟠',Medium:'🟡',Low:'🟢'};
-    const bulletsHtml=top3.map(a=>`<li style="margin:4px 0;">${priEmoji[a.priority]||'⚪'} <strong>${a.asset}</strong> missing from <strong>${a.branches.length}</strong> branches</li>`).join('');
+
+    const bulletsHtml=top3.map(a=>
+      `<li style="margin:5px 0;"><strong>${a.asset}</strong> — Missing from <strong>${a.branches.length}</strong> branches</li>`
+    ).join('');
+
     const html=`
       <p style="margin:0 0 12px;color:#888;font-size:11px;border-bottom:1px solid #eee;padding-bottom:8px;">Subject: Weekly Asset Receiving Summary — ${week}</p>
       <p style="margin:8px 0;">Dear Team,</p>
-      <p style="margin:8px 0;">Please find this week's asset receiving summary for <strong>${week}</strong>.</p>
-      <p style="margin:8px 0;">We currently have <strong>${total} active branches</strong> at an average completion of <strong>${avgPct}%</strong>. The most urgent gaps are highlighted in the attached reports.</p>
-      <p style="margin:14px 0 6px;"><strong>Key this week:</strong></p>
-      <ul style="margin:0 0 14px 20px;">${bulletsHtml}</ul>
-      <p style="margin:8px 0;">View the live dashboard: <a href="${DASHBOARD_URL}" style="color:#0e7490;font-weight:600;">Receiving Dashboard →</a></p>
-      <p style="margin:8px 0;">Full details in the attached Branch Report and Asset Report.</p>
+      <p style="margin:8px 0;">Please find this week's Asset Receiving Summary for <strong>${week}</strong>.</p>
+      <p style="margin:8px 0;">We currently have <strong>${total} active branches</strong> with an average asset receiving completion of <strong>${avgPct}%</strong>. The most critical gaps are summarized below:</p>
+      <ul style="margin:8px 0 14px 20px;">${bulletsHtml}</ul>
+      <p style="margin:8px 0;"><strong>Attached to this email:</strong></p>
+      <ul style="margin:4px 0 14px 20px;">
+        <li style="margin:4px 0;"><strong>Store Receiving Report</strong> — Overall receiving status by branch.</li>
+        <li style="margin:4px 0;"><strong>Asset Receiving Report</strong> — Missing and pending assets by category.</li>
+      </ul>
+      <p style="margin:8px 0;">For a more detailed and live view of the receiving status, including branch-level and asset-level information, please use the dashboard below:</p>
+      <p style="margin:8px 0;"><strong>Receiving Dashboard:</strong> <a href="${DASHBOARD_URL}" style="color:#0e7490;font-weight:600;">${DASHBOARD_URL}</a></p>
+      <br/>
+      <p style="margin:4px 0;">Thank you.</p>
       <br/>
       <p style="margin:4px 0;"><strong>${sig}</strong></p>
       <p style="margin:0;font-size:11px;color:#555;">Space Planning &amp; Store Improvement Team</p>`;
@@ -1285,7 +1294,7 @@
     });
     y+=26;
 
-    /* ── PIE CHART — priority breakdown ── */
+    /* ── PIE CHART — centered above bar chart, both left half ── */
     const priCounts={Essential:0,High:0,Medium:0,Low:0};
     assetList.forEach(a=>{if(priCounts[a.priority]!==undefined)priCounts[a.priority]++;});
     const pieSegments=[
@@ -1295,7 +1304,7 @@
       {label:'Low',       count:priCounts.Low,      color:[22,163,74]},
     ].filter(s=>s.count>0);
     const pieTotal=pieSegments.reduce((s,p)=>s+p.count,0)||1;
-    const pieR=18, pieCX=pageW/4, pieCY=y+pieR+4;
+    const pieR=22, pieCX=50, pieCY=y+pieR+6;
 
     /* Draw pie */
     let angle=-Math.PI/2;
@@ -1304,7 +1313,7 @@
       const steps=Math.max(4,Math.round(sweep*12));
       doc.setFillColor(...s.color);
       for(let i=0;i<steps;i++){
-        const a1=angle+(i/steps)*sweep, a2=angle+((i+1)/steps)*sweep;
+        const a1=angle+(i/steps)*sweep,a2=angle+((i+1)/steps)*sweep;
         doc.triangle(pieCX,pieCY,pieCX+pieR*Math.cos(a1),pieCY+pieR*Math.sin(a1),pieCX+pieR*Math.cos(a2),pieCY+pieR*Math.sin(a2),'F');
       }
       angle+=sweep;
@@ -1312,46 +1321,48 @@
     /* Donut hole */
     doc.setFillColor(255,255,255);
     for(let i=0;i<36;i++){
-      const a1=(i/36)*2*Math.PI, a2=((i+1)/36)*2*Math.PI;
-      doc.triangle(pieCX,pieCY,pieCX+pieR*0.5*Math.cos(a1),pieCY+pieR*0.5*Math.sin(a1),pieCX+pieR*0.5*Math.cos(a2),pieCY+pieR*0.5*Math.sin(a2),'F');
+      const a1=(i/36)*2*Math.PI,a2=((i+1)/36)*2*Math.PI;
+      doc.triangle(pieCX,pieCY,pieCX+pieR*0.48*Math.cos(a1),pieCY+pieR*0.48*Math.sin(a1),pieCX+pieR*0.48*Math.cos(a2),pieCY+pieR*0.48*Math.sin(a2),'F');
     }
-    doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Priority',pieCX,pieCY-pieR-3,{align:'center'});
-    doc.text('Breakdown',pieCX,pieCY-pieR+1,{align:'center'});
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+    doc.text('Priority',pieCX,y+2,{align:'center'});
+    doc.text('Breakdown',pieCX,y+7,{align:'center'});
 
-    /* Legend */
+    /* Legend — below pie */
+    const legY=pieCY+pieR+4;
     pieSegments.forEach((s,i)=>{
-      const lx=pieCX+pieR+8, ly=pieCY-pieR+i*9;
-      doc.setFillColor(...s.color);doc.roundedRect(lx,ly,5,5,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
-      doc.text(s.label+': '+s.count+' ('+Math.round(s.count/pieTotal*100)+'%)',lx+7,ly+4);
+      const lx=10+i*24;
+      doc.setFillColor(...s.color);doc.roundedRect(lx,legY,4,4,1,1,'F');
+      doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
+      doc.text(s.label+': '+s.count,lx+5,legY+3.5);
     });
 
-    /* ── TOP 8 BAR CHART ── */
-    const barSectionX=pageW/2+2;
+    /* ── TOP 8 BAR CHART — right of pie ── */
+    const barSectionX=pieCX+pieR+18;
     const barSectionW=pageW-barSectionX-10;
     doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Top 8 Most Missing',barSectionX,pieCY-pieR-2);
+    doc.text('Top 8 Most Missing',barSectionX,y+6);
     const top8=assetList.slice(0,8);
     const maxCount=top8[0]?.branches.length||1;
-    const barH=6, barGap=2.5;
-    const barStart=pieCY-pieR+4;
+    const barH=6,barGap=3;
+    const barStart=y+10;
     top8.forEach((a,i)=>{
       const pc=priColor[a.priority]||CLR.grey;
-      const barW=Math.max(1,(a.branches.length/maxCount)*(barSectionW-22));
+      const barAreaW=barSectionW-22;
+      const barW=Math.max(1,(a.branches.length/maxCount)*barAreaW);
       const rowY=barStart+i*(barH+barGap);
       const rowBg=i%2===0?[255,255,255]:[249,250,251];
       doc.setFillColor(...rowBg);doc.rect(barSectionX,rowY-0.5,barSectionW,barH+1,'F');
-      const lbl=a.asset.length>16?a.asset.substring(0,15)+'…':a.asset;
+      const lbl=a.asset.length>18?a.asset.substring(0,17)+'…':a.asset;
       doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(15,23,42);
       doc.text(lbl,barSectionX,rowY+4);
-      doc.setFillColor(225,228,232);doc.roundedRect(barSectionX+40,rowY+0.5,barSectionW-22-40,barH-1,1,1,'F');
-      doc.setFillColor(...pc);doc.roundedRect(barSectionX+40,rowY+0.5,barW,barH-1,1,1,'F');
+      doc.setFillColor(225,228,232);doc.roundedRect(barSectionX+42,rowY+0.5,barAreaW,barH-1,1,1,'F');
+      doc.setFillColor(...pc);doc.roundedRect(barSectionX+42,rowY+0.5,barW,barH-1,1,1,'F');
       doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      doc.text(a.branches.length+'/'+total,barSectionX+barSectionW-3,rowY+4,{align:'right'});
+      doc.text(a.branches.length+'/'+total,barSectionX+barSectionW-2,rowY+4,{align:'right'});
     });
 
-    y=pieCY+pieR+10;
+    y=legY+8;
 
     /* ── PAGE 2+: ASSET CARDS — multiple per page ── */
     /* Each asset: navy header (name + priority + count) + severity bar + branch count label */
