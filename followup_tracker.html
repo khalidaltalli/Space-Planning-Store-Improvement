@@ -1386,6 +1386,33 @@
     });
     y+=c2H+6;
 
+    /* ─ Chart 3: Top 8 Most Missing Assets ─ */
+    const top8=assetList.slice(0,8);
+    const maxCount=top8[0]?.branches.length||1;
+    const c3H=top8.length*8+18;
+    doc.setFillColor(250,251,253);doc.roundedRect(chartX,y,chartW,c3H,2,2,'F');
+    doc.setDrawColor(...CLR.border);doc.setLineWidth(0.4);doc.roundedRect(chartX,y,chartW,c3H,2,2,'S');
+    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+    doc.text('Top 8 Most Missing Assets',chartX+4,y+7);
+    doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
+    doc.text('Across all active branches',chartX+chartW-4,y+7,{align:'right'});
+    cy=y+12;
+    top8.forEach((a,i)=>{
+      const pc=priColor[a.priority]||CLR.grey;
+      const barW=Math.max(1,(a.branches.length/maxCount)*barAreaW);
+      const rowBg=i%2===0?[255,255,255]:[248,250,252];
+      doc.setFillColor(...rowBg);doc.rect(chartX+1,cy,chartW-2,7,'F');
+      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      const lbl=a.asset.length>18?a.asset.substring(0,17)+'…':a.asset;
+      doc.text(lbl,chartX+3,cy+5);
+      doc.setFillColor(225,228,232);doc.roundedRect(chartX+labelW2,cy+1,barAreaW,5,1,1,'F');
+      doc.setFillColor(...pc);doc.roundedRect(chartX+labelW2,cy+1,barW,5,1,1,'F');
+      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      doc.text(a.branches.length+'/'+total,chartX+labelW2+barAreaW+2,cy+5);
+      cy+=8;
+    });
+    y+=c3H+6;
+
     /* ── PAGE 2+: ASSET CARDS — multiple per page ── */
     /* Each asset: navy header (name + priority + count) + severity bar + branch count label */
     /* Fit as many as possible — each card is ~22mm tall */
