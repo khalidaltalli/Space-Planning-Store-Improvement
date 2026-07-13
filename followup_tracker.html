@@ -159,6 +159,7 @@
     <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;">
       <span id="user-badge" class="user-badge"></span>
       <button class="btn" onclick="loadData()">↻ Refresh</button>
+      <button class="btn" style="background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;" onclick="openWeeklySummary()">📊 Weekly Summary</button>
       <button class="btn" style="background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.2);color:#f87171;" onclick="signOut()">Sign Out</button>
     </div>
   </div>
@@ -983,6 +984,239 @@
     doc.save(`Report_${branch}_${today.replace(/\//g,'-')}.pdf`);
   }
 
+  /* ══ WEEKLY SUMMARY ══ */
+  function getWeekLabel(){
+    const now=new Date();
+    const start=new Date(now.getFullYear(),0,1);
+    const week=Math.ceil(((now-start)/86400000+start.getDay()+1)/7);
+    return `Week ${week}, ${now.getFullYear()}`;
+  }
+
+  function buildWeeklyData(){
+    const activeBranches=branches.filter(b=>b.status==='Receiving'||b.status==='Live');
+    /* Per-branch stats */
+    const branchStats=activeBranches.map(b=>{
+      const rows=checklist.filter(r=>(r['Branch Code']||'').trim()===b.code);
+      const total=rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length||1;
+      const rec  =rows.filter(r=>r['Asset Status']==='Received').length;
+      const missing=rows.filter(r=>r['Asset Status']==='Not Received'||r['Asset Status']==='Delivered');
+      return { code:b.code, status:b.status, pct:Math.round(rec/total*100), missing, rows };
+    });
+    /* Asset summary — count branches missing each asset */
+    const assetMap={};
+    branchStats.forEach(b=>{
+      b.missing.forEach(r=>{
+        const asset=(r['Asset']||'').trim();
+        if(!asset) return;
+        if(!assetMap[asset]) assetMap[asset]={asset,priority:r['Priority']||'',branches:[]};
+        assetMap[asset].branches.push({code:b.code,status:r['Asset Status'],pct:b.pct});
+      });
+    });
+    const assetList=Object.values(assetMap).sort((a,b)=>b.branches.length-a.branches.length);
+    return { activeBranches, branchStats, assetList };
+  }
+
+  function openWeeklySummary(){
+    const {activeBranches,branchStats,assetList}=buildWeeklyData();
+    const week=getWeekLabel();
+    const today=new Date().toLocaleDateString('en-GB');
+    const total=activeBranches.length;
+    const fullRec=branchStats.filter(b=>b.pct===100).length;
+    const avgPct=total?Math.round(branchStats.reduce((s,b)=>s+b.pct,0)/total):0;
+    const sig={'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
+
+    const tbl='width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px;';
+    const th='padding:7px 10px;background:#1a3a5c;color:#fff;text-align:left;border:1px solid #ccc;font-weight:bold;';
+    const td='padding:6px 10px;border:1px solid #ccc;';
+    const priColor={Essential:'#c0392b',Critical:'#c0392b',High:'#e67e22',Medium:'#f39c12',Low:'#27ae60'};
+
+    function makeTable(headers,rows){
+      const head='<thead><tr>'+headers.map(h=>`<th style="${th}">${h}</th>`).join('')+'</tr></thead>';
+      const body='<tbody>'+rows.map((r,i)=>`<tr style="background:${i%2===0?'#fff':'#f7f9fc'};">`+r.map(c=>`<td style="${td}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
+      return `<table style="${tbl}">${head}${body}</table>`;
+    }
+
+    const overviewRows=[
+      ['Active Branches',total],['Fully Received',fullRec],
+      ['In Progress',total-fullRec],['Avg Completion',avgPct+'%']
+    ];
+
+    const assetRows=assetList.slice(0,20).map(a=>[
+      a.asset,
+      `<span style="color:${priColor[a.priority]||'#555'};font-weight:bold;">${a.priority||'—'}</span>`,
+      `<strong>${a.branches.length}</strong>`,
+      Math.round(a.branches.length/total*100)+'%'
+    ]);
+
+    const html=`
+      <p style="font-size:14px;font-weight:bold;margin:0 0 4px;">Subject: Weekly Asset Receiving Summary — ${week}</p>
+      <hr style="border:none;border-top:1px solid #ddd;margin:10px 0;"/>
+      <p style="margin:8px 0;">Dear Team,</p>
+      <p style="margin:8px 0;">Please find below the weekly asset receiving summary across all active branches as of <strong>${today}</strong>.</p>
+      <p style="margin:14px 0 4px;font-weight:bold;font-size:13px;color:#1a3a5c;">Overview:</p>
+      ${makeTable(['Metric','Value'],overviewRows)}
+      <p style="margin:14px 0 4px;font-weight:bold;font-size:13px;color:#1a3a5c;">Most Missing Assets <span style="font-size:11px;font-weight:normal;color:#666;">(sorted by number of branches missing)</span></p>
+      ${makeTable(['Asset','Priority','Branches Missing','% of Branches'],assetRows)}
+      <p style="margin:8px 0;">Please find attached:</p>
+      <ul style="margin:4px 0 12px 20px;">
+        <li>Branch Report — status per branch with missing assets</li>
+        <li>Asset Report — each asset with branches missing it</li>
+      </ul>
+      <p style="margin:8px 0;">Kindly review and follow up with the relevant branches on any outstanding items.</p>
+      <p style="margin:8px 0;">Thank you.</p>
+      <br/>
+      <p style="margin:4px 0;"><strong>${sig}</strong></p>
+      <p style="margin:0;font-size:11px;color:#555;">Space Planning & Store Improvement Team</p>`;
+
+    document.getElementById('ws-email-html').innerHTML=html;
+    document.getElementById('ws-send-status').textContent='';
+    document.getElementById('weekly-modal').style.display='flex';
+  }
+
+  /* ══ DOWNLOAD BOTH PDFs ══ */
+  function downloadWeeklyPDFs(){
+    generateBranchReportPDF();
+    setTimeout(()=>generateAssetReportPDF(),800);
+  }
+
+  function generateBranchReportPDF(){
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+    const today=new Date().toLocaleDateString('en-GB');
+    const week=getWeekLabel();
+    const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225],navy:[26,62,92]};
+    const priColor={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]};
+    const stColor={Received:[22,163,74],Delivered:[180,120,0],'Not Received':[185,28,28]};
+
+    function dH(){doc.setFillColor(...CLR.navy);doc.rect(0,0,pageW,16,'F');doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);doc.text('Branch Report',10,10);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(200,220,240);doc.text(week,pageW/2,10,{align:'center'});doc.text(today,pageW-10,10,{align:'right'});}
+    function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text('Branch Report — '+week,10,pageH-3);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
+
+    const {branchStats}=buildWeeklyData();
+    dH(); let y=20;
+
+    branchStats.forEach(b=>{
+      if(!b.missing.length) return;
+      if(y>pageH-60){doc.addPage();dH();y=20;}
+      /* Branch header */
+      const pctColor=b.pct>=80?CLR.green:b.pct>=50?CLR.accent:CLR.red;
+      doc.setFillColor(...CLR.card);doc.rect(10,y,pageW-20,10,'F');
+      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+      doc.text(b.code,13,y+6.5);
+      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
+      doc.text(b.status,pageW/2,y+6.5,{align:'center'});
+      doc.setTextColor(...pctColor);doc.setFont('helvetica','bold');
+      doc.text(b.pct+'% Complete',pageW-13,y+6.5,{align:'right'});
+      y+=12;
+      doc.autoTable({startY:y,
+        head:[['Asset','Priority','Status']],
+        body:b.missing.map(r=>[r['Asset']||'',r['Priority']||'',r['Asset Status']||'']),
+        theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2},
+        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:7},
+        alternateRowStyles:{fillColor:CLR.rowOdd},
+        columnStyles:{0:{cellWidth:85},1:{cellWidth:28},2:{cellWidth:37}},
+        margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+        didParseCell:d=>{
+          if(d.section==='body'&&d.column.index===1){const c=priColor[d.cell.raw];if(c){d.cell.styles.textColor=c;d.cell.styles.fontStyle='bold';}}
+          if(d.section==='body'&&d.column.index===2){const c=stColor[d.cell.raw];if(c)d.cell.styles.textColor=c;}
+        }
+      });
+      y=doc.lastAutoTable.finalY+8;
+    });
+    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+    doc.save(`Branch_Report_${week.replace(/,?\s/g,'_')}_${today.replace(/\//g,'-')}.pdf`);
+  }
+
+  function generateAssetReportPDF(){
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
+    const today=new Date().toLocaleDateString('en-GB');
+    const week=getWeekLabel();
+    const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225],navy:[26,62,92]};
+    const priColor={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]};
+    const stColor={Delivered:[180,120,0],'Not Received':[185,28,28]};
+
+    function dH(){doc.setFillColor(...CLR.navy);doc.rect(0,0,pageW,16,'F');doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);doc.text('Asset Report',10,10);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(200,220,240);doc.text(week,pageW/2,10,{align:'center'});doc.text(today,pageW-10,10,{align:'right'});}
+    function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text('Asset Report — '+week,10,pageH-3);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
+
+    const {assetList,activeBranches}=buildWeeklyData();
+    const total=activeBranches.length;
+    dH(); let y=20;
+
+    assetList.forEach(a=>{
+      if(!a.branches.length) return;
+      if(y>pageH-60){doc.addPage();dH();y=20;}
+      /* Asset header */
+      const pColor=priColor[a.priority]||CLR.grey;
+      doc.setFillColor(...CLR.card);doc.rect(10,y,pageW-20,10,'F');
+      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+      doc.text(a.asset,13,y+6.5);
+      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...pColor);
+      doc.text(a.priority,pageW/2,y+6.5,{align:'center'});
+      doc.setTextColor(...CLR.red);doc.setFont('helvetica','bold');
+      doc.text(`${a.branches.length} / ${total} branches missing`,pageW-13,y+6.5,{align:'right'});
+      y+=12;
+      doc.autoTable({startY:y,
+        head:[['Branch','Status','Completion']],
+        body:a.branches.map(b=>[b.code,b.status,b.pct+'%']),
+        theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2},
+        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:7},
+        alternateRowStyles:{fillColor:CLR.rowOdd},
+        columnStyles:{0:{cellWidth:70},1:{cellWidth:50},2:{cellWidth:30}},
+        margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
+        didParseCell:d=>{
+          if(d.section==='body'&&d.column.index===1){const c=stColor[d.cell.raw];if(c)d.cell.styles.textColor=c;}
+          if(d.section==='body'&&d.column.index===2){const v=parseInt(d.cell.raw);const c=v>=80?CLR.green:v>=50?CLR.accent:CLR.red;d.cell.styles.textColor=c;}
+        }
+      });
+      y=doc.lastAutoTable.finalY+8;
+    });
+    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+    doc.save(`Asset_Report_${week.replace(/,?\s/g,'_')}_${today.replace(/\//g,'-')}.pdf`);
+  }
+
+  /* ══ SEND WEEKLY SUMMARY ══ */
+  async function sendWeeklySummary(){
+    const to  = document.getElementById('ws-to').value.trim();
+    const cc  = document.getElementById('ws-cc').value.trim();
+    const btn = document.getElementById('ws-send-btn');
+    const status = document.getElementById('ws-send-status');
+    if(!to){ status.textContent='⚠ Please enter a To address.'; status.style.color='#f87171'; return; }
+
+    const week=getWeekLabel();
+    const subject=`Weekly Asset Receiving Summary — ${week}`;
+    const htmlBody=document.getElementById('ws-email-html').innerHTML;
+    const sig={'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
+    const fullHtml=htmlBody+`<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
+    const sendId='WS_'+Date.now();
+
+    btn.disabled=true; btn.textContent='Sending...';
+    status.textContent='Sending weekly summary...'; status.style.color='#64748b';
+
+    fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'sendWeeklySummary',sendId,to,cc,subject,htmlBody:fullHtml,
+        user:currentUser||'Khalid',timestamp:new Date().toLocaleString('en-GB')})
+    });
+
+    /* Poll for result */
+    let result=null;
+    for(let i=0;i<20;i++){
+      await new Promise(r=>setTimeout(r,2000));
+      status.textContent=`Waiting... (${(i+1)*2}s)`;
+      try{
+        const p=await fetch(`${APPS_URL}?action=getSendResult&sendId=${sendId}`);
+        const d=await p.json();
+        if(d.success||d.error){result=d;break;}
+      }catch(e){}
+    }
+    btn.textContent='✉️ Send'; btn.disabled=false;
+    if(!result){ status.textContent='⚠ Sent but not confirmed — check Gmail Sent folder.'; status.style.color='#fbbf24'; return; }
+    if(result.error){ status.textContent='✗ Failed: '+result.error; status.style.color='#f87171'; return; }
+    status.textContent='✓ Weekly summary sent!'; status.style.color='#4ade80';
+    showToast('Weekly summary sent!');
+  }
+
   window.addEventListener('DOMContentLoaded', ()=>{ loadUsersFU(); });
 </script>
 
@@ -1016,6 +1250,33 @@
       <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('fu-email-modal').style.display='none'">Close</button>
       <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="copyFollowupEmail()">📋 Copy</button>
       <button class="btn" id="fu-send-btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="sendFollowupEmailFU()">✉️ Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ WEEKLY SUMMARY MODAL ══ -->
+<div id="weekly-modal" class="modal-overlay" style="z-index:300;">
+  <div class="modal-box" style="width:720px;max-height:92vh;">
+    <h3>📊 Weekly Asset Receiving Summary</h3>
+    <div style="display:grid;gap:6px;margin-bottom:10px;">
+      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
+        <label class="form-label" style="margin:0;">To</label>
+        <input id="ws-to" class="form-input" placeholder="team@example.com" />
+      </div>
+      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
+        <label class="form-label" style="margin:0;">CC</label>
+        <input id="ws-cc" class="form-input" placeholder="optional@example.com" />
+      </div>
+    </div>
+    <div style="font-size:10px;color:#64748b;margin-bottom:4px;">Email Preview:</div>
+    <div style="overflow-y:auto;background:#fff;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);max-height:380px;">
+      <div id="ws-email-html" style="padding:20px 24px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);align-items:center;flex-wrap:wrap;">
+      <span id="ws-send-status" style="font-size:11px;color:#64748b;margin-right:auto;"></span>
+      <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('weekly-modal').style.display='none'">Close</button>
+      <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="downloadWeeklyPDFs()">⬇ Download PDFs</button>
+      <button class="btn" id="ws-send-btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" onclick="sendWeeklySummary()">✉️ Send</button>
     </div>
   </div>
 </div>
