@@ -1020,195 +1020,332 @@
   function openWeeklySummary(){
     const {activeBranches,branchStats,assetList}=buildWeeklyData();
     const week=getWeekLabel();
-    const today=new Date().toLocaleDateString('en-GB');
     const total=activeBranches.length;
-    const fullRec=branchStats.filter(b=>b.pct===100).length;
     const avgPct=total?Math.round(branchStats.reduce((s,b)=>s+b.pct,0)/total):0;
     const sig={'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
-
-    const tbl='width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px;';
-    const th='padding:7px 10px;background:#1a3a5c;color:#fff;text-align:left;border:1px solid #ccc;font-weight:bold;';
-    const td='padding:6px 10px;border:1px solid #ccc;';
-    const priColor={Essential:'#c0392b',Critical:'#c0392b',High:'#e67e22',Medium:'#f39c12',Low:'#27ae60'};
-
-    function makeTable(headers,rows){
-      const head='<thead><tr>'+headers.map(h=>`<th style="${th}">${h}</th>`).join('')+'</tr></thead>';
-      const body='<tbody>'+rows.map((r,i)=>`<tr style="background:${i%2===0?'#fff':'#f7f9fc'};">`+r.map(c=>`<td style="${td}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
-      return `<table style="${tbl}">${head}${body}</table>`;
-    }
-
-    const overviewRows=[
-      ['Active Branches',total],['Fully Received',fullRec],
-      ['In Progress',total-fullRec],['Avg Completion',avgPct+'%']
-    ];
-
-    const assetRows=assetList.slice(0,20).map(a=>[
-      a.asset,
-      `<span style="color:${priColor[a.priority]||'#555'};font-weight:bold;">${a.priority||'—'}</span>`,
-      `<strong>${a.branches.length}</strong>`,
-      Math.round(a.branches.length/total*100)+'%'
-    ]);
-
+    const DASHBOARD_URL='https://khalidaltalli.github.io/Space-Planning-Store-Improvement/Receiving_Dashboard.html';
+    const top3=assetList.slice(0,3);
+    const priEmoji={Essential:'🔴',Critical:'🔴',High:'🟠',Medium:'🟡',Low:'🟢'};
+    const bulletsHtml=top3.map(a=>`<li style="margin:4px 0;">${priEmoji[a.priority]||'⚪'} <strong>${a.asset}</strong> missing from <strong>${a.branches.length}</strong> branches</li>`).join('');
     const html=`
-      <p style="font-size:14px;font-weight:bold;margin:0 0 4px;">Subject: Weekly Asset Receiving Summary — ${week}</p>
-      <hr style="border:none;border-top:1px solid #ddd;margin:10px 0;"/>
+      <p style="margin:0 0 12px;color:#888;font-size:11px;border-bottom:1px solid #eee;padding-bottom:8px;">Subject: Weekly Asset Receiving Summary — ${week}</p>
       <p style="margin:8px 0;">Dear Team,</p>
-      <p style="margin:8px 0;">Please find below the weekly asset receiving summary across all active branches as of <strong>${today}</strong>.</p>
-      <p style="margin:14px 0 4px;font-weight:bold;font-size:13px;color:#1a3a5c;">Overview:</p>
-      ${makeTable(['Metric','Value'],overviewRows)}
-      <p style="margin:14px 0 4px;font-weight:bold;font-size:13px;color:#1a3a5c;">Most Missing Assets <span style="font-size:11px;font-weight:normal;color:#666;">(sorted by number of branches missing)</span></p>
-      ${makeTable(['Asset','Priority','Branches Missing','% of Branches'],assetRows)}
-      <p style="margin:8px 0;">Please find attached:</p>
-      <ul style="margin:4px 0 12px 20px;">
-        <li>Branch Report — status per branch with missing assets</li>
-        <li>Asset Report — each asset with branches missing it</li>
-      </ul>
-      <p style="margin:8px 0;">Kindly review and follow up with the relevant branches on any outstanding items.</p>
-      <p style="margin:8px 0;">Thank you.</p>
+      <p style="margin:8px 0;">Please find this week's asset receiving summary for <strong>${week}</strong>.</p>
+      <p style="margin:8px 0;">We currently have <strong>${total} active branches</strong> at an average completion of <strong>${avgPct}%</strong>. The most urgent gaps are highlighted in the attached reports.</p>
+      <p style="margin:14px 0 6px;"><strong>Key this week:</strong></p>
+      <ul style="margin:0 0 14px 20px;">${bulletsHtml}</ul>
+      <p style="margin:8px 0;">View the live dashboard: <a href="${DASHBOARD_URL}" style="color:#0e7490;font-weight:600;">Receiving Dashboard →</a></p>
+      <p style="margin:8px 0;">Full details in the attached Branch Report and Asset Report.</p>
       <br/>
       <p style="margin:4px 0;"><strong>${sig}</strong></p>
-      <p style="margin:0;font-size:11px;color:#555;">Space Planning & Store Improvement Team</p>`;
-
+      <p style="margin:0;font-size:11px;color:#555;">Space Planning &amp; Store Improvement Team</p>`;
     document.getElementById('ws-email-html').innerHTML=html;
-    document.getElementById('ws-send-status').textContent='';
     document.getElementById('weekly-modal').style.display='flex';
   }
 
-  /* ══ DOWNLOAD BOTH PDFs ══ */
-  function downloadWeeklyPDFs(){
-    generateBranchReportPDF();
-    setTimeout(()=>generateAssetReportPDF(),800);
+  function copyWeeklyEmail(){
+    const el=document.getElementById('ws-email-html');
+    const range=document.createRange();range.selectNodeContents(el);
+    const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+    document.execCommand('copy');sel.removeAllRanges();
+    showToast('Email copied to clipboard!');
   }
 
-  function generateBranchReportPDF(){
+  /* ══ WEEKLY BRANCH REPORT PDF ══ */
+  function generateWeeklyBranchPDF(){
     const{jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
     const today=new Date().toLocaleDateString('en-GB');
     const week=getWeekLabel();
-    const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225],navy:[26,62,92]};
-    const priColor={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]};
-    const stColor={Received:[22,163,74],Delivered:[180,120,0],'Not Received':[185,28,28]};
+    const CLR={
+      bg:[255,255,255],card:[245,247,250],text:[15,23,42],
+      navy:[26,62,92],accent:[14,116,144],
+      green:[22,163,74],amber:[180,120,0],red:[185,28,28],
+      grey:[100,116,139],border:[203,213,225],rowOdd:[249,250,251],
+      green2:[220,252,231],amber2:[254,243,199],red2:[254,226,226]
+    };
 
-    function dH(){doc.setFillColor(...CLR.navy);doc.rect(0,0,pageW,16,'F');doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);doc.text('Branch Report',10,10);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(200,220,240);doc.text(week,pageW/2,10,{align:'center'});doc.text(today,pageW-10,10,{align:'right'});}
-    function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text('Branch Report — '+week,10,pageH-3);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
+    const {activeBranches,branchStats,assetList}=buildWeeklyData();
+    const total=activeBranches.length;
+    const fullRec=branchStats.filter(b=>b.pct===100).length;
+    const avgPct=total?Math.round(branchStats.reduce((s,b)=>s+b.pct,0)/total):0;
 
-    const {branchStats}=buildWeeklyData();
-    dH(); let y=20;
+    function dH(title){
+      doc.setFillColor(...CLR.navy);doc.rect(0,0,pageW,18,'F');
+      doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+      doc.text(title,10,11);
+      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
+      doc.text(week,pageW/2,11,{align:'center'});
+      doc.text(today,pageW-10,11,{align:'right'});
+    }
+    function dF(pg,tot){
+      doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');
+      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.line(0,pageH-8,pageW,pageH-8);
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
+      doc.text('Branch Report — '+week,10,pageH-3);
+      doc.text('Page '+pg+' of '+tot,pageW/2,pageH-3,{align:'center'});
+      doc.text(today,pageW-10,pageH-3,{align:'right'});
+    }
 
+    /* ── PAGE 1: SUMMARY ── */
+    dH('Branch Report'); let y=24;
+
+    /* KPI cards */
+    const kpis=[
+      {label:'Active Branches',value:total,color:CLR.accent},
+      {label:'Avg Completion',value:avgPct+'%',color:avgPct>=80?CLR.green:avgPct>=50?CLR.accent:CLR.red},
+      {label:'Fully Received',value:fullRec,color:CLR.green},
+      {label:'In Progress',value:total-fullRec,color:CLR.amber}
+    ];
+    const kw=(pageW-20)/4;
+    kpis.forEach((k,i)=>{
+      const x=10+i*kw;
+      doc.setFillColor(...CLR.card);doc.roundedRect(x,y,kw-3,20,2,2,'F');
+      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.3);doc.roundedRect(x,y,kw-3,20,2,2,'S');
+      /* color bar top */
+      doc.setFillColor(...k.color);doc.roundedRect(x,y,kw-3,2,1,1,'F');
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
+      doc.text(k.label.toUpperCase(),x+(kw-3)/2,y+8,{align:'center'});
+      doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
+      doc.text(String(k.value),x+(kw-3)/2,y+17,{align:'center'});
+    });
+    y+=26;
+
+    /* Completion bar chart - all branches */
+    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+    doc.text('Branch Completion — All Active Branches',10,y);y+=6;
+
+    const sortedStats=[...branchStats].sort((a,b)=>b.pct-a.pct);
+    const barH=5, barGap=2, labelW=42, barMaxW=pageW-20-labelW-16;
+    sortedStats.forEach((b,i)=>{
+      if(y>pageH-20){doc.addPage();dH('Branch Report (cont.)');y=24;}
+      const barColor=b.pct>=80?CLR.green:b.pct>=50?CLR.accent:CLR.red;
+      const barW=Math.max(1,(b.pct/100)*barMaxW);
+      const rowBg=i%2===0?[255,255,255]:[248,250,252];
+      doc.setFillColor(...rowBg);doc.rect(10,y-1,pageW-20,barH+2,'F');
+      /* label */
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);
+      doc.text(b.code,10,y+4);
+      /* bg track */
+      doc.setFillColor(230,232,235);doc.roundedRect(10+labelW,y+0.5,barMaxW,barH-1,1,1,'F');
+      /* bar */
+      doc.setFillColor(...barColor);doc.roundedRect(10+labelW,y+0.5,barW,barH-1,1,1,'F');
+      /* pct label */
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...barColor);
+      doc.text(b.pct+'%',10+labelW+barMaxW+2,y+4);
+      y+=barH+barGap;
+    });
+
+    /* ── PAGE 2+: BRANCH DETAIL ── */
     branchStats.forEach(b=>{
       if(!b.missing.length) return;
-      if(y>pageH-60){doc.addPage();dH();y=20;}
+      doc.addPage(); dH('Branch Detail'); y=24;
+
       /* Branch header */
       const pctColor=b.pct>=80?CLR.green:b.pct>=50?CLR.accent:CLR.red;
-      doc.setFillColor(...CLR.card);doc.rect(10,y,pageW-20,10,'F');
-      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-      doc.text(b.code,13,y+6.5);
-      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
-      doc.text(b.status,pageW/2,y+6.5,{align:'center'});
-      doc.setTextColor(...pctColor);doc.setFont('helvetica','bold');
-      doc.text(b.pct+'% Complete',pageW-13,y+6.5,{align:'right'});
-      y+=12;
+      doc.setFillColor(...CLR.navy);doc.roundedRect(10,y,pageW-20,14,2,2,'F');
+      doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+      doc.text(b.code,14,y+9);
+      doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
+      doc.text(b.status,pageW/2,y+9,{align:'center'});
+      doc.setTextColor(pctColor[0]>200?CLR.green[0]:150,220,150);
+      doc.text(b.pct+'% Complete',pageW-14,y+9,{align:'right'});
+      y+=18;
+
+      /* Completion bar */
+      doc.setFillColor(220,225,232);doc.roundedRect(10,y,pageW-20,5,1,1,'F');
+      doc.setFillColor(...pctColor);doc.roundedRect(10,y,(pageW-20)*b.pct/100,5,1,1,'F');
+      y+=10;
+
       doc.autoTable({startY:y,
         head:[['Asset','Priority','Status']],
         body:b.missing.map(r=>[r['Asset']||'',r['Priority']||'',r['Asset Status']||'']),
-        theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2},
-        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:7},
+        theme:'plain',
+        styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},
+        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
         alternateRowStyles:{fillColor:CLR.rowOdd},
-        columnStyles:{0:{cellWidth:85},1:{cellWidth:28},2:{cellWidth:37}},
+        columnStyles:{0:{cellWidth:90},1:{cellWidth:30},2:{cellWidth:35}},
         margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
         didParseCell:d=>{
-          if(d.section==='body'&&d.column.index===1){const c=priColor[d.cell.raw];if(c){d.cell.styles.textColor=c;d.cell.styles.fontStyle='bold';}}
-          if(d.section==='body'&&d.column.index===2){const c=stColor[d.cell.raw];if(c)d.cell.styles.textColor=c;}
+          if(d.section==='body'&&d.column.index===1){
+            const c={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];
+            if(c){d.cell.styles.textColor=c;d.cell.styles.fontStyle='bold';}
+          }
+          if(d.section==='body'&&d.column.index===2){
+            const c={'Not Received':[185,28,28],Delivered:[180,120,0]}[d.cell.raw];
+            if(c)d.cell.styles.textColor=c;
+          }
         }
       });
-      y=doc.lastAutoTable.finalY+8;
+      y=doc.lastAutoTable.finalY+6;
     });
-    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+
+    const pages=doc.getNumberOfPages();
+    for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
     doc.save(`Branch_Report_${week.replace(/,?\s/g,'_')}_${today.replace(/\//g,'-')}.pdf`);
+    showToast('Branch Report PDF downloaded!');
   }
 
-  function generateAssetReportPDF(){
+  /* ══ WEEKLY ASSET REPORT PDF ══ */
+  function generateWeeklyAssetPDF(){
     const{jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
     const today=new Date().toLocaleDateString('en-GB');
     const week=getWeekLabel();
-    const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225],navy:[26,62,92]};
+    const CLR={
+      bg:[255,255,255],card:[245,247,250],text:[15,23,42],
+      navy:[26,62,92],accent:[14,116,144],
+      green:[22,163,74],amber:[180,120,0],red:[185,28,28],
+      grey:[100,116,139],border:[203,213,225],rowOdd:[249,250,251]
+    };
     const priColor={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]};
-    const stColor={Delivered:[180,120,0],'Not Received':[185,28,28]};
+    const priLabel={Essential:'🔴 Essential',Critical:'🔴 Critical',High:'🟠 High',Medium:'🟡 Medium',Low:'🟢 Low'};
 
-    function dH(){doc.setFillColor(...CLR.navy);doc.rect(0,0,pageW,16,'F');doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);doc.text('Asset Report',10,10);doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(200,220,240);doc.text(week,pageW/2,10,{align:'center'});doc.text(today,pageW-10,10,{align:'right'});}
-    function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text('Asset Report — '+week,10,pageH-3);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
-
-    const {assetList,activeBranches}=buildWeeklyData();
+    const {activeBranches,assetList}=buildWeeklyData();
     const total=activeBranches.length;
-    dH(); let y=20;
 
+    function dH(title){
+      doc.setFillColor(...CLR.navy);doc.rect(0,0,pageW,18,'F');
+      doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+      doc.text(title,10,11);
+      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
+      doc.text(week,pageW/2,11,{align:'center'});doc.text(today,pageW-10,11,{align:'right'});
+    }
+    function dF(pg,tot){
+      doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');
+      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.line(0,pageH-8,pageW,pageH-8);
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
+      doc.text('Asset Report — '+week,10,pageH-3);
+      doc.text('Page '+pg+' of '+tot,pageW/2,pageH-3,{align:'center'});
+      doc.text(today,pageW-10,pageH-3,{align:'right'});
+    }
+
+    /* ── PAGE 1: SUMMARY ── */
+    dH('Asset Report'); let y=24;
+
+    /* KPI cards */
+    const totalMissing=[...new Set(assetList.map(a=>a.asset))].length;
+    const criticalCount=assetList.filter(a=>a.priority==='Essential'||a.priority==='Critical').length;
+    const topAsset=assetList[0];
+    const kpis=[
+      {label:'Active Branches',value:total,color:CLR.accent},
+      {label:'Assets With Gaps',value:totalMissing,color:CLR.red},
+      {label:'Essential/Critical',value:criticalCount,color:[185,28,28]},
+      {label:'Top Missing',value:topAsset?topAsset.branches.length+' branches':'—',color:CLR.red}
+    ];
+    const kw=(pageW-20)/4;
+    kpis.forEach((k,i)=>{
+      const x=10+i*kw;
+      doc.setFillColor(...CLR.card);doc.roundedRect(x,y,kw-3,20,2,2,'F');
+      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.3);doc.roundedRect(x,y,kw-3,20,2,2,'S');
+      doc.setFillColor(...k.color);doc.roundedRect(x,y,kw-3,2,1,1,'F');
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
+      doc.text(k.label.toUpperCase(),x+(kw-3)/2,y+8,{align:'center'});
+      doc.setFontSize(k.value.toString().length>6?10:14);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
+      doc.text(String(k.value),x+(kw-3)/2,y+17,{align:'center'});
+    });
+    y+=26;
+
+    /* Priority breakdown pills */
+    const priCounts={Essential:0,High:0,Medium:0,Low:0};
+    assetList.forEach(a=>{ if(priCounts[a.priority]!==undefined) priCounts[a.priority]++; });
+    const pills=[
+      {label:'Essential',count:priCounts.Essential,bg:[254,226,226],color:[185,28,28]},
+      {label:'High',count:priCounts.High,bg:[255,237,213],color:[194,65,12]},
+      {label:'Medium',count:priCounts.Medium,bg:[254,249,195],color:[161,98,7]},
+      {label:'Low',count:priCounts.Low,bg:[220,252,231],color:[22,163,74]},
+    ];
+    const pw=(pageW-20)/4;
+    pills.forEach((p,i)=>{
+      const x=10+i*pw;
+      doc.setFillColor(...p.bg);doc.roundedRect(x,y,pw-4,10,2,2,'F');
+      doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...p.color);
+      doc.text(p.label+': '+p.count,x+(pw-4)/2,y+6.5,{align:'center'});
+    });
+    y+=16;
+
+    /* Top 15 missing assets bar chart */
+    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+    doc.text('Top 15 Most Missing Assets',10,y);y+=6;
+
+    const top15=assetList.slice(0,15);
+    const maxCount=top15[0]?.branches.length||1;
+    const barH=6,barGap=1.5,labelW=60,barMaxW=pageW-20-labelW-20;
+    top15.forEach((a,i)=>{
+      const pc=priColor[a.priority]||CLR.grey;
+      const barW=Math.max(2,(a.branches.length/maxCount)*barMaxW);
+      const rowBg=i%2===0?[255,255,255]:[249,250,251];
+      doc.setFillColor(...rowBg);doc.rect(10,y-0.5,pageW-20,barH+1.5,'F');
+      /* label */
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);
+      const label=a.asset.length>22?a.asset.substring(0,21)+'…':a.asset;
+      doc.text(label,10,y+4.5);
+      /* track */
+      doc.setFillColor(225,228,232);doc.roundedRect(10+labelW,y+0.5,barMaxW,barH-1,1,1,'F');
+      /* bar */
+      doc.setFillColor(...pc);doc.roundedRect(10+labelW,y+0.5,barW,barH-1,1,1,'F');
+      /* count */
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...pc);
+      doc.text(a.branches.length+'/'+total,10+labelW+barMaxW+2,y+4.5);
+      y+=barH+barGap;
+    });
+
+    /* ── PAGE 2+: ASSET DETAIL ── */
     assetList.forEach(a=>{
       if(!a.branches.length) return;
-      if(y>pageH-60){doc.addPage();dH();y=20;}
+      doc.addPage(); dH('Asset Detail'); y=24;
+
       /* Asset header */
-      const pColor=priColor[a.priority]||CLR.grey;
-      doc.setFillColor(...CLR.card);doc.rect(10,y,pageW-20,10,'F');
-      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-      doc.text(a.asset,13,y+6.5);
-      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(...pColor);
-      doc.text(a.priority,pageW/2,y+6.5,{align:'center'});
-      doc.setTextColor(...CLR.red);doc.setFont('helvetica','bold');
-      doc.text(`${a.branches.length} / ${total} branches missing`,pageW-13,y+6.5,{align:'right'});
-      y+=12;
+      const pc=priColor[a.priority]||CLR.grey;
+      doc.setFillColor(...CLR.navy);doc.roundedRect(10,y,pageW-20,14,2,2,'F');
+      doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+      doc.text(a.asset,14,y+9);
+      doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(pc[0],180,180);
+      doc.text(a.priority||'',pageW/2,y+9,{align:'center'});
+      doc.setTextColor(255,160,160);
+      doc.text(a.branches.length+' / '+total+' branches missing',pageW-14,y+9,{align:'right'});
+      y+=18;
+
+      /* Severity bar */
+      const sevPct=Math.round(a.branches.length/total*100);
+      doc.setFillColor(220,225,232);doc.roundedRect(10,y,(pageW-20),5,1,1,'F');
+      doc.setFillColor(...pc);doc.roundedRect(10,y,(pageW-20)*sevPct/100,5,1,1,'F');
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...pc);
+      doc.text(sevPct+'% of branches missing this asset',pageW-10,y+4,{align:'right'});
+      y+=10;
+
       doc.autoTable({startY:y,
         head:[['Branch','Status','Completion']],
         body:a.branches.map(b=>[b.code,b.status,b.pct+'%']),
-        theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2},
-        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:7},
-        alternateRowStyles:{fillColor:CLR.rowOdd},
-        columnStyles:{0:{cellWidth:70},1:{cellWidth:50},2:{cellWidth:30}},
+        theme:'plain',
+        styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},
+        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
+        alternateRowStyles:{fillColor:[249,250,251]},
+        columnStyles:{0:{cellWidth:80},1:{cellWidth:50},2:{cellWidth:30}},
         margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
         didParseCell:d=>{
-          if(d.section==='body'&&d.column.index===1){const c=stColor[d.cell.raw];if(c)d.cell.styles.textColor=c;}
-          if(d.section==='body'&&d.column.index===2){const v=parseInt(d.cell.raw);const c=v>=80?CLR.green:v>=50?CLR.accent:CLR.red;d.cell.styles.textColor=c;}
+          if(d.section==='body'&&d.column.index===1){
+            const c={'Not Received':[185,28,28],Delivered:[180,120,0]}[d.cell.raw];
+            if(c)d.cell.styles.textColor=c;
+          }
+          if(d.section==='body'&&d.column.index===2){
+            const v=parseInt(d.cell.raw);
+            d.cell.styles.textColor=v>=80?[22,163,74]:v>=50?[14,116,144]:[185,28,28];
+            d.cell.styles.fontStyle='bold';
+          }
         }
       });
-      y=doc.lastAutoTable.finalY+8;
+      y=doc.lastAutoTable.finalY+6;
     });
-    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+
+    const pages=doc.getNumberOfPages();
+    for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
     doc.save(`Asset_Report_${week.replace(/,?\s/g,'_')}_${today.replace(/\//g,'-')}.pdf`);
+    showToast('Asset Report PDF downloaded!');
   }
 
-  /* ══ SEND WEEKLY SUMMARY ══ */
-  async function sendWeeklySummary(){
-    const to  = document.getElementById('ws-to').value.trim();
-    const cc  = document.getElementById('ws-cc').value.trim();
-    const btn = document.getElementById('ws-send-btn');
-    const status = document.getElementById('ws-send-status');
-    if(!to){ status.textContent='⚠ Please enter a To address.'; status.style.color='#f87171'; return; }
-
-    const week = getWeekLabel();
-    const subject = `Weekly Asset Receiving Summary — ${week}`;
-
-    btn.disabled=true; btn.textContent='Sending...';
-    status.textContent='Generating PDFs and sending...'; status.style.color='#64748b';
-
-    try {
-      const params = new URLSearchParams({
-        action:  'sendWeeklySummary',
-        to, cc, subject,
-        user:    currentUser||'Khalid',
-        timestamp: new Date().toLocaleString('en-GB')
-      });
-      const res  = await fetch(`${APPS_URL}?${params.toString()}`);
-      const data = await res.json();
-      btn.textContent='✉️ Send'; btn.disabled=false;
-      if(data.error){ status.textContent='✗ Failed: '+data.error; status.style.color='#f87171'; return; }
-      status.textContent='✓ Weekly summary sent with PDFs attached!'; status.style.color='#4ade80';
-      showToast('Weekly summary sent!');
-    } catch(e){
-      btn.textContent='✉️ Send'; btn.disabled=false;
-      status.textContent='✗ Failed: '+e.message; status.style.color='#f87171';
-    }
-  }
 
   window.addEventListener('DOMContentLoaded', ()=>{ loadUsersFU(); });
 </script>
@@ -1251,25 +1388,15 @@
 <div id="weekly-modal" class="modal-overlay" style="z-index:300;">
   <div class="modal-box" style="width:720px;max-height:92vh;">
     <h3>📊 Weekly Asset Receiving Summary</h3>
-    <div style="display:grid;gap:6px;margin-bottom:10px;">
-      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
-        <label class="form-label" style="margin:0;">To</label>
-        <input id="ws-to" class="form-input" placeholder="team@example.com" />
-      </div>
-      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
-        <label class="form-label" style="margin:0;">CC</label>
-        <input id="ws-cc" class="form-input" placeholder="optional@example.com" />
-      </div>
-    </div>
-    <div style="font-size:10px;color:#64748b;margin-bottom:4px;">Email Preview:</div>
-    <div style="overflow-y:auto;background:#fff;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);max-height:380px;">
+    <div style="font-size:10px;color:#64748b;margin-bottom:4px;">Email Preview — copy and paste into your email client:</div>
+    <div style="overflow-y:auto;background:#fff;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);max-height:420px;">
       <div id="ws-email-html" style="padding:20px 24px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);align-items:center;flex-wrap:wrap;">
-      <span id="ws-send-status" style="font-size:11px;color:#64748b;margin-right:auto;"></span>
       <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('weekly-modal').style.display='none'">Close</button>
-      <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="downloadWeeklyPDFs()">⬇ Download PDFs</button>
-      <button class="btn" id="ws-send-btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" onclick="sendWeeklySummary()">✉️ Send</button>
+      <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="copyWeeklyEmail()">📋 Copy Email</button>
+      <button class="btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="generateWeeklyBranchPDF()">⬇ Branch Report PDF</button>
+      <button class="btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" onclick="generateWeeklyAssetPDF()">⬇ Asset Report PDF</button>
     </div>
   </div>
 </div>
