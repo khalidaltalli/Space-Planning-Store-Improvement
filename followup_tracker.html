@@ -1088,17 +1088,15 @@
     /* ── PAGE 1: KPI CARDS + DONUTS + HEATMAP GRID ── */
     dH('Branch Report'); let y=24;
 
-    /* KPI cards */
+    /* KPI cards — only 2: Active Branches + Avg Completion */
     const low=branchStats.filter(b=>b.pct<50).length;
     const mid=branchStats.filter(b=>b.pct>=50&&b.pct<80).length;
     const high=branchStats.filter(b=>b.pct>=80).length;
     const kpis=[
       {label:'Active Branches',value:total,color:CLR.accent},
       {label:'Avg Completion',value:avgPct+'%',color:avgPct>=80?CLR.green:avgPct>=50?CLR.accent:CLR.red},
-      {label:'Fully Received',value:fullRec,color:CLR.green},
-      {label:'In Progress',value:total-fullRec,color:CLR.amber}
     ];
-    const kw=(pageW-20)/4;
+    const kw=(pageW-20)/2;
     kpis.forEach((k,i)=>{
       const x=10+i*kw;
       doc.setFillColor(...CLR.card);doc.roundedRect(x,y,kw-3,20,2,2,'F');
@@ -1111,13 +1109,12 @@
     });
     y+=26;
 
-    /* ── DONUT CHARTS (3) ── */
+    /* ── DONUT CHARTS (2 only) ── */
     function drawDonut(cx,cy,r,segments,title){
       let angle=-Math.PI/2;
       segments.forEach(s=>{
         if(!s.val) return;
         const sweep=(s.val/total)*2*Math.PI;
-        /* approximate arc with lines */
         const steps=Math.max(4,Math.round(sweep*12));
         doc.setFillColor(...s.color);
         for(let i=0;i<steps;i++){
@@ -1126,7 +1123,6 @@
         }
         angle+=sweep;
       });
-      /* hole */
       doc.setFillColor(255,255,255);
       const holeSteps=36;
       for(let i=0;i<holeSteps;i++){
@@ -1137,43 +1133,29 @@
       doc.text(title,cx,cy-r-3,{align:'center'});
     }
 
-    const donutR=16;
+    const donutR=18;
     const donutY=y+donutR+4;
-    /* Donut 1: Completion bands */
-    drawDonut(35,donutY,donutR,[
+
+    /* Donut 1: Completion bands — centred left quarter */
+    drawDonut(pageW/4,donutY,donutR,[
       {val:high,color:CLR.green},{val:mid,color:CLR.amber},{val:low,color:CLR.red}
-    ],'Completion');
-    /* Legend */
+    ],'Completion Bands');
     [[CLR.green,'80–100%: '+high],[CLR.amber,'50–79%: '+mid],[CLR.red,'<50%: '+low]].forEach((l,i)=>{
-      doc.setFillColor(...l[0]);doc.roundedRect(55,donutY-donutR+i*7,5,4,1,1,'F');
+      doc.setFillColor(...l[0]);doc.roundedRect(pageW/4+donutR+5,donutY-donutR+i*8,5,4,1,1,'F');
       doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
-      doc.text(l[1],62,donutY-donutR+i*7+3.5);
+      doc.text(l[1],pageW/4+donutR+12,donutY-donutR+i*8+3.5);
     });
 
-    /* Donut 2: Receiving vs Live */
+    /* Donut 2: Receiving vs Live — centred right quarter */
     const recCount=branchStats.filter(b=>b.status==='Receiving').length;
     const liveCount=branchStats.filter(b=>b.status==='Live').length;
-    drawDonut(pageW/2,donutY,donutR,[
+    drawDonut(pageW*3/4,donutY,donutR,[
       {val:liveCount,color:CLR.green},{val:recCount,color:CLR.accent}
     ],'Branch Status');
     [[CLR.green,'Live: '+liveCount],[CLR.accent,'Receiving: '+recCount]].forEach((l,i)=>{
-      doc.setFillColor(...l[0]);doc.roundedRect(pageW/2+donutR+6,donutY-donutR+i*8,5,4,1,1,'F');
+      doc.setFillColor(...l[0]);doc.roundedRect(pageW*3/4+donutR+5,donutY-donutR+i*8,5,4,1,1,'F');
       doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
-      doc.text(l[1],pageW/2+donutR+13,donutY-donutR+i*8+3.5);
-    });
-
-    /* Donut 3: Assets status across all */
-    const allAssets=branchStats.reduce((s,b)=>s+b.rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length,0);
-    const allRec=branchStats.reduce((s,b)=>s+b.rows.filter(r=>r['Asset Status']==='Received').length,0);
-    const allDel=branchStats.reduce((s,b)=>s+b.rows.filter(r=>r['Asset Status']==='Delivered').length,0);
-    const allNR=branchStats.reduce((s,b)=>s+b.rows.filter(r=>r['Asset Status']==='Not Received').length,0);
-    drawDonut(pageW-35,donutY,donutR,[
-      {val:allRec,color:CLR.green},{val:allDel,color:CLR.amber},{val:allNR,color:CLR.red}
-    ],'Asset Status');
-    [[CLR.green,'Received: '+allRec],[CLR.amber,'Delivered: '+allDel],[CLR.red,'Not Recv: '+allNR]].forEach((l,i)=>{
-      doc.setFillColor(...l[0]);doc.roundedRect(pageW-35+donutR+6,donutY-donutR+i*7,5,4,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
-      doc.text(l[1],pageW-35+donutR+13,donutY-donutR+i*7+3.5);
+      doc.text(l[1],pageW*3/4+donutR+12,donutY-donutR+i*8+3.5);
     });
 
     y=donutY+donutR+10;
@@ -1181,8 +1163,6 @@
     /* ── HEATMAP GRID ── */
     doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
     doc.text('Completion Heatmap — All Branches',10,y);y+=4;
-
-    /* Legend */
     const legItems=[[[22,163,74],'80–100%'],[[180,120,0],'50–79%'],[[185,28,28],'0–49%']];
     legItems.forEach((l,i)=>{
       doc.setFillColor(...l[0]);doc.roundedRect(pageW-75+i*26,y,4,4,1,1,'F');
@@ -1190,14 +1170,10 @@
       doc.text(l[1],pageW-70+i*26,y+3.5);
     });
     y+=6;
-
     const cols=4, cellW=(pageW-20)/cols, cellH=9;
     const sortedStats=[...branchStats].sort((a,b)=>b.pct-a.pct);
     sortedStats.forEach((b,i)=>{
       const col=i%cols, row=Math.floor(i/cols);
-      if(col===0&&i>0&&row*cellH+y>pageH-20){
-        /* won't overflow — grid fits on one page for ~50 branches */
-      }
       const x=10+col*cellW, cellY=y+row*cellH;
       const bgColor=b.pct>=80?[220,252,231]:b.pct>=50?[254,243,199]:[254,226,226];
       const txtColor=b.pct>=80?[22,163,74]:b.pct>=50?[180,120,0]:[185,28,28];
@@ -1209,37 +1185,51 @@
       doc.text(b.pct+'%',x+cellW-4,cellY+4.5,{align:'right'});
     });
 
-    /* ── PAGE 2+: BRANCH DETAIL ── */
-    branchStats.forEach(b=>{
-      if(!b.missing.length) return;
-      doc.addPage(); dH('Branch Detail'); y=24;
-      const pctColor=b.pct>=80?CLR.green:b.pct>=50?CLR.accent:CLR.red;
-      doc.setFillColor(...CLR.navy);doc.roundedRect(10,y,pageW-20,14,2,2,'F');
-      doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-      doc.text(b.code,14,y+9);
-      doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
-      doc.text(b.status,pageW/2,y+9,{align:'center'});
-      doc.setTextColor(150,230,150);
-      doc.text(b.pct+'% Complete',pageW-14,y+9,{align:'right'});
-      y+=18;
-      doc.setFillColor(220,225,232);doc.roundedRect(10,y,pageW-20,5,1,1,'F');
-      doc.setFillColor(...pctColor);doc.roundedRect(10,y,(pageW-20)*b.pct/100,5,1,1,'F');
-      y+=10;
-      doc.autoTable({startY:y,head:[['Asset','Priority','Status']],
-        body:b.missing.map(r=>[r['Asset']||'',r['Priority']||'',r['Asset Status']||'']),
-        theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},
-        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
-        alternateRowStyles:{fillColor:CLR.rowOdd},
-        columnStyles:{0:{cellWidth:90},1:{cellWidth:30},2:{cellWidth:35}},
-        margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
-        didParseCell:d=>{
-          if(d.section==='body'&&d.column.index===1){const c={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];if(c){d.cell.styles.textColor=c;d.cell.styles.fontStyle='bold';}}
-          if(d.section==='body'&&d.column.index===2){const c={'Not Received':[185,28,28],Delivered:[180,120,0]}[d.cell.raw];if(c)d.cell.styles.textColor=c;}
-        }
+    /* ── PAGE 2+: BRANCH DETAIL — 3 branches per page, side by side ── */
+    const branchesWithMissing=branchStats.filter(b=>b.missing.length);
+    for(let bi=0;bi<branchesWithMissing.length;bi+=3){
+      doc.addPage(); dH('Branch Detail'); let y=24;
+      const group=branchesWithMissing.slice(bi,bi+3);
+      const tblW=(pageW-20-(group.length-1)*3)/group.length;
+
+      /* Find max rows for this group */
+      const maxRows=Math.max(...group.map(b=>b.missing.length));
+
+      group.forEach((b,gi)=>{
+        const x=10+gi*(tblW+3);
+        const pctColor=b.pct>=80?CLR.green:b.pct>=50?CLR.accent:CLR.red;
+
+        /* Branch header */
+        doc.setFillColor(...CLR.navy);doc.roundedRect(x,y,tblW,12,1,1,'F');
+        doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+        doc.text(b.code,x+tblW/2,y+5,{align:'center'});
+        doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
+        doc.text(b.pct+'%  •  '+b.status,x+tblW/2,y+10,{align:'center'});
+
+        /* Completion bar */
+        doc.setFillColor(220,225,232);doc.roundedRect(x,y+13,tblW,3,1,1,'F');
+        doc.setFillColor(...pctColor);doc.roundedRect(x,y+13,tblW*b.pct/100,3,1,1,'F');
+
+        /* Column header */
+        doc.setFillColor(245,247,250);doc.rect(x,y+17,tblW,7,'F');
+        doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.rect(x,y+17,tblW,7,'S');
+        doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.grey);
+        doc.text('Missing Assets ('+b.missing.length+')',x+tblW/2,y+22,{align:'center'});
+
+        /* Asset rows */
+        b.missing.forEach((r,ri)=>{
+          const rowY=y+24+ri*7;
+          const rowBg=ri%2===0?[255,255,255]:[249,250,251];
+          doc.setFillColor(...rowBg);doc.rect(x,rowY,tblW,7,'F');
+          doc.setDrawColor(...CLR.border);doc.setLineWidth(0.1);doc.rect(x,rowY,tblW,7,'S');
+          doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(15,23,42);
+          const asset=(r['Asset']||'').length>20?(r['Asset']||'').substring(0,19)+'…':(r['Asset']||'');
+          doc.text(asset,x+3,rowY+4.5);
+        });
       });
-    });
+    }
     const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
-    doc.save(`Branch_Report_${week.replace(/,?\s/g,'_')}_${today.replace(/\//g,'-')}.pdf`);
+    doc.save('Branch_Report_'+week.split(',').join('').split(' ').join('_')+'_'+today.split('/').join('-')+'.pdf');
     showToast('Branch Report PDF downloaded!');
   }
 
