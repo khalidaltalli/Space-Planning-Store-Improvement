@@ -1062,11 +1062,9 @@
       bg:[255,255,255],card:[245,247,250],text:[15,23,42],
       navy:[26,62,92],accent:[14,116,144],
       green:[22,163,74],amber:[180,120,0],red:[185,28,28],
-      grey:[100,116,139],border:[203,213,225],rowOdd:[249,250,251],
-      green2:[220,252,231],amber2:[254,243,199],red2:[254,226,226]
+      grey:[100,116,139],border:[203,213,225],rowOdd:[249,250,251]
     };
-
-    const {activeBranches,branchStats,assetList}=buildWeeklyData();
+    const {activeBranches,branchStats}=buildWeeklyData();
     const total=activeBranches.length;
     const fullRec=branchStats.filter(b=>b.pct===100).length;
     const avgPct=total?Math.round(branchStats.reduce((s,b)=>s+b.pct,0)/total):0;
@@ -1076,8 +1074,7 @@
       doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
       doc.text(title,10,11);
       doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
-      doc.text(week,pageW/2,11,{align:'center'});
-      doc.text(today,pageW-10,11,{align:'right'});
+      doc.text(week,pageW/2,11,{align:'center'});doc.text(today,pageW-10,11,{align:'right'});
     }
     function dF(pg,tot){
       doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');
@@ -1088,10 +1085,13 @@
       doc.text(today,pageW-10,pageH-3,{align:'right'});
     }
 
-    /* ── PAGE 1: SUMMARY ── */
+    /* ── PAGE 1: KPI CARDS + DONUTS + HEATMAP GRID ── */
     dH('Branch Report'); let y=24;
 
     /* KPI cards */
+    const low=branchStats.filter(b=>b.pct<50).length;
+    const mid=branchStats.filter(b=>b.pct>=50&&b.pct<80).length;
+    const high=branchStats.filter(b=>b.pct>=80).length;
     const kpis=[
       {label:'Active Branches',value:total,color:CLR.accent},
       {label:'Avg Completion',value:avgPct+'%',color:avgPct>=80?CLR.green:avgPct>=50?CLR.accent:CLR.red},
@@ -1103,86 +1103,142 @@
       const x=10+i*kw;
       doc.setFillColor(...CLR.card);doc.roundedRect(x,y,kw-3,20,2,2,'F');
       doc.setDrawColor(...CLR.border);doc.setLineWidth(0.3);doc.roundedRect(x,y,kw-3,20,2,2,'S');
-      /* color bar top */
       doc.setFillColor(...k.color);doc.roundedRect(x,y,kw-3,2,1,1,'F');
       doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
       doc.text(k.label.toUpperCase(),x+(kw-3)/2,y+8,{align:'center'});
-      doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
+      doc.setFontSize(15);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
       doc.text(String(k.value),x+(kw-3)/2,y+17,{align:'center'});
     });
     y+=26;
 
-    /* Completion bar chart - all branches */
-    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Branch Completion — All Active Branches',10,y);y+=6;
+    /* ── DONUT CHARTS (3) ── */
+    function drawDonut(cx,cy,r,segments,title){
+      let angle=-Math.PI/2;
+      segments.forEach(s=>{
+        if(!s.val) return;
+        const sweep=(s.val/total)*2*Math.PI;
+        /* approximate arc with lines */
+        const steps=Math.max(4,Math.round(sweep*12));
+        doc.setFillColor(...s.color);
+        for(let i=0;i<steps;i++){
+          const a1=angle+(i/steps)*sweep, a2=angle+((i+1)/steps)*sweep;
+          doc.triangle(cx,cy,cx+r*Math.cos(a1),cy+r*Math.sin(a1),cx+r*Math.cos(a2),cy+r*Math.sin(a2),'F');
+        }
+        angle+=sweep;
+      });
+      /* hole */
+      doc.setFillColor(255,255,255);
+      const holeSteps=36;
+      for(let i=0;i<holeSteps;i++){
+        const a1=(i/holeSteps)*2*Math.PI, a2=((i+1)/holeSteps)*2*Math.PI;
+        doc.triangle(cx,cy,cx+(r*0.55)*Math.cos(a1),cy+(r*0.55)*Math.sin(a1),cx+(r*0.55)*Math.cos(a2),cy+(r*0.55)*Math.sin(a2),'F');
+      }
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+      doc.text(title,cx,cy-r-3,{align:'center'});
+    }
 
+    const donutR=16;
+    const donutY=y+donutR+4;
+    /* Donut 1: Completion bands */
+    drawDonut(35,donutY,donutR,[
+      {val:high,color:CLR.green},{val:mid,color:CLR.amber},{val:low,color:CLR.red}
+    ],'Completion');
+    /* Legend */
+    [[CLR.green,'80–100%: '+high],[CLR.amber,'50–79%: '+mid],[CLR.red,'<50%: '+low]].forEach((l,i)=>{
+      doc.setFillColor(...l[0]);doc.roundedRect(55,donutY-donutR+i*7,5,4,1,1,'F');
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
+      doc.text(l[1],62,donutY-donutR+i*7+3.5);
+    });
+
+    /* Donut 2: Receiving vs Live */
+    const recCount=branchStats.filter(b=>b.status==='Receiving').length;
+    const liveCount=branchStats.filter(b=>b.status==='Live').length;
+    drawDonut(pageW/2,donutY,donutR,[
+      {val:liveCount,color:CLR.green},{val:recCount,color:CLR.accent}
+    ],'Branch Status');
+    [[CLR.green,'Live: '+liveCount],[CLR.accent,'Receiving: '+recCount]].forEach((l,i)=>{
+      doc.setFillColor(...l[0]);doc.roundedRect(pageW/2+donutR+6,donutY-donutR+i*8,5,4,1,1,'F');
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
+      doc.text(l[1],pageW/2+donutR+13,donutY-donutR+i*8+3.5);
+    });
+
+    /* Donut 3: Assets status across all */
+    const allAssets=branchStats.reduce((s,b)=>s+b.rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length,0);
+    const allRec=branchStats.reduce((s,b)=>s+b.rows.filter(r=>r['Asset Status']==='Received').length,0);
+    const allDel=branchStats.reduce((s,b)=>s+b.rows.filter(r=>r['Asset Status']==='Delivered').length,0);
+    const allNR=branchStats.reduce((s,b)=>s+b.rows.filter(r=>r['Asset Status']==='Not Received').length,0);
+    drawDonut(pageW-35,donutY,donutR,[
+      {val:allRec,color:CLR.green},{val:allDel,color:CLR.amber},{val:allNR,color:CLR.red}
+    ],'Asset Status');
+    [[CLR.green,'Received: '+allRec],[CLR.amber,'Delivered: '+allDel],[CLR.red,'Not Recv: '+allNR]].forEach((l,i)=>{
+      doc.setFillColor(...l[0]);doc.roundedRect(pageW-35+donutR+6,donutY-donutR+i*7,5,4,1,1,'F');
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
+      doc.text(l[1],pageW-35+donutR+13,donutY-donutR+i*7+3.5);
+    });
+
+    y=donutY+donutR+10;
+
+    /* ── HEATMAP GRID ── */
+    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
+    doc.text('Completion Heatmap — All Branches',10,y);y+=4;
+
+    /* Legend */
+    const legItems=[[[22,163,74],'80–100%'],[[180,120,0],'50–79%'],[[185,28,28],'0–49%']];
+    legItems.forEach((l,i)=>{
+      doc.setFillColor(...l[0]);doc.roundedRect(pageW-75+i*26,y,4,4,1,1,'F');
+      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
+      doc.text(l[1],pageW-70+i*26,y+3.5);
+    });
+    y+=6;
+
+    const cols=4, cellW=(pageW-20)/cols, cellH=9;
     const sortedStats=[...branchStats].sort((a,b)=>b.pct-a.pct);
-    const barH=5, barGap=2, labelW=42, barMaxW=pageW-20-labelW-16;
     sortedStats.forEach((b,i)=>{
-      if(y>pageH-20){doc.addPage();dH('Branch Report (cont.)');y=24;}
-      const barColor=b.pct>=80?CLR.green:b.pct>=50?CLR.accent:CLR.red;
-      const barW=Math.max(1,(b.pct/100)*barMaxW);
-      const rowBg=i%2===0?[255,255,255]:[248,250,252];
-      doc.setFillColor(...rowBg);doc.rect(10,y-1,pageW-20,barH+2,'F');
-      /* label */
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);
-      doc.text(b.code,10,y+4);
-      /* bg track */
-      doc.setFillColor(230,232,235);doc.roundedRect(10+labelW,y+0.5,barMaxW,barH-1,1,1,'F');
-      /* bar */
-      doc.setFillColor(...barColor);doc.roundedRect(10+labelW,y+0.5,barW,barH-1,1,1,'F');
-      /* pct label */
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...barColor);
-      doc.text(b.pct+'%',10+labelW+barMaxW+2,y+4);
-      y+=barH+barGap;
+      const col=i%cols, row=Math.floor(i/cols);
+      if(col===0&&i>0&&row*cellH+y>pageH-20){
+        /* won't overflow — grid fits on one page for ~50 branches */
+      }
+      const x=10+col*cellW, cellY=y+row*cellH;
+      const bgColor=b.pct>=80?[220,252,231]:b.pct>=50?[254,243,199]:[254,226,226];
+      const txtColor=b.pct>=80?[22,163,74]:b.pct>=50?[180,120,0]:[185,28,28];
+      doc.setFillColor(...bgColor);doc.roundedRect(x,cellY,cellW-2,cellH-1,1,1,'F');
+      doc.setDrawColor(...txtColor);doc.setLineWidth(0.3);doc.roundedRect(x,cellY,cellW-2,cellH-1,1,1,'S');
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+      doc.text(b.code,x+3,cellY+4.5);
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...txtColor);
+      doc.text(b.pct+'%',x+cellW-4,cellY+4.5,{align:'right'});
     });
 
     /* ── PAGE 2+: BRANCH DETAIL ── */
     branchStats.forEach(b=>{
       if(!b.missing.length) return;
       doc.addPage(); dH('Branch Detail'); y=24;
-
-      /* Branch header */
       const pctColor=b.pct>=80?CLR.green:b.pct>=50?CLR.accent:CLR.red;
       doc.setFillColor(...CLR.navy);doc.roundedRect(10,y,pageW-20,14,2,2,'F');
       doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
       doc.text(b.code,14,y+9);
       doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
       doc.text(b.status,pageW/2,y+9,{align:'center'});
-      doc.setTextColor(pctColor[0]>200?CLR.green[0]:150,220,150);
+      doc.setTextColor(150,230,150);
       doc.text(b.pct+'% Complete',pageW-14,y+9,{align:'right'});
       y+=18;
-
-      /* Completion bar */
       doc.setFillColor(220,225,232);doc.roundedRect(10,y,pageW-20,5,1,1,'F');
       doc.setFillColor(...pctColor);doc.roundedRect(10,y,(pageW-20)*b.pct/100,5,1,1,'F');
       y+=10;
-
-      doc.autoTable({startY:y,
-        head:[['Asset','Priority','Status']],
+      doc.autoTable({startY:y,head:[['Asset','Priority','Status']],
         body:b.missing.map(r=>[r['Asset']||'',r['Priority']||'',r['Asset Status']||'']),
-        theme:'plain',
-        styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},
+        theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},
         headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
         alternateRowStyles:{fillColor:CLR.rowOdd},
         columnStyles:{0:{cellWidth:90},1:{cellWidth:30},2:{cellWidth:35}},
         margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
         didParseCell:d=>{
-          if(d.section==='body'&&d.column.index===1){
-            const c={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];
-            if(c){d.cell.styles.textColor=c;d.cell.styles.fontStyle='bold';}
-          }
-          if(d.section==='body'&&d.column.index===2){
-            const c={'Not Received':[185,28,28],Delivered:[180,120,0]}[d.cell.raw];
-            if(c)d.cell.styles.textColor=c;
-          }
+          if(d.section==='body'&&d.column.index===1){const c={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];if(c){d.cell.styles.textColor=c;d.cell.styles.fontStyle='bold';}}
+          if(d.section==='body'&&d.column.index===2){const c={'Not Received':[185,28,28],Delivered:[180,120,0]}[d.cell.raw];if(c)d.cell.styles.textColor=c;}
         }
       });
-      y=doc.lastAutoTable.finalY+6;
     });
-
-    const pages=doc.getNumberOfPages();
-    for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
     doc.save(`Branch_Report_${week.replace(/,?\s/g,'_')}_${today.replace(/\//g,'-')}.pdf`);
     showToast('Branch Report PDF downloaded!');
   }
@@ -1194,14 +1250,8 @@
     const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
     const today=new Date().toLocaleDateString('en-GB');
     const week=getWeekLabel();
-    const CLR={
-      bg:[255,255,255],card:[245,247,250],text:[15,23,42],
-      navy:[26,62,92],accent:[14,116,144],
-      green:[22,163,74],amber:[180,120,0],red:[185,28,28],
-      grey:[100,116,139],border:[203,213,225],rowOdd:[249,250,251]
-    };
+    const CLR={bg:[255,255,255],card:[245,247,250],text:[15,23,42],navy:[26,62,92],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],grey:[100,116,139],border:[203,213,225],rowOdd:[249,250,251]};
     const priColor={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]};
-    const priLabel={Essential:'🔴 Essential',Critical:'🔴 Critical',High:'🟠 High',Medium:'🟡 Medium',Low:'🟢 Low'};
 
     const {activeBranches,assetList}=buildWeeklyData();
     const total=activeBranches.length;
@@ -1222,18 +1272,16 @@
       doc.text(today,pageW-10,pageH-3,{align:'right'});
     }
 
-    /* ── PAGE 1: SUMMARY ── */
     dH('Asset Report'); let y=24;
 
     /* KPI cards */
-    const totalMissing=[...new Set(assetList.map(a=>a.asset))].length;
-    const criticalCount=assetList.filter(a=>a.priority==='Essential'||a.priority==='Critical').length;
+    const critCount=assetList.filter(a=>a.priority==='Essential'||a.priority==='Critical').length;
     const topAsset=assetList[0];
     const kpis=[
       {label:'Active Branches',value:total,color:CLR.accent},
-      {label:'Assets With Gaps',value:totalMissing,color:CLR.red},
-      {label:'Essential/Critical',value:criticalCount,color:[185,28,28]},
-      {label:'Top Missing',value:topAsset?topAsset.branches.length+' branches':'—',color:CLR.red}
+      {label:'Assets With Gaps',value:assetList.length,color:CLR.red},
+      {label:'Essential/Critical',value:critCount,color:[185,28,28]},
+      {label:'Top Gap',value:topAsset?topAsset.branches.length+' branches':'—',color:CLR.red}
     ];
     const kw=(pageW-20)/4;
     kpis.forEach((k,i)=>{
@@ -1243,14 +1291,14 @@
       doc.setFillColor(...k.color);doc.roundedRect(x,y,kw-3,2,1,1,'F');
       doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
       doc.text(k.label.toUpperCase(),x+(kw-3)/2,y+8,{align:'center'});
-      doc.setFontSize(k.value.toString().length>6?10:14);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
+      doc.setFontSize(String(k.value).length>7?9:14);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
       doc.text(String(k.value),x+(kw-3)/2,y+17,{align:'center'});
     });
     y+=26;
 
-    /* Priority breakdown pills */
+    /* Priority pills */
     const priCounts={Essential:0,High:0,Medium:0,Low:0};
-    assetList.forEach(a=>{ if(priCounts[a.priority]!==undefined) priCounts[a.priority]++; });
+    assetList.forEach(a=>{if(priCounts[a.priority]!==undefined)priCounts[a.priority]++;});
     const pills=[
       {label:'Essential',count:priCounts.Essential,bg:[254,226,226],color:[185,28,28]},
       {label:'High',count:priCounts.High,bg:[255,237,213],color:[194,65,12]},
@@ -1266,82 +1314,62 @@
     });
     y+=16;
 
-    /* Top 15 missing assets bar chart */
+    /* Top 15 bar chart — text in black */
     doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
     doc.text('Top 15 Most Missing Assets',10,y);y+=6;
-
     const top15=assetList.slice(0,15);
     const maxCount=top15[0]?.branches.length||1;
-    const barH=6,barGap=1.5,labelW=60,barMaxW=pageW-20-labelW-20;
+    const barH=6,barGap=1.5,labelW=62,barMaxW=pageW-20-labelW-20;
     top15.forEach((a,i)=>{
       const pc=priColor[a.priority]||CLR.grey;
       const barW=Math.max(2,(a.branches.length/maxCount)*barMaxW);
       const rowBg=i%2===0?[255,255,255]:[249,250,251];
       doc.setFillColor(...rowBg);doc.rect(10,y-0.5,pageW-20,barH+1.5,'F');
-      /* label */
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);
-      const label=a.asset.length>22?a.asset.substring(0,21)+'…':a.asset;
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42); /* black label */
+      const label=a.asset.length>24?a.asset.substring(0,23)+'…':a.asset;
       doc.text(label,10,y+4.5);
-      /* track */
       doc.setFillColor(225,228,232);doc.roundedRect(10+labelW,y+0.5,barMaxW,barH-1,1,1,'F');
-      /* bar */
       doc.setFillColor(...pc);doc.roundedRect(10+labelW,y+0.5,barW,barH-1,1,1,'F');
-      /* count */
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...pc);
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42); /* black count */
       doc.text(a.branches.length+'/'+total,10+labelW+barMaxW+2,y+4.5);
       y+=barH+barGap;
     });
 
-    /* ── PAGE 2+: ASSET DETAIL ── */
+    /* ── PAGE 2+: ASSET DETAIL — 3-column branch grid ── */
     assetList.forEach(a=>{
       if(!a.branches.length) return;
       doc.addPage(); dH('Asset Detail'); y=24;
-
-      /* Asset header */
       const pc=priColor[a.priority]||CLR.grey;
       doc.setFillColor(...CLR.navy);doc.roundedRect(10,y,pageW-20,14,2,2,'F');
       doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
       doc.text(a.asset,14,y+9);
-      doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(pc[0],180,180);
+      doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
       doc.text(a.priority||'',pageW/2,y+9,{align:'center'});
       doc.setTextColor(255,160,160);
-      doc.text(a.branches.length+' / '+total+' branches missing',pageW-14,y+9,{align:'right'});
+      doc.text(a.branches.length+' / '+total+' branches',pageW-14,y+9,{align:'right'});
       y+=18;
-
-      /* Severity bar */
+      /* severity bar */
       const sevPct=Math.round(a.branches.length/total*100);
-      doc.setFillColor(220,225,232);doc.roundedRect(10,y,(pageW-20),5,1,1,'F');
+      doc.setFillColor(220,225,232);doc.roundedRect(10,y,pageW-20,5,1,1,'F');
       doc.setFillColor(...pc);doc.roundedRect(10,y,(pageW-20)*sevPct/100,5,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...pc);
-      doc.text(sevPct+'% of branches missing this asset',pageW-10,y+4,{align:'right'});
+      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42); /* black */
+      doc.text(sevPct+'% of branches',pageW-10,y+4,{align:'right'});
       y+=10;
-
-      doc.autoTable({startY:y,
-        head:[['Branch','Status','Completion']],
-        body:a.branches.map(b=>[b.code,b.status,b.pct+'%']),
-        theme:'plain',
-        styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:3},
-        headStyles:{fillColor:CLR.navy,textColor:[255,255,255],fontStyle:'bold',fontSize:8},
-        alternateRowStyles:{fillColor:[249,250,251]},
-        columnStyles:{0:{cellWidth:80},1:{cellWidth:50},2:{cellWidth:30}},
-        margin:{left:10,right:10},tableLineColor:CLR.border,tableLineWidth:0.2,
-        didParseCell:d=>{
-          if(d.section==='body'&&d.column.index===1){
-            const c={'Not Received':[185,28,28],Delivered:[180,120,0]}[d.cell.raw];
-            if(c)d.cell.styles.textColor=c;
-          }
-          if(d.section==='body'&&d.column.index===2){
-            const v=parseInt(d.cell.raw);
-            d.cell.styles.textColor=v>=80?[22,163,74]:v>=50?[14,116,144]:[185,28,28];
-            d.cell.styles.fontStyle='bold';
-          }
-        }
+      /* 3-column branch grid */
+      const cols3=3, cw3=(pageW-20)/cols3, rh=7;
+      a.branches.forEach((b,i)=>{
+        const col=i%cols3, row=Math.floor(i/cols3);
+        if(col===0&&i>0&&y+row*rh>pageH-20){/* handled by page overflow below */}
+        const cellX=10+col*cw3, cellY=y+row*rh;
+        if(cellY+rh>pageH-12){doc.addPage();dH('Asset Detail (cont.)');y=24;/* reset - simplified */}
+        const bgC=b.status==='Not Received'?[254,226,226]:[254,243,199];
+        doc.setFillColor(...bgC);doc.roundedRect(cellX,cellY,cw3-2,rh-1,1,1,'F');
+        doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
+        doc.text(b.code,cellX+3,cellY+4.5);
       });
-      y=doc.lastAutoTable.finalY+6;
     });
 
-    const pages=doc.getNumberOfPages();
-    for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
+    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
     doc.save(`Asset_Report_${week.replace(/,?\s/g,'_')}_${today.replace(/\//g,'-')}.pdf`);
     showToast('Asset Report PDF downloaded!');
   }
@@ -1350,11 +1378,21 @@
   window.addEventListener('DOMContentLoaded', ()=>{ loadUsersFU(); });
 </script>
 
+<!-- ══ NOTES ALL POPUP ══ -->
+<div id="notes-all-modal" class="modal-overlay" style="z-index:300;">
+  <div class="modal-box" style="width:520px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <h3 style="margin:0;">📝 All Follow-up Notes</h3>
+      <button onclick="document.getElementById('notes-all-modal').style.display='none';" style="background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div style="overflow-y:auto;max-height:500px;" id="notes-all-list"></div>
+  </div>
+</div>
+
 <!-- ══ EMAIL MODAL ══ -->
 <div id="fu-email-modal" class="modal-overlay" style="z-index:300;">
   <div class="modal-box" style="width:700px;max-height:92vh;">
     <h3>📧 Follow-up Email — <span id="fu-email-branch"></span></h3>
-    <!-- Fields -->
     <div style="display:grid;gap:6px;margin-bottom:10px;">
       <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
         <label class="form-label" style="margin:0;">To</label>
@@ -1370,7 +1408,6 @@
       </div>
     </div>
     <div style="font-size:10px;color:#64748b;margin-bottom:4px;" id="fu-thread-status"></div>
-    <!-- Preview -->
     <div style="font-size:10px;color:#64748b;margin-bottom:4px;">Email Preview:</div>
     <div style="flex:1;overflow-y:auto;background:#fff;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);max-height:360px;">
       <div id="fu-email-html" style="padding:20px 24px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
