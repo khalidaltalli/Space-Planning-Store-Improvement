@@ -238,7 +238,7 @@
     <div style="background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.1);border-radius:12px;padding:1.5rem;width:360px;">
       <h3 style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:1rem;">Add New Branch</h3>
       <div style="margin-bottom:0.75rem;"><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">Branch Code</label>
-        <input style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:12px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;" id="new-branch-code" placeholder="e.g. JED-SHZ001" /></div>
+        <input style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:12px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;" id="new-branch-code" placeholder="e.g. JED-SHZ001 or JED-SHZ001 EXP" /></div>
       <div style="margin-bottom:0.75rem;"><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">Branch Status</label>
         <select style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.15);color:#e2e8f0;font-size:12px;padding:8px 10px;border-radius:6px;font-family:'DM Sans',sans-serif;" id="new-branch-status">
           <option value="Receiving">Receiving</option>
@@ -940,8 +940,8 @@
       const code=document.getElementById('new-branch-code').value.trim().toUpperCase();
       const status=document.getElementById('new-branch-status').value;
       if(!code){alert('Please enter a branch code.');return;}
-      const codeRegex=/^[A-Z]{3}-[A-Z]{3}\d{3}$/;
-      if(!codeRegex.test(code)){alert('Invalid branch code format.\nRequired: ABC-ABC001\nExample: JED-SHZ001');return;}
+      const codeRegex=/^[A-Z]{3}-[A-Z]{3}\d{3}(\s?EXP)?$/;
+      if(!codeRegex.test(code)){alert('Invalid branch code format.\nRequired: ABC-ABC001\nExample: JED-SHZ001\nExpansion: JED-SHZ001 EXP');return;}
       const btn=document.getElementById('add-branch-btn');
       btn.textContent='Adding...';btn.disabled=true;
       try{
