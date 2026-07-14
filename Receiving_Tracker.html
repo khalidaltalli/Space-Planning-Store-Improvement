@@ -124,7 +124,7 @@
         <button class="btn" style="background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;font-size:11px;" onclick="sessionStorage.removeItem('tracker_user');location.reload()">Sign Out</button>
         <button class="btn" style="background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;" onclick="openMonthlyReport()">📅 Monthly Report</button>
         <button class="btn" style="background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;" onclick="openAddBranch()">+ Add Branch</button>
-        <span id="dn-missing-pill" style="font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(248,113,113,0.12);border:0.5px solid rgba(248,113,113,0.3);color:#f87171;font-weight:600;display:none;">📋 — Missing D.N.s</span>
+        <span id="dn-missing-pill" style="display:none;"></span>
         <button class="btn" onclick="loadTracker()">↻ Refresh</button>
       </div>
     </div>
@@ -136,6 +136,7 @@
         <option value="Receiving" selected>Receiving</option>
         <option value="Live">Live</option>
         <option value="Pending">Pending</option>
+        <option value="Completed">Completed</option>
       </select>
       <label>Branch:</label>
       <!-- Multi-select branch dropdown -->
@@ -471,7 +472,7 @@
 
     function buildBranchCheckboxes() {
       const selStatus = document.getElementById('t-status-filter').value;
-      const filtered  = selStatus === 'ALL' ? trackerBranches : trackerBranches.filter(b=>b.status===selStatus);
+      const filtered  = selStatus === 'ALL' ? trackerBranches.filter(b=>b.status!=='Completed') : trackerBranches.filter(b=>b.status===selStatus);
       const list = document.getElementById('branch-checkbox-list');
       list.innerHTML = filtered.map(b=>`
         <label style="display:flex;align-items:center;gap:8px;padding:5px 12px;cursor:pointer;font-size:12px;color:#e2e8f0;white-space:nowrap;width:100%;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
@@ -549,7 +550,9 @@
 
     function getSelectedBranchCodes(statusFilter) {
       const selStatus = statusFilter || document.getElementById('t-status-filter').value;
-      let branches = selStatus === 'ALL' ? trackerBranches : trackerBranches.filter(b=>b.status===selStatus);
+      let branches = selStatus === 'ALL'
+        ? trackerBranches.filter(b=>b.status!=='Completed')
+        : trackerBranches.filter(b=>b.status===selStatus);
       if (selectedBranches.size > 0) branches = branches.filter(b=>selectedBranches.has(b.code));
       return branches;
     }
@@ -582,7 +585,8 @@
       const pctColor=getColor(pct);
       const st   =trackerStatus[branch.code]||{};
       const folder=st['D.N. Folder']||'';
-      const tagCls={Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24'}[branch.status]||'#94a3b8';
+      const isEXP = branch.code.endsWith('EXP');
+      const tagCls={Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24',Completed:'#94a3b8'}[branch.status]||'#94a3b8';
       const cardId='tc_'+branch.code.replace(/[^a-zA-Z0-9]/g,'_');
       const SECTION_ORDER=['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
       const SHARED_GROUPS={'Shelves':['Freebolt','Heavyrack','Heavy Rack'],'Fridges':['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'],'CCTV+AccessPoints':['CCTV','Access Points'],'OfficeFurniture':['Office Chair','Office Desk']};
@@ -597,10 +601,12 @@
       card.innerHTML=`
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1.25rem;background:rgba(255,255,255,0.03);border-bottom:0.5px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none';this.querySelector('.ci').style.transform=b.style.display==='none'?'rotate(-90deg)':'rotate(0deg)'">
           <div style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;flex-wrap:wrap;">
-            <span style="color:#ffffff;font-weight:700;">${branch.code}</span>
+            <span style="color:#ffffff;font-weight:700;">${branch.code}</span>${isEXP?'<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;background:rgba(251,191,36,0.2);color:#fbbf24;margin-left:6px;vertical-align:middle;">EXP</span>':''}
             <select onchange="updateBranchStatus('${branch.code}',this)" style="font-size:10px;padding:2px 8px;border-radius:10px;background:${tagCls}18;color:${tagCls};font-weight:600;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;outline:none;">
               <option value="Receiving" ${branch.status==='Receiving'?'selected':''}>Receiving</option>
               <option value="Live"      ${branch.status==='Live'     ?'selected':''}>Live</option>
+              <option value="Completed" ${branch.status==='Completed'?'selected':''}>Completed</option>
+              <option value="Pending"   ${branch.status==='Pending'  ?'selected':''}>Pending</option>
               <option value="Pending"   ${branch.status==='Pending'  ?'selected':''}>Pending</option>
             </select>
             <span id="${cardId}_statusdate" style="font-size:10px;color:#475569;font-weight:400;">${(()=>{const ex=branchExtras[branch.code]||{};const d=branch.status==='Live'?ex.liveDate:branch.status==='Receiving'?ex.receivingDate:'';return d?d.split(' ')[0]:'';})()}</span>
@@ -949,7 +955,7 @@
 
     async function updateBranchStatus(branchCode,sel){
       const newStatus=sel.value;
-      const tagColors={Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24'};
+      const tagColors={Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24',Completed:'#94a3b8'};
       const c=tagColors[newStatus]||'#94a3b8';
       sel.style.background=c+'18';sel.style.color=c;
       trackerBranches=trackerBranches.map(b=>b.code===branchCode?{...b,status:newStatus}:b);
