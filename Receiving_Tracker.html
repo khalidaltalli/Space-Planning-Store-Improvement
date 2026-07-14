@@ -2484,7 +2484,7 @@
       const dnRowsFiltered=DN_GE.map(g=>{
         const ga=assets.filter(r=>g.assets.includes((r['Asset']||'').trim())&&r['Asset Status']&&r['Asset Status']!=='None');
         if(!ga.length) return null;
-        const signed  =ga.every(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
+        const signed  =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
         if(signed) return null; /* all signed — skip */
         const anySigned  =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
         const anyUnsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
@@ -2501,7 +2501,7 @@
         ?'The initial asset receiving process is still not complete due to the pending items listed below.'
         :'The branch is currently in Receiving status. The following items are still pending.';
 
-      const p=(t,style='')=>`<p style="margin:8px 0;${style}">${t}</p>`;
+      const p=(t,style='')=>`<p style="margin:8px 0;color:#1a1a1a;${style}">${t}</p>`;
       const h=(t)=>`<p style="margin:14px 0 4px;font-weight:bold;font-size:13px;color:#1a3a5c;">${t}</p>`;
 
       return `
@@ -2646,7 +2646,7 @@
     <div class="modal-box" style="width:660px;max-height:90vh;">
       <h3>📧 Weekly Follow-up — <span id="wfu-branch-label"></span></h3>
       <div class="modal-scroll" style="flex:1;overflow-y:auto;background:#fff;border-radius:8px;padding:0;">
-        <div id="wfu-html" style="padding:24px 28px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
+        <div id="wfu-html" style="padding:24px 28px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;background:#fff;"></div>
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);">
         <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="closeModal('wfu-modal')">Close</button>
