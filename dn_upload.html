@@ -312,12 +312,13 @@
       if (currentFilter === 'signed'   && !groups.every(g=>g.status==='signed'))  return;
 
       shown++;
-      const statusColor = { Receiving:'#22d3ee', Live:'#4ade80', Pending:'#fbbf24' }[branch.status]||'#94a3b8';
+      const statusColor = { Receiving:'#22d3ee', Live:'#4ade80', Pending:'#fbbf24', Completed:'#94a3b8' }[branch.status]||'#94a3b8';
+      const isEXP = branch.code.endsWith('EXP');
       const tr = document.createElement('tr');
       tr.dataset.branch = branch.code;
 
       let html = `
-        <td style="font-weight:700;color:#f1f5f9;">${branch.code}</td>
+        <td style="font-weight:700;color:#f1f5f9;">${branch.code}${isEXP?' <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;background:rgba(251,191,36,0.2);color:#fbbf24;">EXP</span>':''}</td>
         <td><span style="font-size:10px;font-weight:600;color:${statusColor};">${branch.status}</span></td>`;
 
       groups.forEach((g,i) => {
