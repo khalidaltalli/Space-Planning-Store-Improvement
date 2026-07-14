@@ -179,6 +179,7 @@
     <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
     <button class="filter-btn" onclick="setFilter('Receiving',this)">Receiving</button>
     <button class="filter-btn" onclick="setFilter('Live',this)">Live</button>
+    <button class="filter-btn" onclick="setFilter('Completed',this)">Completed</button>
     <input class="search-input" id="search" placeholder="🔍  Search branch..." oninput="renderGrid()" />
     <select class="sort-select" id="sort-select" onchange="renderGrid()">
       <option value="code">Sort: Branch Code</option>
@@ -481,7 +482,7 @@
     const grid   = document.getElementById('branch-grid');
 
     let filtered = branches.filter(b=>{
-      if(b.status==='Completed') return false;
+      if(b.status==='Completed'&&currentFilter!=='Completed') return false;
       if(currentFilter!=='all'&&b.status!==currentFilter) return false;
       if(search&&!b.code.toLowerCase().includes(search)) return false;
       return true;
@@ -517,7 +518,8 @@
       const dnSigned = getDNSigned(rows);
       const fuStatus = followupData[b.code]?.status||'None';
       const pctColor = pct>=80?'#4ade80':pct>=50?'#22d3ee':pct>0?'#fbbf24':'#f87171';
-      const sbClass  = b.status==='Live'?'sb-live':'sb-receiving';
+      const sbClass  = b.status==='Live'?'sb-live':b.status==='Completed'?'sb-completed':'sb-receiving';
+      const isEXP    = b.code.endsWith('EXP');
       const fbClass  = {Contacting:'fb-contacting','Waiting for Validation':'fb-waiting',Validated:'fb-validated','Email Sent':'fb-emailsent',None:'fb-none'}[fuStatus]||'fb-none';
       const sched    = b.status==='Live'?'Sun & Wed':'Mon';
       const today    = new Date(); const dow=today.getDay();
@@ -529,7 +531,7 @@
       pill.onclick = () => openModal(b.code);
       pill.innerHTML = `
         <div class="pill-top">
-          <div class="branch-code">${b.code}</div>
+          <div class="branch-code">${b.code}${isEXP?' <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;background:rgba(251,191,36,0.2);color:#fbbf24;vertical-align:middle;">EXP</span>':''}</div>
           <span class="status-badge ${sbClass}">${b.status}</span>
         </div>
         <div class="pill-stats">
@@ -558,9 +560,10 @@
     const fu   = followupData[code]||{status:'None',notes:[]};
 
     /* Header */
-    document.getElementById('modal-branch-code').textContent = code;
-    const sbClass = b.status==='Live'?'sb-live':'sb-receiving';
-    document.getElementById('modal-meta').innerHTML = `<span class="status-badge ${sbClass}">${b.status}</span>`;
+    document.getElementById('modal-branch-code').textContent = code.replace(/\s*EXP$/, '');
+    const sbClass = b.status==='Live'?'sb-live':b.status==='Completed'?'sb-completed':'sb-receiving';
+    const isEXPModal = b.code.endsWith('EXP');
+    document.getElementById('modal-meta').innerHTML = `<span class="status-badge ${sbClass}">${b.status}</span>${isEXPModal?' <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(251,191,36,0.15);color:#fbbf24;">EXP</span>':''}`;
 
     /* KPIs */
     const total = rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length||1;
