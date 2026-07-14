@@ -2436,12 +2436,12 @@
       /* ── Table style ── */
       const tbl='width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px;';
       const th='padding:7px 10px;background:#1a3a5c;color:#fff;text-align:left;border:1px solid #ccc;font-weight:bold;';
-      const td='padding:6px 10px;border:1px solid #ccc;';
+      const td='padding:6px 10px;border:1px solid #ccc;color:#1a1a1a;';
       const priColor={Essential:'#c0392b',Critical:'#c0392b',High:'#e67e22',Medium:'#f39c12',Low:'#27ae60'};
 
       function makeTable(headers, rows, colStyles=[]){
         const head='<thead><tr>'+headers.map(h=>`<th style="${th}">${h}</th>`).join('')+'</tr></thead>';
-        const body='<tbody>'+rows.map((r,ri)=>`<tr style="background:${ri%2===0?'#fff':'#f7f9fc'};">`+r.map((c,ci)=>`<td style="${td}${colStyles[ci]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
+        const body='<tbody>'+rows.map((r,ri)=>`<tr style="background:${ri%2===0?'#fff':'#f7f9fc'};color:#1a1a1a;">`+r.map((c,ci)=>`<td style="${td}${colStyles[ci]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
         return `<table style="${tbl}">${head}${body}</table>`;
       }
 
