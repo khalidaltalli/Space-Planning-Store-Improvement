@@ -272,9 +272,8 @@
         fetch(`${APPS_URL}?sheet=DN%20Upload%20Log`).then(r=>r.json()).catch(()=>({rows:[]}))
       ]);
 
-      /* Build branch list (exclude Pending) */
+      /* Build branch list (all branches including Pending) */
       allBranches = (bcRes.rows||[])
-        .filter(r=>r['Branch Status']!=='Pending')
         .map(r=>({ code:r['Branch Code'], status:r['Branch Status'] }))
         .sort((a,b)=>a.code.localeCompare(b.code));
 
