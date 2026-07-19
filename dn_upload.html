@@ -422,7 +422,6 @@
     saveDNLink(_dnModalBranch, _dnModalGroup, link, _dnModalType);
   }
 
-  document.getElementById('dn-link-input').addEventListener('keydown', e=>{ if(e.key==='Enter') saveDNFromModal(); });
 
   async function saveDNLink(branch, group, fileUrl, dnType='unsigned') {
     const timestamp = new Date().toLocaleString('en-GB');
