@@ -379,24 +379,61 @@
     applyFilter();
   }
 
-  /* ══ FILE UPLOAD ══ */
+  /* ══ DN LINK MODAL ══ */
+  let _dnModalBranch = null;
+  let _dnModalGroup  = null;
+  let _dnModalType   = 'unsigned'; /* 'signed' or 'unsigned' */
+
   function triggerUpload(branch, groupKey) {
-    const group = DN_GROUPS.find(g=>g.key===groupKey);
-    const link  = prompt(`Paste the Google Drive link for:\n${branch} — ${group.name}`);
-    if (!link || !link.trim()) return;
-    if (!link.startsWith('http')) { showToast('✗ Invalid link — must start with http', true); return; }
-    saveDNLink(branch, group, link.trim());
+    _dnModalBranch = branch;
+    _dnModalGroup  = DN_GROUPS.find(g=>g.key===groupKey);
+    _dnModalType   = 'unsigned';
+    document.getElementById('dn-modal-title').textContent    = `Add D.N. Link — ${branch}`;
+    document.getElementById('dn-modal-subtitle').textContent = _dnModalGroup.name;
+    document.getElementById('dn-link-input').value           = '';
+    setDNType('unsigned');
+    document.getElementById('dn-link-modal').style.display   = 'flex';
+    setTimeout(()=>document.getElementById('dn-link-input').focus(), 50);
   }
 
-  async function saveDNLink(branch, group, fileUrl) {
+  function setDNType(type) {
+    _dnModalType = type;
+    const btnU = document.getElementById('btn-not-signed');
+    const btnS = document.getElementById('btn-signed');
+    if (type === 'unsigned') {
+      btnU.style.background='rgba(251,191,36,0.15)'; btnU.style.borderColor='rgba(251,191,36,0.4)'; btnU.style.color='#fbbf24';
+      btnS.style.background='rgba(255,255,255,0.04)'; btnS.style.borderColor='rgba(255,255,255,0.1)'; btnS.style.color='#94a3b8';
+    } else {
+      btnS.style.background='rgba(74,222,128,0.15)'; btnS.style.borderColor='rgba(74,222,128,0.4)'; btnS.style.color='#4ade80';
+      btnU.style.background='rgba(255,255,255,0.04)'; btnU.style.borderColor='rgba(255,255,255,0.1)'; btnU.style.color='#94a3b8';
+    }
+  }
+
+  function closeDNModal() {
+    document.getElementById('dn-link-modal').style.display = 'none';
+    _dnModalBranch = null; _dnModalGroup = null;
+  }
+
+  function saveDNFromModal() {
+    const link = document.getElementById('dn-link-input').value.trim();
+    if (!link) { showToast('✗ Please paste a link', true); return; }
+    if (!link.startsWith('http')) { showToast('✗ Invalid link — must start with http', true); return; }
+    closeDNModal();
+    saveDNLink(_dnModalBranch, _dnModalGroup, link, _dnModalType);
+  }
+
+  document.getElementById('dn-link-input').addEventListener('keydown', e=>{ if(e.key==='Enter') saveDNFromModal(); });
+
+  async function saveDNLink(branch, group, fileUrl, dnType='unsigned') {
     const timestamp = new Date().toLocaleString('en-GB');
+    const action = dnType === 'signed' ? 'writeSignedDNLink' : 'writeDNLink';
     /* Write to sheet */
     await fetch(APPS_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action:    'writeDNLink',
+        action,
         branch,
         assets:    group.assets,
         groupName: group.name,
@@ -406,18 +443,22 @@
         timestamp
       })
     });
-    /* Update local data immediately */
+    /* Update local data */
     checklistData.forEach(r => {
       if ((r['Branch Code']||'').trim()===branch && group.assets.includes((r['Asset']||'').trim())) {
-        r['D.N. Not Signed'] = fileUrl;
+        if (dnType === 'signed') r['D.N. Signed'] = fileUrl;
+        else r['D.N. Not Signed'] = fileUrl;
       }
     });
+    /* Add to activity log */
     activityLog.unshift({
       Timestamp: timestamp, User: currentUser,
       'Branch Code': branch, 'D.N. Group': group.name,
-      'File Name': 'Manual link', 'File URL': fileUrl
+      'File Name': dnType === 'signed' ? '✓ Signed D.N.' : '📎 Not Signed D.N.',
+      'File URL': fileUrl,
+      'Type': dnType
     });
-    showToast('✓ Link saved!');
+    showToast(`✓ ${dnType === 'signed' ? 'Signed' : 'Unsigned'} D.N. link saved!`);
     applyFilter();
     updateMissingPill();
     renderLog();
@@ -463,13 +504,19 @@
       const groupId = 'log-group-' + gi;
 
       const entriesHtml = entries.map(e => {
+        const isSigned  = e['Type']==='signed' || (e['File Name']||'').includes('Signed');
+        const dotColor  = isSigned ? '#4ade80' : '#fbbf24';
+        const typeLabel = isSigned
+          ? '<span style="font-size:9px;padding:1px 6px;border-radius:5px;background:rgba(74,222,128,0.12);color:#4ade80;font-weight:700;">✓ Signed</span>'
+          : '<span style="font-size:9px;padding:1px 6px;border-radius:5px;background:rgba(251,191,36,0.12);color:#fbbf24;font-weight:700;">📎 Not Signed</span>';
         const hasLink = e['File URL'] && e['File URL'].startsWith('http');
         return `<div class="log-entry">
-          <div class="log-dot"></div>
+          <div class="log-dot" style="background:${dotColor};margin-top:3px;"></div>
           <div style="flex:1;min-width:0;">
             <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;">
               <span style="font-weight:600;color:#e2e8f0;">${e['Branch Code']||''}</span>
               <span style="color:#a78bfa;">${e['D.N. Group']||''}</span>
+              ${typeLabel}
               <span style="color:#94a3b8;font-size:10px;">by ${e['User']||''}</span>
               <span style="color:#475569;font-size:10px;margin-left:auto;">${(()=>{ const ts=e['Timestamp']||''; const m=ts.match(/\d{1,2}:\d{2}/); return m?m[0]:''; })()}</span>
             </div>
@@ -505,7 +552,10 @@
   }
 
   /* ══ BOOT ══ */
-  window.addEventListener('DOMContentLoaded', ()=>{ loadUsersDN(); });
+  window.addEventListener('DOMContentLoaded', ()=>{
+    loadUsersDN();
+    document.getElementById('dn-link-input').addEventListener('keydown', e=>{ if(e.key==='Enter') saveDNFromModal(); });
+  });
   let toastTimer;
   function showToast(msg, error=false) {
     const t = document.getElementById('toast');
@@ -517,5 +567,34 @@
     toastTimer = setTimeout(()=>t.style.opacity='0', 3500);
   }
 </script>
+<!-- ══ DN LINK MODAL ══ -->
+<div id="dn-link-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.12);border-radius:12px;padding:1.5rem;width:420px;">
+    <h3 style="font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:4px;" id="dn-modal-title">Add D.N. Link</h3>
+    <p style="font-size:11px;color:#64748b;margin-bottom:1rem;" id="dn-modal-subtitle"></p>
+
+    <!-- Type toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button id="btn-not-signed" onclick="setDNType('unsigned')"
+        style="flex:1;padding:8px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;background:rgba(251,191,36,0.15);border:0.5px solid rgba(251,191,36,0.4);color:#fbbf24;">
+        📎 Not Signed
+      </button>
+      <button id="btn-signed" onclick="setDNType('signed')"
+        style="flex:1;padding:8px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;">
+        ✓ Signed
+      </button>
+    </div>
+
+    <!-- Link input -->
+    <label style="font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;">Paste Drive Link</label>
+    <input id="dn-link-input" class="form-input" placeholder="https://drive.google.com/..." style="margin-bottom:14px;" />
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" onclick="closeDNModal()" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;">Cancel</button>
+      <button class="btn" id="dn-modal-save" onclick="saveDNFromModal()" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;">Save Link</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
