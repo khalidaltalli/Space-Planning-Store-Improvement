@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0f1117; color: #e2e8f0; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
@@ -272,6 +273,7 @@
         <button class="btn" style="background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.2);color:#22d3ee;" onclick="openFollowupEmail()">📧 Email</button>
         <button class="btn" style="background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.2);color:#4ade80;" onclick="generateFollowupReport()">⬇ Full Report</button>
         <button class="btn" style="background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.2);color:#fbbf24;" onclick="generateFollowupMissing()">⬇ Missing PDF</button>
+        <button class="btn" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.2);color:#34d399;" onclick="generateFollowupExcel()">⬇ Excel</button>
         <button class="btn" onclick="closeModal()">Close</button>
         <button class="btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="saveNote()">💾 Save Note</button>
       </div>
@@ -853,22 +855,44 @@
 
     const fullHtml = htmlBody + `<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
     const sendId   = 'SEND_' + Date.now();
+    const today    = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
 
-    btn.disabled=true; btn.textContent='Sending...';
+    btn.disabled=true; btn.textContent='Preparing...';
+    status.textContent='Generating Excel...'; status.style.color='#64748b';
+
+    /* Generate Excel as base64 */
+    let xlsxBase64 = '', xlsxName = '';
+    try {
+      const assets = checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
+      const rows = [...assets]
+        .filter(r=>r['Asset Status']&&r['Asset Status']!=='')
+        .sort((a,b)=>{const sc=(a['Section']||'').localeCompare(b['Section']||'');return sc!==0?sc:(a['Asset']||'').localeCompare(b['Asset']||'');})
+        .map(r=>({'Category':r['Section']||'','Asset':r['Asset']||'','Status':r['Asset Status']||'','Updated Status':''}));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18}];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, branch);
+      const wbArr = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
+      xlsxBase64 = wbArr;
+      xlsxName   = `Receiving_Status_${branch}_${today}.xlsx`;
+    } catch(e){ /* send without Excel if generation fails */ }
+
+    btn.textContent='Sending...';
     status.textContent='Sending email + generating PDF...'; status.style.color='#64748b';
 
-    /* Step 1 — fire no-cors POST */
+    /* Fire no-cors POST */
     fetch(APPS_URL, {
       method:'POST', mode:'no-cors',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         action:'sendFollowupEmail', sendId, branch, to, cc, subject,
         htmlBody:fullHtml, threadId:saved.threadId||'',
+        xlsxBase64, xlsxName,
         user:currentUser||'Khalid', timestamp:new Date().toLocaleString('en-GB')
       })
     });
 
-    /* Step 2 — poll GET for result */
+    /* Poll for result */
     status.textContent='Waiting for email to send...';
     let result = null;
     for(let i=0; i<25; i++){
@@ -891,13 +915,12 @@
     }
     if(result.error){ status.textContent='✗ Failed: '+result.error; status.style.color='#f87171'; return; }
 
-    /* Update local cache */
     emailThreads[branch]={ to, cc, subject, threadId:result.threadId||saved.threadId||'', lastSent:new Date().toLocaleString('en-GB') };
     document.getElementById('fu-subject').readOnly=true;
     document.getElementById('fu-subject').style.opacity='0.6';
-    document.getElementById('fu-thread-status').textContent=`🔗 Thread created — Last sent: ${emailThreads[branch].lastSent}`;
+    document.getElementById('fu-thread-status').textContent=`🔗 Thread — Last sent: ${emailThreads[branch].lastSent}`;
     document.getElementById('fu-thread-status').style.color='#4ade80';
-    status.textContent='✓ Email sent with PDF attached!'; status.style.color='#4ade80';
+    status.textContent='✓ Email sent with PDF and Excel attached!'; status.style.color='#4ade80';
     showToast('Email sent!');
   }
 
@@ -1468,6 +1491,55 @@
   }
 
 
+  /* ══ FOLLOW-UP EXCEL ══ */
+  function generateFollowupExcel(){
+    if(!currentBranch) return;
+    const branch = currentBranch;
+    const assets = checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
+    const today  = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+
+    /* Sort by section then asset name */
+    const rows = [...assets]
+      .filter(r=>r['Asset Status']&&r['Asset Status']!=='')
+      .sort((a,b)=>{
+        const sc=(a['Section']||'').localeCompare(b['Section']||'');
+        return sc!==0?sc:(a['Asset']||'').localeCompare(b['Asset']||'');
+      })
+      .map(r=>({
+        'Category':       r['Section']      ||'',
+        'Asset':          r['Asset']        ||'',
+        'Status':         r['Asset Status'] ||'',
+        'Updated Status': ''
+      }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    /* Column widths */
+    ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18}];
+
+    /* Style header row */
+    const headerStyle={font:{bold:true},fill:{fgColor:{rgb:'1A3A5C'}},font:{color:{rgb:'FFFFFF'},bold:true}};
+    ['A1','B1','C1','D1'].forEach(cell=>{
+      if(ws[cell]) ws[cell].s=headerStyle;
+    });
+
+    /* Color status cells */
+    rows.forEach((r,i)=>{
+      const cellRef='C'+(i+2);
+      if(ws[cellRef]){
+        const v=r['Status'];
+        if(v==='Received')      ws[cellRef].s={font:{color:{rgb:'16A34A'},bold:true}};
+        else if(v==='Not Received') ws[cellRef].s={font:{color:{rgb:'B91C1C'},bold:true}};
+        else if(v==='Delivered')    ws[cellRef].s={font:{color:{rgb:'B45309'},bold:true}};
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, branch);
+    XLSX.writeFile(wb, `Receiving_Status_${branch}_${today}.xlsx`);
+    showToast('Excel downloaded!');
+  }
+
   window.addEventListener('DOMContentLoaded', ()=>{ loadUsersFU(); });
 </script>
 
@@ -1508,6 +1580,7 @@
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);align-items:center;flex-wrap:wrap;">
       <span id="fu-send-status" style="font-size:11px;color:#64748b;margin-right:auto;"></span>
       <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('fu-email-modal').style.display='none'">Close</button>
+      <button class="btn" style="background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.3);color:#34d399;" onclick="generateFollowupExcel()">⬇ Excel</button>
       <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="copyFollowupEmail()">📋 Copy</button>
       <button class="btn" id="fu-send-btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="sendFollowupEmailFU()">✉️ Send</button>
     </div>
