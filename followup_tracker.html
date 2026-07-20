@@ -393,14 +393,22 @@
   async function loadData() {
     document.getElementById('last-updated').textContent = 'Loading...';
     try {
-      const [bcRes, clRes, fuRes, prRes, qtyRes] = await Promise.all([
+      const [bcRes, clRes, fuRes, prRes, qtyRes, assetRes] = await Promise.all([
         fetch(`${APPS_URL}?sheet=Branch%20Codes`).then(r=>r.json()),
         fetch(`${APPS_URL}?sheet=Receiving%20Checklist`).then(r=>r.json()),
         fetch(`${APPS_URL}?sheet=Follow-up%20Tracker`).then(r=>r.json()).catch(()=>({rows:[]})),
         fetch(`${APPS_URL}?sheet=Procurement%20Tracking`).then(r=>r.json()).catch(()=>({rows:[]})),
         fetch(`${APPS_URL}?sheet=Fridge%20%26%20Shelf%20Quantities`).then(r=>r.json()).catch(()=>({rows:[]})),
+        fetch(`${APPS_URL}?sheet=Asset%20List%20%26%20Priority`).then(r=>r.json()).catch(()=>({rows:[]})),
       ]);
       loadEmailThreads().catch(()=>{});
+      /* Build asset image map */
+      assetImages = {};
+      (assetRes.rows||[]).forEach(r=>{
+        const name=String(r['Asset']||r[Object.keys(r)[0]]||'').trim();
+        const img =String(r['Images']||'').trim();
+        if(name&&img) assetImages[name]=img;
+      });
 
       branches = (bcRes.rows||[])
         .filter(r=>['Receiving','Live','Completed'].includes(r['Branch Status']))
@@ -732,6 +740,7 @@
 
   /* ══ FOLLOW-UP EMAIL ══ */
   let emailThreads = {}; /* branchCode -> {to, cc, subject, threadId} */
+  let assetImages  = {}; /* assetName -> imageUrl */
 
   async function loadEmailThreads() {
     try {
@@ -827,6 +836,13 @@
       ${p('Thank you for your support.')}
       <br/>${p('Best regards,')}<br/><strong>${sig}</strong><br/><span style="font-size:12px;color:#555;">Space Planning & Store Improvement Team</span>`;
 
+    /* Show/hide Send button based on user */
+    const sendBtn = document.getElementById('fu-send-btn');
+    if(currentUser === 'Khalid'){
+      sendBtn.style.display = '';
+    } else {
+      sendBtn.style.display = 'none';
+    }
     document.getElementById('fu-email-html').innerHTML=html;
     document.getElementById('fu-email-modal').style.display='flex';
   }
@@ -867,9 +883,10 @@
       const rows = [...assets]
         .filter(r=>r['Asset Status']&&r['Asset Status']!=='')
         .sort((a,b)=>{const sc=(a['Section']||'').localeCompare(b['Section']||'');return sc!==0?sc:(a['Asset']||'').localeCompare(b['Asset']||'');})
-        .map(r=>({'Category':r['Section']||'','Asset':r['Asset']||'','Status':r['Asset Status']||'','Updated Status':''}));
+        .map(r=>({'Category':r['Section']||'','Asset':r['Asset']||'','Status':r['Asset Status']||'','Updated Status':'','Photo':assetImages[(r['Asset']||'').trim()]||''}));
       const ws = XLSX.utils.json_to_sheet(rows);
-      ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18}];
+      ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18},{wch:40}];
+      rows.forEach((r,i)=>{ if(r['Photo']){ const cell='E'+(i+2); ws[cell]={ v:'View Photo', t:'s', l:{ Target: r['Photo'] } }; } });
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, branch);
       const wbArr = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
@@ -1076,6 +1093,13 @@
       <p style="margin:4px 0;"><strong>${sig}</strong></p>
       <p style="margin:0;font-size:11px;color:#555;">Space Planning &amp; Store Improvement Team</p>`;
     document.getElementById('ws-email-html').innerHTML=html;
+    /* Show/hide Send button based on user */
+    const wsSendBtn = document.getElementById('ws-send-btn');
+    if(currentUser === 'Khalid'){
+      wsSendBtn.style.display = '';
+    } else {
+      wsSendBtn.style.display = 'none';
+    }
     document.getElementById('weekly-modal').style.display='flex';
   }
 
@@ -1498,39 +1522,30 @@
     const assets = checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
     const today  = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
 
-    /* Sort by section then asset name */
-    const rows = [...assets]
+    const sorted = [...assets]
       .filter(r=>r['Asset Status']&&r['Asset Status']!=='')
       .sort((a,b)=>{
         const sc=(a['Section']||'').localeCompare(b['Section']||'');
         return sc!==0?sc:(a['Asset']||'').localeCompare(b['Asset']||'');
-      })
-      .map(r=>({
-        'Category':       r['Section']      ||'',
-        'Asset':          r['Asset']        ||'',
-        'Status':         r['Asset Status'] ||'',
-        'Updated Status': ''
-      }));
+      });
+
+    const rows = sorted.map(r=>({
+      'Category':       r['Section']      ||'',
+      'Asset':          r['Asset']        ||'',
+      'Status':         r['Asset Status'] ||'',
+      'Updated Status': '',
+      'Photo':          assetImages[(r['Asset']||'').trim()]||''
+    }));
 
     const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18},{wch:40}];
 
-    /* Column widths */
-    ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18}];
-
-    /* Style header row */
-    const headerStyle={font:{bold:true},fill:{fgColor:{rgb:'1A3A5C'}},font:{color:{rgb:'FFFFFF'},bold:true}};
-    ['A1','B1','C1','D1'].forEach(cell=>{
-      if(ws[cell]) ws[cell].s=headerStyle;
-    });
-
-    /* Color status cells */
+    /* Add hyperlinks to Photo column */
     rows.forEach((r,i)=>{
-      const cellRef='C'+(i+2);
-      if(ws[cellRef]){
-        const v=r['Status'];
-        if(v==='Received')      ws[cellRef].s={font:{color:{rgb:'16A34A'},bold:true}};
-        else if(v==='Not Received') ws[cellRef].s={font:{color:{rgb:'B91C1C'},bold:true}};
-        else if(v==='Delivered')    ws[cellRef].s={font:{color:{rgb:'B45309'},bold:true}};
+      if(r['Photo']){
+        const cell='E'+(i+2);
+        ws[cell]={ v:'View Photo', t:'s', l:{ Target: r['Photo'] },
+          s:{ font:{ color:{ rgb:'0E7490' }, underline:true } } };
       }
     });
 
