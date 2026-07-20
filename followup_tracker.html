@@ -405,10 +405,12 @@
       /* Build asset image map */
       assetImages = {};
       (assetRes.rows||[]).forEach(r=>{
-        const name=String(r['Asset']||r[Object.keys(r)[0]]||'').trim();
-        const img =String(r['Images']||'').trim();
+        /* Try common column names for asset name */
+        const name=String(r['Assets']||r['Asset']||r['Asset Name']||r['Name']||r['Item']||r[Object.keys(r)[0]]||'').trim();
+        const img =String(r['Images']||r['Image']||r['Photo']||r['Image Link']||'').trim();
         if(name&&img) assetImages[name]=img;
       });
+      console.log('Asset images loaded:', Object.keys(assetImages).length, 'assets', assetRes.rows?.length, 'rows');
 
       branches = (bcRes.rows||[])
         .filter(r=>['Receiving','Live','Completed'].includes(r['Branch Status']))
