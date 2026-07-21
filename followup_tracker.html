@@ -3,1623 +3,785 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Follow-up Tracker — Space Planning</title>
+  <title>Store Info</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0f1117; color: #e2e8f0; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
 
-    /* ── Header ── */
-    .header { background: #1a1f2e; border-bottom: 0.5px solid rgba(255,255,255,0.07); padding: 0.6rem 1.5rem; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 50; }
-    .header-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; text-align: center; }
-    .header-sub { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 2px; }
-    .btn { font-size: 12px; padding: 6px 14px; border-radius: 7px; border: 0.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #e2e8f0; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; transition: all 0.15s; }
-    .user-badge { font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
-    .badge-khalid { background: rgba(34,211,238,0.12); color: #22d3ee; }
-    .badge-azhar  { background: rgba(167,139,250,0.12); color: #a78bfa; }
-    .badge-eissa  { background: rgba(74,222,128,0.12); color: #4ade80; }
-    .badge-viewer { background: rgba(100,116,139,0.12); color: #94a3b8; }
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1f2e;
+      --surface2: #222840;
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.16);
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --heading: #f1f5f9;
+      --cyan: #22d3ee;
+      --cyan-dim: rgba(34,211,238,0.12);
+      --green: #4ade80;
+      --green-dim: rgba(74,222,128,0.12);
+      --mint: #6ee7b7;
+      --mint-dim: rgba(110,231,183,0.13);
+      --amber: #fbbf24;
+      --amber-dim: rgba(251,191,36,0.12);
+      --red: #f87171;
+      --red-dim: rgba(248,113,113,0.12);
+      --grey: #94a3b8;
+      --grey-dim: rgba(148,163,184,0.12);
+      --purple: #a78bfa;
+      --purple-dim: rgba(167,139,250,0.12);
+      --radius: 10px;
+      --radius-sm: 6px;
+    }
 
-    /* ── Login ── */
-    .login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 999; }
-    .login-card { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 2rem; width: 320px; text-align: center; }
-    .login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .login-card p { font-size: 12px; color: #64748b; margin-bottom: 1.5rem; }
-    .login-select { width: 100%; background: #0f1117; border: 0.5px solid rgba(255,255,255,0.12); color: #e2e8f0; font-size: 13px; padding: 9px 10px; border-radius: 6px; font-family: 'DM Sans', sans-serif; margin-bottom: 10px; }
-    .login-pin { width: 100%; background: #0f1117; border: 0.5px solid rgba(255,255,255,0.12); color: #e2e8f0; font-size: 20px; padding: 9px 10px; border-radius: 6px; font-family: 'DM Mono', monospace; letter-spacing: 6px; text-align: center; margin-bottom: 10px; }
-    .login-pin:focus, .login-select:focus { outline: none; border-color: rgba(34,211,238,0.4); }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
 
-    /* ── Summary bar ── */
-    .summary-bar { display: flex; gap: 12px; padding: 0.75rem 1.5rem; border-bottom: 0.5px solid rgba(255,255,255,0.05); flex-wrap: wrap; }
-    .summary-kpi { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 8px 16px; display: flex; flex-direction: column; align-items: center; min-width: 100px; }
-    .summary-kpi .val { font-size: 20px; font-weight: 700; font-family: 'DM Mono', monospace; }
-    .summary-kpi .lbl { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+    /* ── SIGN-IN OVERLAY ── */
+    .signin-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+    .signin-overlay.hidden { display: none; }
 
-    /* ── Filters ── */
-    .filters { padding: 0.75rem 1.5rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-bottom: 0.5px solid rgba(255,255,255,0.05); }
-    .filter-btn { font-size: 11px; padding: 4px 14px; border-radius: 20px; border: 0.5px solid rgba(255,255,255,0.1); background: transparent; color: #94a3b8; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
-    .filter-btn.active { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.3); color: #22d3ee; }
-    .search-input { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 11px; padding: 5px 12px; border-radius: 20px; font-family: 'DM Sans', sans-serif; width: 200px; }
-    .search-input:focus { outline: none; border-color: rgba(34,211,238,0.3); }
-    .sort-select { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 11px; padding: 5px 10px; border-radius: 20px; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-left: auto; }
+    .signin-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 32px;
+      width: 100%; max-width: 380px;
+      animation: modalIn 0.2s ease;
+    }
+    .signin-title {
+      font-size: 20px; font-weight: 700; color: var(--heading);
+      margin-bottom: 4px;
+    }
+    .signin-sub {
+      font-size: 13px; color: var(--muted); margin-bottom: 28px;
+    }
+    .signin-label {
+      font-size: 11px; color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      display: block; margin-bottom: 6px;
+    }
+    .signin-select, .signin-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 16px;
+    }
+    .signin-select:focus, .signin-input:focus { border-color: var(--cyan); }
+    .signin-select option { background: var(--surface2); }
+    .signin-passcode-wrap { display: none; }
+    .signin-passcode-wrap.visible { display: block; }
+    .signin-btn {
+      width: 100%;
+      background: var(--cyan);
+      color: #0f1117;
+      border: none; border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 700;
+      padding: 11px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      margin-top: 4px;
+    }
+    .signin-btn:hover { opacity: 0.88; }
+    .signin-error {
+      font-size: 12px; color: var(--red);
+      margin-top: 10px; text-align: center;
+      min-height: 18px;
+    }
 
-    /* ── Branch grid ── */
-    .branch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; padding: 1.25rem 1.5rem; }
+    /* ── HEADER ── */
+    .header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 0.5px solid rgba(255,255,255,0.08);
+    }
+    .header-logo-link { display: flex; align-items: center; text-decoration: none; }
+    .header-logo { height: 60px; object-fit: contain; }
+    .header-center { text-align: center; }
+    .header-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .header-sub { font-size: 12px; color: #f1f5f9; margin-top: 3px; font-weight: 500; }
+    .header-right { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: #22d3ee;
+      background: rgba(34,211,238,0.08);
+      border: 0.5px solid rgba(34,211,238,0.2);
+      padding: 5px 12px; border-radius: 20px;
+    }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22d3ee; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .user-badge-header {
+      font-size: 11px; padding: 4px 10px; border-radius: 10px; font-weight: 600;
+    }
+    .user-badge-header.editor { background: rgba(110,231,183,0.12); color: #6ee7b7; }
+    .user-badge-header.viewer { background: rgba(148,163,184,0.12); color: #94a3b8; }
+    .signout-btn {
+      background: rgba(248,113,113,0.08); border: 0.5px solid rgba(248,113,113,0.2);
+      color: #f87171; font-size: 11px; font-family: 'DM Sans', sans-serif;
+      padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s;
+    }
+    .signout-btn:hover { background: rgba(248,113,113,0.15); }
 
-    /* ── Branch pill ── */
-    .branch-pill { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; cursor: pointer; position: relative; transition: all 0.15s; display: flex; flex-direction: column; gap: 6px; min-height: 90px; }
-    .branch-pill:hover { border-color: rgba(34,211,238,0.3); background: rgba(34,211,238,0.04); transform: translateY(-1px); }
-    .branch-pill.completed { display: none; }
-    .pill-top { display: flex; justify-content: space-between; align-items: flex-start; }
-    .branch-code { font-size: 13px; font-weight: 700; color: #ffffff; letter-spacing: -0.2px; }
-    .status-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
-    .sb-receiving { background: rgba(34,211,238,0.15); color: #22d3ee; }
-    .sb-live { background: rgba(74,222,128,0.15); color: #4ade80; }
-    .sb-completed { background: rgba(100,116,139,0.15); color: #64748b; }
-    .pill-stats { display: flex; gap: 4px; flex-wrap: wrap; }
-    .mini-stat { font-size: 9px; padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,0.05); color: #94a3b8; white-space: nowrap; }
-    .mini-stat.red { background: rgba(248,113,113,0.1); color: #f87171; }
-    .mini-stat.amber { background: rgba(251,191,36,0.1); color: #fbbf24; }
-    .mini-stat.green { background: rgba(74,222,128,0.1); color: #4ade80; }
-    .pill-bottom { display: flex; justify-content: space-between; align-items: center; }
-    .followup-badge { font-size: 9px; font-weight: 600; padding: 2px 7px; border-radius: 8px; cursor: pointer; }
-    .fb-contacting { background: rgba(14,116,144,0.15); color: #22d3ee; border: 0.5px solid rgba(14,116,144,0.3); }
-    .fb-waiting    { background: rgba(251,191,36,0.12); color: #fbbf24; border: 0.5px solid rgba(251,191,36,0.3); }
-    .fb-validated  { background: rgba(74,222,128,0.12); color: #4ade80; border: 0.5px solid rgba(74,222,128,0.3); }
-    .fb-emailsent  { background: rgba(167,139,250,0.12); color: #a78bfa; border: 0.5px solid rgba(167,139,250,0.3); }
-    .fb-none       { background: rgba(100,116,139,0.1); color: #475569; border: 0.5px solid rgba(100,116,139,0.2); }
-    .schedule-tag  { font-size: 9px; color: #475569; }
-    .due-today     { color: #fbbf24; font-weight: 600; }
+    /* ── TOOLBAR ── */
+    .toolbar {
+      padding: 1.25rem 2rem 0;
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
+    .search-wrap svg {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+    .search-input {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      padding: 9px 12px 9px 38px; outline: none; transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--cyan); }
+    .search-input::placeholder { color: var(--muted); }
+    .filter-select {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      padding: 9px 12px; outline: none; cursor: pointer;
+      transition: border-color 0.15s; min-width: 140px;
+    }
+    .filter-select:focus { border-color: var(--cyan); }
+    .filter-select option { background: var(--surface2); }
+    .count-badge {
+      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 5px 12px; white-space: nowrap; margin-left: auto;
+    }
 
-    /* ── Modal ── */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
-    .modal-box { background: #1a1f2e; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 12px; width: 680px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
-    .modal-header { padding: 1rem 1.25rem; border-bottom: 0.5px solid rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: space-between; }
-    .modal-header h2 { font-size: 16px; font-weight: 700; color: #f1f5f9; }
-    .modal-body { overflow-y: auto; flex: 1; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
-    .modal-footer { padding: 0.75rem 1.25rem; border-top: 0.5px solid rgba(255,255,255,0.07); display: flex; gap: 8px; flex-wrap: wrap; }
-    .section-title { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .kpi-card { background: rgba(255,255,255,0.03); border: 0.5px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 12px; text-align: center; }
-    .kpi-card .v { font-size: 20px; font-weight: 700; font-family: 'DM Mono', monospace; }
-    .kpi-card .l { font-size: 10px; color: #64748b; margin-top: 2px; }
-    .dn-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-    .dn-item { background: rgba(255,255,255,0.02); border-radius: 6px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
-    .dn-item .dn-name { color: #94a3b8; }
-    .proc-row { background: rgba(255,255,255,0.02); border-radius: 6px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 4px; }
-    .note-history { display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; }
-    .note-entry { background: rgba(255,255,255,0.02); border-radius: 6px; padding: 8px 10px; font-size: 11px; }
-    .note-entry .meta { font-size: 10px; color: #475569; margin-bottom: 3px; display: flex; gap: 8px; }
-    .note-entry .text { color: #94a3b8; line-height: 1.5; }
-    .note-input-area { background: #0f1117; border: 0.5px solid rgba(255,255,255,0.1); border-radius: 6px; color: #e2e8f0; font-size: 12px; padding: 8px 10px; font-family: 'DM Sans', sans-serif; width: 100%; resize: vertical; min-height: 60px; }
-    .note-input-area:focus { outline: none; border-color: rgba(34,211,238,0.3); }
-    .status-select { background: #0f1117; border: 0.5px solid rgba(255,255,255,0.1); color: #e2e8f0; font-size: 11px; padding: 5px 8px; border-radius: 6px; font-family: 'DM Sans', sans-serif; }
-    .info-row { display: flex; gap: 8px; font-size: 11px; color: #64748b; }
-    .info-row span { color: #94a3b8; }
+    /* ── STORE GRID ── */
+    .store-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px; padding: 1.25rem 2rem 2rem;
+    }
+    .store-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s, background 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .store-card::before {
+      content: ''; position: absolute; top: 0; left: 0;
+      width: 3px; height: 100%;
+      background: var(--card-accent, var(--grey)); opacity: 0.85;
+    }
+    .store-card:hover { border-color: var(--border-hover); background: var(--surface2); transform: translateY(-1px); }
+    .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .card-code { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.3px; }
+    .status-pill { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; font-family: 'DM Sans', sans-serif; flex-shrink: 0; }
+    .status-live         { background: var(--mint-dim);  color: var(--mint); }
+    .status-soon         { background: var(--amber-dim); color: var(--amber); }
+    .status-construction { background: var(--cyan-dim);  color: var(--cyan); }
+    .status-closed       { background: var(--red-dim);   color: var(--red); }
+    .status-default      { background: var(--grey-dim);  color: var(--grey); }
+    .card-location {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: var(--muted); margin-bottom: 10px;
+    }
+    .card-location svg { flex-shrink: 0; }
+    .card-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+    .pill { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-family: 'DM Mono', monospace; white-space: nowrap; }
+    .pill-class-a  { background: rgba(251,191,36,0.13);        color: #fbbf24; }
+    .pill-class-b  { background: rgba(34,211,238,0.12);        color: var(--cyan); }
+    .pill-class-c  { background: rgba(148,163,184,0.13);       color: var(--grey); }
+    .pill-class-d  { background: rgba(248,113,113,0.12);       color: var(--red); }
+    .pill-mezz     { background: var(--grey-dim);               color: var(--grey); }
+    .pill-pharmacy { background: var(--purple-dim);             color: var(--purple); }
+    .pill-cold     { background: rgba(96,165,250,0.12);         color: #60a5fa; }
+    .pill-region-central { background: rgba(52,211,153,0.12);  color: #34d399; }
+    .pill-region-western { background: rgba(251,146,60,0.12);  color: #fb923c; }
+    .pill-region-eastern { background: rgba(56,189,248,0.12);  color: #38bdf8; }
+    .pill-region-remote  { background: rgba(167,139,250,0.12); color: #a78bfa; }
+    .pill-region-default { background: var(--grey-dim);        color: var(--grey); }
+    .pill-location {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; padding: 3px 8px; border-radius: 20px;
+      font-family: 'DM Mono', monospace;
+      background: rgba(251,191,36,0.10); color: var(--amber);
+    }
 
-    /* ── Toast ── */
-    #toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1a1f2e; border: 0.5px solid rgba(74,222,128,0.3); color: #4ade80; font-size: 12px; padding: 8px 16px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+    /* ── EMPTY / LOADING ── */
+    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--muted); display: none; }
+    .empty-state p { font-size: 14px; }
+    .loading-state { text-align: center; padding: 4rem 2rem; color: var(--muted); }
+    .spinner {
+      width: 28px; height: 28px; border: 2px solid var(--border);
+      border-top-color: var(--cyan); border-radius: 50%;
+      animation: spin 0.7s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Schedule tag ── */
-    .sched-live { color: #f87171; }
-    .sched-receiving { color: #22d3ee; }
-    .qty-row { display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-radius:6px;background:rgba(255,255,255,0.02);margin-bottom:4px;font-size:11px; }
-    .qty-label { color:#94a3b8; }
-    .qty-vals  { font-family:'DM Mono',monospace;font-size:11px; }
-    .qty-diff-short { color:#f87171;font-weight:700; }
-    .qty-diff-extra { color:#22d3ee;font-weight:700; }
-    .qty-diff-ok    { color:#4ade80; }
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 200; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; width: 100%; max-width: 640px;
+      max-height: 90vh; overflow-y: auto; position: relative;
+      animation: modalIn 0.18s ease;
+    }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .modal-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 20px 24px 0; margin-bottom: 20px;
+    }
+    .modal-code { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .modal-name { font-size: 20px; font-weight: 700; color: var(--heading); }
+    .modal-close {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s;
+      flex-shrink: 0; margin-left: 12px;
+    }
+    .modal-close:hover { color: var(--text); background: var(--surface2); }
+    .modal-body { padding: 0 24px 24px; }
+    .modal-section-title {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      letter-spacing: 0.8px; text-transform: uppercase; margin: 20px 0 10px;
+    }
+    .modal-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .modal-field { display: flex; flex-direction: column; gap: 4px; }
+    .modal-field.full { grid-column: 1 / -1; }
+    .field-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+    .field-value { font-size: 14px; color: var(--text); font-weight: 500; }
+    .field-link { font-size: 13px; color: var(--cyan); text-decoration: none; display: flex; align-items: center; gap: 5px; }
+    .field-link:hover { text-decoration: underline; }
+    .field-input, .field-select {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      padding: 7px 10px; outline: none; width: 100%; transition: border-color 0.15s;
+    }
+    .field-input:focus, .field-select:focus { border-color: var(--cyan); }
+    .field-select option { background: var(--surface2); }
+    .modal-actions {
+      display: flex; gap: 10px; margin-top: 24px;
+      padding-top: 20px; border-top: 1px solid var(--border);
+    }
+    .btn {
+      padding: 9px 20px; border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--cyan); color: #0f1117; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--border-hover); }
+    .btn-edit { background: var(--surface2); color: var(--cyan); border: 1px solid rgba(34,211,238,0.3); margin-left: auto; }
+    .btn-edit:hover { background: var(--cyan-dim); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 10px 18px;
+      font-size: 13px; font-weight: 500; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+      z-index: 999; opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    .toast-dot.error { background: var(--red); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
   </style>
 </head>
 <body>
 
-<!-- ══ NOTES ALL POPUP ══ -->
-<div class="modal-overlay" id="notes-all-modal" style="z-index:300;">
-  <div class="modal-box" style="width:520px;">
-    <div class="modal-header">
-      <h2>📝 All Follow-up Notes</h2>
-      <button onclick="document.getElementById('notes-all-modal').style.display='none';" style="background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;">✕</button>
-    </div>
-    <div class="modal-body" style="padding:1rem 1.25rem;">
-      <div id="notes-all-list" class="note-history" style="max-height:500px;"></div>
-    </div>
-  </div>
-</div>
+  <!-- SIGN-IN OVERLAY -->
+  <div class="signin-overlay" id="signin-overlay">
+    <div class="signin-box">
+      <div class="signin-title">Store Info</div>
+      <div class="signin-sub">Select your name to continue</div>
 
-<div class="login-overlay" id="login-overlay">
-  <div class="login-card">
-    <h2>📋 Follow-up Tracker</h2>
-    <p>Space Planning & Store Improvement</p>
-    <select id="login-name" class="login-select" onchange="toggleLoginPin()">
-      <option value="">Loading...</option>
-    </select>
-    <div id="pin-wrap">
-      <input type="password" id="login-pin" class="login-pin" maxlength="4" placeholder="••••"
-        onkeydown="if(event.key==='Enter') submitLogin()" />
-    </div>
-    <p id="login-error" style="color:#f87171;font-size:11px;margin:4px 0 8px;display:none;">Incorrect PIN.</p>
-    <button onclick="submitLogin()" style="width:100%;padding:10px;border-radius:6px;background:rgba(34,211,238,0.1);border:0.5px solid rgba(34,211,238,0.3);color:#22d3ee;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Enter</button>
-  </div>
-</div>
+      <label class="signin-label">Who are you?</label>
+      <select class="signin-select" id="signin-user" onchange="onUserSelect()">
+        <option value="">— Select —</option>
+        <option value="Viewer">Viewer</option>
+        <option value="Khalid">Khalid</option>
+        <option value="Eissa">Eissa</option>
+        <option value="Abdulrahman">Abdulrahman</option>
+        <option value="Mahmmoud">Mahmmoud</option>
+      </select>
 
-<!-- ══ APP ══ -->
-<div id="app" style="display:none;">
-
-  <!-- Header -->
-  <div class="header">
-    <div style="display:flex;align-items:center;">
-      <a href="index.html"><img src="logo.png" style="height:60px;object-fit:contain;" alt="Logo" /></a>
-    </div>
-    <div>
-      <div class="header-title">Follow-up Tracker</div>
-      <div class="header-sub" id="last-updated">Loading...</div>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;">
-      <span id="user-badge" class="user-badge"></span>
-      <button class="btn" onclick="loadData()">↻ Refresh</button>
-      <button class="btn" style="background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;" onclick="openWeeklySummary()">📊 Weekly Summary</button>
-      <button class="btn" style="background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.2);color:#f87171;" onclick="signOut()">Sign Out</button>
-    </div>
-  </div>
-
-  <!-- Summary bar -->
-  <div class="summary-bar">
-    <div class="summary-kpi"><div class="val" id="kpi-total" style="color:#22d3ee;">—</div><div class="lbl">Total Branches</div></div>
-    <div class="summary-kpi"><div class="val" id="kpi-receiving" style="color:#22d3ee;">—</div><div class="lbl">Receiving</div></div>
-    <div class="summary-kpi"><div class="val" id="kpi-live" style="color:#4ade80;">—</div><div class="lbl">Live</div></div>
-    <div class="summary-kpi"><div class="val" id="kpi-validated" style="color:#a78bfa;">—</div><div class="lbl">Validated</div></div>
-    <div class="summary-kpi"><div class="val" id="kpi-due" style="color:#fbbf24;">—</div><div class="lbl">Due This Week</div></div>
-    <div class="summary-kpi" style="margin-left:auto;"><div class="val" id="kpi-avg" style="color:#4ade80;">—</div><div class="lbl">Avg Completion</div></div>
-  </div>
-
-  <!-- Filters -->
-  <div class="filters">
-    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
-    <button class="filter-btn" onclick="setFilter('Receiving',this)">Receiving</button>
-    <button class="filter-btn" onclick="setFilter('Live',this)">Live</button>
-    <button class="filter-btn" onclick="setFilter('Completed',this)">Completed</button>
-    <input class="search-input" id="search" placeholder="🔍  Search branch..." oninput="renderGrid()" />
-    <select class="sort-select" id="sort-select" onchange="renderGrid()">
-      <option value="code">Sort: Branch Code</option>
-      <option value="pct">Sort: Completion %</option>
-      <option value="status">Sort: Status</option>
-      <option value="followup">Sort: Follow-up Status</option>
-    </select>
-  </div>
-
-  <!-- Branch grid -->
-  <div class="branch-grid" id="branch-grid">
-    <div style="color:#475569;font-size:13px;padding:2rem;grid-column:1/-1;text-align:center;">Loading branches...</div>
-  </div>
-
-</div>
-
-<!-- ══ BRANCH POPUP ══ -->
-<div class="modal-overlay" id="branch-modal">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div>
-        <h2 id="modal-branch-code"></h2>
-        <div style="display:flex;gap:6px;margin-top:4px;align-items:center;" id="modal-meta"></div>
+      <div class="signin-passcode-wrap" id="passcode-wrap">
+        <label class="signin-label">Passcode</label>
+        <input class="signin-input" id="signin-passcode" type="password" placeholder="Enter passcode" onkeydown="if(event.key==='Enter') attemptSignIn()" />
       </div>
-      <button onclick="closeModal()" style="background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;">✕</button>
-    </div>
-    <div class="modal-body">
 
-      <!-- KPIs -->
+      <button class="signin-btn" onclick="attemptSignIn()">Continue</button>
+      <div class="signin-error" id="signin-error"></div>
+    </div>
+  </div>
+
+  <!-- MAIN APP (hidden until signed in) -->
+  <div id="app" style="display:none">
+
+    <!-- HEADER -->
+    <header class="header">
       <div>
-        <div class="section-title">Receiving Overview</div>
-        <div class="kpi-row">
-          <div class="kpi-card"><div class="v" id="m-pct" style="color:#22d3ee;">—</div><div class="l">Completion</div></div>
-          <div class="kpi-card"><div class="v" id="m-crit" style="color:#f87171;">—</div><div class="l">Critical %</div></div>
-          <div class="kpi-card"><div class="v" id="m-nr" style="color:#f87171;">—</div><div class="l">Not Received</div></div>
-          <div class="kpi-card"><div class="v" id="m-del" style="color:#fbbf24;">—</div><div class="l">Delivered</div></div>
+        <a class="header-logo-link" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/" target="_blank">
+          <img class="header-logo" src="logo.png" alt="Logo" onerror="this.style.display='none'" />
+        </a>
+      </div>
+      <div class="header-center">
+        <div class="header-title">Store Info</div>
+        <div class="header-sub" id="header-sub">Space Planning & Store Improvement</div>
+      </div>
+      <div class="header-right">
+        <div class="live-badge"><div class="live-dot"></div> Live</div>
+        <span class="user-badge-header" id="user-badge-header" style="display:none;"></span>
+        <button class="signout-btn" onclick="signOut()">Sign Out</button>
+      </div>
+    </header>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input class="search-input" id="search" type="text" placeholder="Search by code, city, district…" oninput="applyFilters()" />
+      </div>
+      <select class="filter-select" id="filter-status" onchange="applyFilters()">
+        <option value="">All Statuses</option>
+      </select>
+      <div class="count-badge" id="count-badge">— stores</div>
+    </div>
+
+    <!-- STORE GRID -->
+    <div class="store-grid" id="store-grid">
+      <div class="loading-state" style="grid-column:1/-1">
+        <div class="spinner"></div>
+        <p>Loading stores…</p>
+      </div>
+    </div>
+    <div class="empty-state" id="empty-state">
+      <p>No stores match your filters.</p>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+      <div class="modal" id="modal">
+        <div class="modal-header">
+          <div>
+            <div class="modal-code" id="modal-code"></div>
+            <div class="modal-name" id="modal-name"></div>
+          </div>
+          <button class="modal-close" onclick="closeModal()">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
-      </div>
-
-      <!-- Qty Discrepancy -->
-      <div>
-        <div class="section-title">Qty — Shortage & Extra</div>
-        <div id="modal-qty"><div style="font-size:11px;color:#475569;">Loading...</div></div>
-      </div>
-
-      <!-- D.N. Status -->
-      <div>
-        <div class="section-title">D.N. Status (7 Groups)</div>
-        <div class="dn-grid" id="modal-dn"></div>
-      </div>
-
-      <!-- Procurement -->
-      <div>
-        <div class="section-title">Procurement Requests</div>
-        <div id="modal-proc"><div style="font-size:11px;color:#475569;">No requests.</div></div>
-      </div>
-
-      <!-- Timestamps -->
-      <div>
-        <div class="section-title">Key Dates</div>
-        <div class="info-row" id="modal-dates"></div>
-      </div>
-
-      <!-- Follow-up Status -->
-      <div>
-        <div class="section-title">Follow-up Status</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <select class="status-select" id="modal-followup-status" onchange="updateFollowupStatus()">
-            <option value="None">— Set Status —</option>
-            <option value="Contacting">Contacting</option>
-            <option value="Waiting for Validation">Waiting for Validation</option>
-            <option value="Validated">Validated</option>
-            <option value="Email Sent">Email Sent</option>
-          </select>
-          <span style="font-size:11px;color:#475569;" id="modal-schedule-note"></span>
-        </div>
-      </div>
-
-      <!-- Notes -->
-      <div>
-        <div class="section-title">Follow-up Notes</div>
-        <div id="modal-notes-preview"></div>
-        <textarea class="note-input-area" id="modal-note-input" placeholder="Add a follow-up note..." style="margin-top:8px;"></textarea>
-      </div>
-
-    </div>
-    <div class="modal-footer">
-      <button class="btn" style="background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.2);color:#f87171;" onclick="markCompleted()" id="btn-complete">Mark Completed</button>
-      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn" style="background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.2);color:#22d3ee;" onclick="openFollowupEmail()">📧 Email</button>
-        <button class="btn" style="background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.2);color:#4ade80;" onclick="generateFollowupReport()">⬇ Full Report</button>
-        <button class="btn" style="background:rgba(251,191,36,0.08);border-color:rgba(251,191,36,0.2);color:#fbbf24;" onclick="generateFollowupMissing()">⬇ Missing PDF</button>
-        <button class="btn" style="background:rgba(52,211,153,0.08);border-color:rgba(52,211,153,0.2);color:#34d399;" onclick="generateFollowupExcel()">⬇ Excel</button>
-        <button class="btn" onclick="closeModal()">Close</button>
-        <button class="btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="saveNote()">💾 Save Note</button>
+        <div class="modal-body" id="modal-body"></div>
       </div>
     </div>
+
+  </div><!-- /app -->
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <div class="toast-dot" id="toast-dot"></div>
+    <span id="toast-msg"></span>
   </div>
-</div>
-
-<div id="toast"></div>
 
 <script>
-  const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
-  const PAGE_KEY_FU = 'Followup Tracker';
-  let usersDataFU  = [];
-  let currentUser  = sessionStorage.getItem('followup_user') || '';
-  let isViewer     = false;
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZ4DlhFv-RHsGhvEHT6766aCprbrWn8shmOLRZTaKqOtdhHUERfV01Ih3sG29hj0M/exec';
 
-  const FALLBACK_USERS_FU = [
-    {Name:'Khalid',PIN:'6969','Followup Tracker':'Editor'},
-    {Name:'Azhar', PIN:'0000','Followup Tracker':'Editor'},
-    {Name:'Eissa', PIN:'1234','Followup Tracker':'Editor'},
-    {Name:'Viewer',PIN:'',   'Followup Tracker':'Viewer'},
-  ];
+  // ─── USERS ────────────────────────────────────────────────────────
+  const USERS = {
+    'Viewer':       { passcode: null,   canEdit: false },
+    'Khalid':       { passcode: '6969', canEdit: true },
+    'Eissa':        { passcode: '1234', canEdit: true },
+    'Abdulrahman':  { passcode: '8852', canEdit: true },
+    'Mahmmoud':     { passcode: '9999', canEdit: true },
+  };
 
-  function populateFUDropdown() {
-    const sel = document.getElementById('login-name');
-    sel.innerHTML = '<option value="">Select name</option>' +
-      usersDataFU.map(u=>`<option value="${u['Name']}">${u['Name']}</option>`).join('');
+  let currentUser = null;   // { name, canEdit }
+  let allStores   = [];
+  let currentStore = null;
+  let editMode = false;
+
+  // ─── SIGN-IN ──────────────────────────────────────────────────────
+  function onUserSelect() {
+    const name = document.getElementById('signin-user').value;
+    const wrap = document.getElementById('passcode-wrap');
+    wrap.classList.toggle('visible', name && USERS[name] && USERS[name].passcode !== null);
+    document.getElementById('signin-error').textContent = '';
+    document.getElementById('signin-passcode').value = '';
   }
 
-  async function loadUsersFU() {
-    usersDataFU = FALLBACK_USERS_FU;
-    populateFUDropdown();
+  function attemptSignIn() {
+    const name = document.getElementById('signin-user').value;
+    if (!name) { document.getElementById('signin-error').textContent = 'Please select a name.'; return; }
+
+    const user = USERS[name];
+    if (user.passcode !== null) {
+      const entered = document.getElementById('signin-passcode').value;
+      if (entered !== user.passcode) {
+        document.getElementById('signin-error').textContent = 'Wrong passcode. Try again.';
+        document.getElementById('signin-passcode').value = '';
+        document.getElementById('signin-passcode').focus();
+        return;
+      }
+    }
+
+    currentUser = { name, canEdit: user.canEdit };
+    document.getElementById('signin-overlay').classList.add('hidden');
+    document.getElementById('app').style.display = 'block';
+
+    // update header badge
+    const badge = document.getElementById('user-badge-header');
+    badge.textContent = name;
+    badge.className = 'user-badge-header ' + (user.canEdit ? 'editor' : 'viewer');
+    badge.style.display = 'inline-block';
+
+    fetchStores();
+  }
+
+  function signOut() {
+    currentUser = null;
+    allStores = [];
+    document.getElementById('signin-user').value = '';
+    document.getElementById('passcode-wrap').classList.remove('visible');
+    document.getElementById('signin-error').textContent = '';
+    document.getElementById('signin-overlay').classList.remove('hidden');
+    document.getElementById('app').style.display = 'none';
+    const badge = document.getElementById('user-badge-header');
+    if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+    document.getElementById('store-grid').innerHTML =
+      `<div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div><p>Loading stores…</p></div>`;
+    document.getElementById('filter-status').innerHTML = '<option value="">All Statuses</option>';
+  }
+
+  // ─── STATUS HELPERS ───────────────────────────────────────────────
+  function statusClass(status) {
+    if (!status) return 'status-default';
+    const s = status.toLowerCase();
+    if (s.includes('live') || s.includes('open'))                            return 'status-live';
+    if (s.includes('soon') || s.includes('receiv') || s.includes('opening')) return 'status-soon';
+    if (s.includes('construct'))                                             return 'status-construction';
+    if (s.includes('closed'))                                                return 'status-closed';
+    return 'status-default';
+  }
+  function accentColor(status) {
+    if (!status) return 'var(--grey)';
+    const s = status.toLowerCase();
+    if (s.includes('live') || s.includes('open'))                            return 'var(--mint)';
+    if (s.includes('soon') || s.includes('receiv') || s.includes('opening')) return 'var(--amber)';
+    if (s.includes('construct'))                                             return 'var(--cyan)';
+    if (s.includes('closed'))                                                return 'var(--red)';
+    return 'var(--grey)';
+  }
+  function statusLabel(status) {
+    if (!status) return 'Unknown';
+    const s = status.toLowerCase();
+    if (s.includes('live') || s.includes('open')) return 'Open';
+    if (s.includes('soon') || s.includes('receiv') || s.includes('opening')) return 'Opening Soon';
+    return status;
+  }
+
+  // ─── API CALL ─────────────────────────────────────────────────────
+  // Apps Script with text/plain mime type allows CORS reads after redirect.
+  async function jsonp(params) {
+    const qs  = new URLSearchParams(params).toString();
+    const url = APPS_SCRIPT_URL + '?' + qs;
+    const res  = await fetch(url, { redirect: 'follow' });
+    const text = await res.text();
     try {
-      const r = await Promise.race([
-        fetch(`${APPS_URL}?sheet=Users`).then(res=>res.json()),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),6000))
-      ]);
-      const fromSheet=(r.rows||[]).filter(u=>u['Name']);
-      if(fromSheet.length){ usersDataFU=fromSheet; populateFUDropdown(); }
-    } catch(e){ /* keep fallback */ }
-    if(currentUser){
-      const u=usersDataFU.find(x=>x['Name']===currentUser);
-      if(u){ applyLoginFU(u); return; }
+      return JSON.parse(text);
+    } catch {
+      // strip JSONP wrapper if present: callback({...});
+      const clean = text.replace(/^[\w$]+\(/, '').replace(/\);?\s*$/, '');
+      return JSON.parse(clean);
     }
   }
 
-  function toggleLoginPin() {
-    const name = document.getElementById('login-name').value;
-    const u    = usersDataFU.find(x=>x['Name']===name);
-    document.getElementById('pin-wrap').style.display = (u && !u['PIN']) ? 'none' : 'block';
-  }
-
-  function submitLogin() {
-    const name = document.getElementById('login-name').value;
-    const pin  = document.getElementById('login-pin').value;
-    if(!name) return;
-    const user = usersDataFU.find(u=>u['Name']===name);
-    if(!user){ document.getElementById('login-error').style.display='block'; return; }
-    if(user['PIN'] && user['PIN']!==pin){
-      document.getElementById('login-error').style.display='block';
-      document.getElementById('login-pin').value=''; return;
-    }
-    applyLoginFU(user);
-  }
-
-  function applyLoginFU(user){
-    currentUser = user['Name'];
-    isViewer    = (user[PAGE_KEY_FU]||'').toLowerCase()==='viewer' || !user['PIN'];
-    sessionStorage.setItem('followup_user', currentUser);
-    document.getElementById('login-overlay').style.display='none';
-    document.getElementById('app').style.display='block';
-    const badge=document.getElementById('user-badge');
-    badge.textContent=isViewer?'👁 Viewer':currentUser;
-    badge.className='user-badge badge-'+currentUser.toLowerCase();
-    loadData();
-  }
-
-  function signOut(){
-    sessionStorage.removeItem('followup_user');
-    location.reload();
-  }
-
-  const DN_GROUPS = [
-    { name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
-    { name:'Sign Board',            assets:['SignBoard','Sign Board'] },
-    { name:'Curtains',              assets:['Curtain'] },
-    { name:'Cold Room',             assets:['Coldroom','Cold Room'] },
-    { name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'] },
-    { name:'Access Points & CCTV',  assets:['Access Points','CCTV'] },
-    { name:'Air Condition',         assets:['Air Condition'] },
-  ];
-
-  const QTY_ITEMS = [
-    {label:'Freebolt',   req:'Freebolt Req',   rec:'Freebolt Rec'},
-    {label:'Heavy Rack', req:'Heavy Rack Req',  rec:'Heavy Rack Rec'},
-    {label:'1D Fridge',  req:'1D Fridge Req',   rec:'1D Fridge Rec'},
-    {label:'2D Fridge',  req:'2D Fridge Req',   rec:'2D Fridge Rec'},
-    {label:'3D Fridge',  req:'3D Fridge Req',   rec:'3D Fridge Rec'},
-    {label:'1D Freezer', req:'1D Freezer Req',  rec:'1D Freezer Rec'},
-    {label:'2D Freezer', req:'2D Freezer Req',  rec:'2D Freezer Rec'},
-    {label:'3D Freezer', req:'3D Freezer Req',  rec:'3D Freezer Rec'},
-  ];
-
-  const FOLLOWUP_SCHEDULE = { Live:'Sun & Wed', Receiving:'Monday' };
-
-  let currentFilter = 'all';
-  let currentBranch = null;
-
-  /* ── Data ── */
-  let branches    = [];
-  let checklist   = [];
-  let procData    = {};
-  let qtyData     = {};
-  let followupData= {};
-
-  /* ══ DATA ══ */
-  async function loadData() {
-    document.getElementById('last-updated').textContent = 'Loading...';
+  // ─── FETCH ────────────────────────────────────────────────────────
+  async function fetchStores() {
     try {
-      const [bcRes, clRes, fuRes, prRes, qtyRes, assetRes] = await Promise.all([
-        fetch(`${APPS_URL}?sheet=Branch%20Codes`).then(r=>r.json()),
-        fetch(`${APPS_URL}?sheet=Receiving%20Checklist`).then(r=>r.json()),
-        fetch(`${APPS_URL}?sheet=Follow-up%20Tracker`).then(r=>r.json()).catch(()=>({rows:[]})),
-        fetch(`${APPS_URL}?sheet=Procurement%20Tracking`).then(r=>r.json()).catch(()=>({rows:[]})),
-        fetch(`${APPS_URL}?sheet=Fridge%20%26%20Shelf%20Quantities`).then(r=>r.json()).catch(()=>({rows:[]})),
-        fetch(`${APPS_URL}?sheet=Asset%20List%20%26%20Priority`).then(r=>r.json()).catch(()=>({rows:[]})),
-      ]);
-      loadEmailThreads().catch(()=>{});
-      /* Build asset image map */
-      assetImages = {};
-      (assetRes.rows||[]).forEach(r=>{
-        /* Try common column names for asset name */
-        const name=String(r['Assets']||r['Asset']||r['Asset Name']||r['Name']||r['Item']||r[Object.keys(r)[0]]||'').trim();
-        const img =String(r['Images']||r['Image']||r['Photo']||r['Image Link']||'').trim();
-        if(name&&img) assetImages[name]=img;
-      });
-      console.log('Asset images loaded:', Object.keys(assetImages).length, 'assets', assetRes.rows?.length, 'rows');
-
-      branches = (bcRes.rows||[])
-        .filter(r=>['Receiving','Live','Completed'].includes(r['Branch Status']))
-        .map(r=>({ code:r['Branch Code'], status:r['Branch Status'], receivingDate:r['Receiving Date']||'', liveDate:r['Live Date']||'' }))
-        .sort((a,b)=>a.code.localeCompare(b.code));
-
-      checklist = clRes.rows||[];
-
-      /* Procurement per branch */
-      procData = {};
-      (prRes.rows||[]).forEach(r=>{ const b=(r['Branch Code']||'').trim(); if(b){if(!procData[b])procData[b]=[];procData[b].push(r);} });
-
-      /* Qty per branch */
-      qtyData = {};
-      (qtyRes.rows||[]).forEach(r=>{ const b=(r['Branch Code']||'').trim(); if(b) qtyData[b]=r; });
-
-      /* Follow-up data per branch */
-      followupData = {};
-      (fuRes.rows||[]).forEach(r=>{
-        const b=(r['Branch Code']||'').trim();
-        if(!b) return;
-        if(!followupData[b]) followupData[b]={ status:'None', notes:[] };
-        if(r['Type']==='status') followupData[b].status = r['Value']||'None';
-        if(r['Type']==='note')   followupData[b].notes.push({ ts:r['Timestamp']||'', user:r['User']||'', text:r['Value']||'' });
-      });
-
-      document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
-      updateSummary();
-      renderGrid();
-    } catch(e) {
-      document.getElementById('last-updated').textContent = 'Error: ' + e.message;
+      const data = await jsonp({ action: 'getStores' });
+      allStores  = data;
+      populateStatusFilter();
+      applyFilters();
+    } catch (e) {
+      document.getElementById('store-grid').innerHTML =
+        '<div class="loading-state" style="grid-column:1/-1;color:var(--red)"><p>Error: ' + e.message + '</p></div>';
+      console.error('fetchStores failed:', e);
     }
   }
 
-  /* ══ SUMMARY ══ */
-  function updateSummary() {
-    const active = branches.filter(b=>b.status!=='Completed');
-    const receiving = active.filter(b=>b.status==='Receiving');
-    const live      = active.filter(b=>b.status==='Live');
-    const validated = active.filter(b=>(followupData[b.code]?.status||'None')==='Validated');
-    /* Due this week */
-    const today = new Date(); const dow = today.getDay(); /* 0=Sun,1=Mon...6=Sat */
-    const dueThisWeek = active.filter(b=>{
-      if(b.status==='Live')      return dow===0||dow===3; /* Sun or Wed */
-      if(b.status==='Receiving') return dow===1;          /* Mon */
-      return false;
+  function populateStatusFilter() {
+    const statuses = [...new Set(allStores.map(s => s['Store Status']).filter(Boolean))].sort();
+    const sel = document.getElementById('filter-status');
+    sel.innerHTML = '<option value="">All Statuses</option>';
+    statuses.forEach(st => {
+      const o = document.createElement('option');
+      o.value = st; o.textContent = st;
+      sel.appendChild(o);
     });
-    /* Avg completion */
-    let totalPct = 0;
-    active.forEach(b=>{
-      const rows=checklist.filter(r=>(r['Branch Code']||'').trim()===b.code);
-      totalPct+=calcPct(rows);
-    });
-    const avg = active.length ? Math.round(totalPct/active.length) : 0;
-
-    document.getElementById('kpi-total').textContent     = active.length;
-    document.getElementById('kpi-receiving').textContent = receiving.length;
-    document.getElementById('kpi-live').textContent      = live.length;
-    document.getElementById('kpi-validated').textContent = validated.length;
-    document.getElementById('kpi-due').textContent       = dueThisWeek.length;
-    document.getElementById('kpi-avg').textContent       = avg + '%';
   }
 
-  /* ══ GRID ══ */
-  function setFilter(f, btn) {
-    currentFilter = f;
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    renderGrid();
+  // ─── FILTERS ──────────────────────────────────────────────────────
+  function applyFilters() {
+    const q      = document.getElementById('search').value.trim().toLowerCase();
+    const status = document.getElementById('filter-status').value;
+    let filtered = allStores;
+    if (status) filtered = filtered.filter(s => s['Store Status'] === status);
+    if (q)      filtered = filtered.filter(s =>
+      Object.values(s).some(v => v && v.toString().toLowerCase().includes(q))
+    );
+    renderGrid(filtered);
   }
 
-  function calcPct(rows) {
-    const total = rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length;
-    const rec   = rows.filter(r=>r['Asset Status']==='Received').length;
-    return total ? Math.round(rec/total*100) : 0;
+  // ─── REGION PILL HELPER ──────────────────────────────────────────
+  function regionPillClass(region) {
+    if (!region) return 'pill-region-default';
+    const r = region.toLowerCase().replace(/\s/g, '');
+    if (r.includes('central'))       return 'pill-region-central';
+    if (r.includes('west'))          return 'pill-region-western';
+    if (r.includes('east'))          return 'pill-region-eastern';
+    if (r.includes('remote'))        return 'pill-region-remote';
+    return 'pill-region-default';
   }
 
-  function renderGrid() {
-    const search = document.getElementById('search').value.toLowerCase();
-    const sort   = document.getElementById('sort-select').value;
-    const grid   = document.getElementById('branch-grid');
+  // ─── RENDER GRID ──────────────────────────────────────────────────
+  function renderGrid(stores) {
+    const grid  = document.getElementById('store-grid');
+    const empty = document.getElementById('empty-state');
+    document.getElementById('count-badge').textContent =
+      `${stores.length} store${stores.length !== 1 ? 's' : ''}`;
 
-    let filtered = branches.filter(b=>{
-      if(b.status==='Completed'&&currentFilter!=='Completed') return false;
-      if(currentFilter!=='all'&&b.status!==currentFilter) return false;
-      if(search&&!b.code.toLowerCase().includes(search)) return false;
-      return true;
-    });
+    if (stores.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
 
-    /* Sort */
-    if(sort==='pct') {
-      filtered.sort((a,b)=>{
-        const ra=checklist.filter(r=>(r['Branch Code']||'').trim()===a.code);
-        const rb=checklist.filter(r=>(r['Branch Code']||'').trim()===b.code);
-        return calcPct(rb)-calcPct(ra);
-      });
-    } else if(sort==='status') {
-      filtered.sort((a,b)=>a.status.localeCompare(b.status));
-    } else if(sort==='followup') {
-      const order = {'None':0,'Contacting':1,'Email Sent':2,'Waiting for Validation':3,'Validated':4};
-      filtered.sort((a,b)=>(order[followupData[a.code]?.status||'None']||0)-(order[followupData[b.code]?.status||'None']||0));
-    } else {
-      filtered.sort((a,b)=>a.code.localeCompare(b.code));
-    }
+    grid.innerHTML = stores.map(s => {
+      const idx         = allStores.indexOf(s);
+      const hasMezz     = s['Mezannine Area'] && parseFloat(s['Mezannine Area']) > 0;
+      const pharmacyVal = (s['Pharmacy'] || '').toString().trim().toLowerCase();
+      const hasPharmacy = pharmacyVal && pharmacyVal !== 'none' && pharmacyVal !== '';
+      const pharmacyLabel = pharmacyVal === 'open' ? 'Pharmacy' : pharmacyVal === 'soon' ? 'Pharmacy Soon' : pharmacyVal === 'yes' ? 'Pharmacy' : '';
+      const hasColdRoom = s['Cold Room'] && s['Cold Room'].toString().toLowerCase() === 'yes';
+      const hasLocation = s['Location']  && s['Location'].toString().trim() !== '';
+      const rawClass    = (s['Store Class'] || '').toString().trim().toUpperCase();
+      // Convert CLASS_A → A, CLASS_B → B etc, then display as "Class A"
+      const classLetter = rawClass.replace(/^CLASS_?/, '') || rawClass;
+      const classCss    = classLetter ? 'pill-class-' + classLetter.toLowerCase() : '';
+      const locationText = [s['City'], s['District']].filter(Boolean).join(' · ');
+      const region      = (s['Region'] || '').toString().trim();
 
-    if(!filtered.length) {
-      grid.innerHTML = '<div style="color:#475569;font-size:13px;padding:2rem;grid-column:1/-1;text-align:center;">No branches found.</div>';
-      return;
-    }
-
-    grid.innerHTML = '';
-    filtered.forEach(b=>{
-      const rows   = checklist.filter(r=>(r['Branch Code']||'').trim()===b.code);
-      const pct    = calcPct(rows);
-      const nr     = rows.filter(r=>r['Asset Status']==='Not Received').length;
-      const del    = rows.filter(r=>r['Asset Status']==='Delivered').length;
-      const dnSigned = getDNSigned(rows);
-      const fuStatus = followupData[b.code]?.status||'None';
-      const pctColor = pct>=80?'#4ade80':pct>=50?'#22d3ee':pct>0?'#fbbf24':'#f87171';
-      const sbClass  = b.status==='Live'?'sb-live':b.status==='Completed'?'sb-completed':'sb-receiving';
-      const isEXP    = b.code.endsWith('EXP');
-      const fbClass  = {Contacting:'fb-contacting','Waiting for Validation':'fb-waiting',Validated:'fb-validated','Email Sent':'fb-emailsent',None:'fb-none'}[fuStatus]||'fb-none';
-      const sched    = b.status==='Live'?'Sun & Wed':'Mon';
-      const today    = new Date(); const dow=today.getDay();
-      const isDue    = (b.status==='Live'&&(dow===0||dow===3))||(b.status==='Receiving'&&dow===1);
-
-      const pill = document.createElement('div');
-      pill.className = 'branch-pill';
-      pill.dataset.branch = b.code;
-      pill.onclick = () => openModal(b.code);
-      pill.innerHTML = `
-        <div class="pill-top">
-          <div class="branch-code">${b.code}${isEXP?' <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;background:rgba(251,191,36,0.2);color:#fbbf24;vertical-align:middle;">EXP</span>':''}</div>
-          <span class="status-badge ${sbClass}">${b.status}</span>
-        </div>
-        <div class="pill-stats">
-          <span class="mini-stat" style="color:${pctColor};">${pct}%</span>
-          ${nr>0?`<span class="mini-stat red">${nr} NR</span>`:''}
-          ${del>0?`<span class="mini-stat amber">${del} Del</span>`:''}
-          <span class="mini-stat ${dnSigned===7?'green':dnSigned>0?'amber':'red'}">${dnSigned}/7 DN</span>
-        </div>
-        <div class="pill-bottom">
-          <span class="followup-badge ${fbClass}">${fuStatus==='None'?'No Follow-up':fuStatus}</span>
-          <span class="schedule-tag ${isDue?'due-today':''}">${isDue?'📅 Due today':sched}</span>
+      return `
+        <div class="store-card" style="--card-accent:${accentColor(s['Store Status'])}" onclick="openModal(${idx})">
+          <div class="card-top">
+            <span class="card-code">${s['Store Code'] || '—'}</span>
+            <span class="status-pill ${statusClass(s['Store Status'])}">${statusLabel(s['Store Status'])}</span>
+          </div>
+          ${locationText ? `<div class="card-location">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>${locationText}</div>` : ''}
+          <div class="card-pills">
+            ${classLetter ? `<span class="pill ${classCss}">Class ${classLetter}</span>` : ''}
+            ${region      ? `<span class="pill ${regionPillClass(region)}">${region}</span>` : ''}
+            ${hasMezz     ? `<span class="pill pill-mezz">Mezz Floor</span>` : ''}
+            ${hasPharmacy && pharmacyLabel ? `<span class="pill pill-pharmacy">${pharmacyLabel}</span>` : ''}
+            ${hasColdRoom ? `<span class="pill pill-cold">Cold Room</span>` : ''}
+            ${hasLocation ? `<span class="pill-location">
+              <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>Map</span>` : ''}
+          </div>
         </div>`;
-      grid.appendChild(pill);
-    });
-  }
-
-  function getDNSigned(rows) {
-    return DN_GROUPS.filter(g=>g.assets.some(a=>rows.find(r=>(r['Asset']||'').trim()===a&&r['D.N. Signed']&&r['D.N. Signed'].startsWith('http')))).length;
-  }
-
-  /* ══ MODAL ══ */
-  function openModal(code) {
-    currentBranch = code;
-    const b    = branches.find(x=>x.code===code);
-    const rows = checklist.filter(r=>(r['Branch Code']||'').trim()===code);
-    const fu   = followupData[code]||{status:'None',notes:[]};
-
-    /* Header */
-    document.getElementById('modal-branch-code').textContent = code.replace(/\s*EXP$/, '');
-    const sbClass = b.status==='Live'?'sb-live':b.status==='Completed'?'sb-completed':'sb-receiving';
-    const isEXPModal = b.code.endsWith('EXP');
-    document.getElementById('modal-meta').innerHTML = `<span class="status-badge ${sbClass}">${b.status}</span>${isEXPModal?' <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:6px;background:rgba(251,191,36,0.15);color:#fbbf24;">EXP</span>':''}`;
-
-    /* KPIs */
-    const total = rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length||1;
-    const rec   = rows.filter(r=>r['Asset Status']==='Received').length;
-    const nr    = rows.filter(r=>r['Asset Status']==='Not Received').length;
-    const del   = rows.filter(r=>r['Asset Status']==='Delivered').length;
-    const crit  = rows.filter(r=>['Critical','Essential'].includes(r['Priority']));
-    const critR = crit.filter(r=>r['Asset Status']==='Received').length;
-    const critT = crit.length||1;
-    document.getElementById('m-pct').textContent  = Math.round(rec/total*100)+'%';
-    document.getElementById('m-crit').textContent = Math.round(critR/critT*100)+'%';
-    document.getElementById('m-nr').textContent   = nr;
-    document.getElementById('m-del').textContent  = del;
-
-    /* DN Groups */
-    const dnGrid = document.getElementById('modal-dn');
-    dnGrid.innerHTML = DN_GROUPS.map(g=>{
-      const signed   = g.assets.some(a=>rows.find(r=>(r['Asset']||'').trim()===a&&r['D.N. Signed']&&r['D.N. Signed'].startsWith('http')));
-      const unsigned = g.assets.some(a=>rows.find(r=>(r['Asset']||'').trim()===a&&r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http')));
-      const icon  = signed?'✓':unsigned?'📎':'✗';
-      const color = signed?'#4ade80':unsigned?'#fbbf24':'#f87171';
-      return `<div class="dn-item"><span class="dn-name">${g.name}</span><span style="color:${color};font-weight:600;font-size:12px;">${icon}</span></div>`;
     }).join('');
-
-    /* Procurement */
-    const procs = procData[code]||[];
-    const procEl = document.getElementById('modal-proc');
-    if(procs.length) {
-      const sbMap={'Requested':'sb-requested','PO Created':'sb-po','In Transit':'sb-transit','Delivered':'sb-delivered'};
-      procEl.innerHTML = procs.map(p=>`
-        <div class="proc-row">
-          <span style="color:#e2e8f0;font-weight:600;">${p['Asset Group']||'—'}</span>
-          <span style="color:#64748b;font-size:10px;">${p['Request Number']||'—'}</span>
-          <span class="sb ${sbMap[p['Status']]||''}" style="font-size:10px;">${p['Status']||'—'}</span>
-          <span style="color:#475569;font-size:10px;">ETA: ${p['ETA']||'—'}</span>
-        </div>`).join('');
-    } else { procEl.innerHTML = '<div style="font-size:11px;color:#475569;">No procurement requests.</div>'; }
-
-    /* Dates */
-    document.getElementById('modal-dates').innerHTML =
-      `<div>Receiving Date: <span>${b.receivingDate||'—'}</span></div>
-       <div style="margin-left:12px;">Live Date: <span>${b.liveDate||'—'}</span></div>`;
-
-    /* Qty discrepancy */
-    const fq = qtyData[code]||{};
-    const qtyRows = QTY_ITEMS.map(item=>{
-      const req=parseInt(fq[item.req]||0)||0, rec=parseInt(fq[item.rec]||0)||0, diff=rec-req;
-      return {label:item.label, req, rec, diff};
-    }).filter(r=>r.req>0);
-    const qtyEl = document.getElementById('modal-qty');
-    if(qtyRows.length){
-      const disc = qtyRows.filter(r=>r.diff!==0);
-      if(disc.length){
-        qtyEl.innerHTML = disc.map(r=>`
-          <div class="qty-row">
-            <span class="qty-label">${r.label}</span>
-            <span class="qty-vals">${r.req} Req / ${r.rec} Rec</span>
-            <span class="${r.diff<0?'qty-diff-short':'qty-diff-extra'}">${r.diff>0?'+':''}${r.diff}</span>
-          </div>`).join('');
-      } else {
-        qtyEl.innerHTML = '<div style="font-size:11px;color:#4ade80;padding:4px 0;">✓ No qty discrepancies.</div>';
-      }
-    } else {
-      qtyEl.innerHTML = '<div style="font-size:11px;color:#475569;">No qty data.</div>';
-    }
-    document.getElementById('modal-followup-status').value = fu.status || 'None';
-    document.getElementById('modal-schedule-note').textContent = `Schedule: ${FOLLOWUP_SCHEDULE[b.status]||'—'}`;
-
-    /* Notes — last note preview + view all button */
-    renderNotesPreview(fu.notes);
-
-    /* Complete button */
-    document.getElementById('btn-complete').style.display = isViewer ? 'none' : 'inline-block';
-    document.getElementById('modal-followup-status').disabled = isViewer;
-
-    document.getElementById('branch-modal').style.display = 'flex';
   }
 
-  function renderNotesPreview(notes) {
-    const el = document.getElementById('modal-notes-preview');
-    if(!notes||!notes.length) {
-      el.innerHTML = '<div style="font-size:11px;color:#475569;padding:4px 0;">No notes yet.</div>';
-      return;
-    }
-    const sorted = [...notes].reverse();
-    const last   = sorted[0];
-    const rest   = sorted.length - 1;
-    el.innerHTML = `
-      <div class="note-entry">
-        <div class="meta"><span>${last.user||''}</span><span>${last.ts||''}</span></div>
-        <div class="text">${last.text||''}</div>
-      </div>
-      ${rest > 0 ? `<button onclick="openAllNotes()" style="font-size:10px;margin-top:6px;padding:3px 10px;border-radius:6px;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;cursor:pointer;font-family:'DM Sans',sans-serif;">▼ View ${rest} more note${rest>1?'s':''}</button>` : ''}`;
+  // ─── MODAL ────────────────────────────────────────────────────────
+  function openModal(idx) {
+    currentStore = allStores[idx];
+    editMode = false;
+    renderModal();
+    document.getElementById('modal-overlay').classList.add('open');
   }
-
-  function openAllNotes() {
-    const notes = followupData[currentBranch]?.notes || [];
-    const sorted = [...notes].reverse();
-    document.getElementById('notes-all-list').innerHTML = sorted.map(n=>`
-      <div class="note-entry">
-        <div class="meta"><span>${n.user||''}</span><span>${n.ts||''}</span></div>
-        <div class="text">${n.text||''}</div>
-      </div>`).join('');
-    document.getElementById('notes-all-modal').style.display = 'flex';
-  }
-
   function closeModal() {
-    document.getElementById('branch-modal').style.display = 'none';
-    currentBranch = null;
+    document.getElementById('modal-overlay').classList.remove('open');
+    currentStore = null; editMode = false;
+  }
+  function handleOverlayClick(e) {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
   }
 
-  /* ══ ACTIONS ══ */
-  async function updateFollowupStatus() {
-    if(isViewer||!currentBranch) return;
-    const status = document.getElementById('modal-followup-status').value;
-    const ts     = new Date().toLocaleString('en-GB');
-    await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'saveFollowup',branch:currentBranch,type:'status',value:status,user:currentUser,timestamp:ts})});
-    if(!followupData[currentBranch]) followupData[currentBranch]={status:'None',notes:[]};
-    followupData[currentBranch].status = status;
-    renderGrid();
-    showToast('Status updated');
-  }
+  function renderModal() {
+    const s = currentStore;
+    document.getElementById('modal-code').textContent = s['Store Code'] || '';
+    document.getElementById('modal-name').textContent = s['Name'] || 'Store Details';
 
-  async function saveNote() {
-    if(isViewer||!currentBranch) return;
-    const text = document.getElementById('modal-note-input').value.trim();
-    if(!text) return;
-    const ts = new Date().toLocaleString('en-GB');
-    await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'saveFollowup',branch:currentBranch,type:'note',value:text,user:currentUser,timestamp:ts})});
-    if(!followupData[currentBranch]) followupData[currentBranch]={status:'None',notes:[]};
-    followupData[currentBranch].notes.push({ts,user:currentUser,text});
-    renderNotesPreview(followupData[currentBranch].notes);
-    document.getElementById('modal-note-input').value = '';
-    showToast('Note saved');
-  }
+    const statusOptions = ['Live', 'Opening Soon', 'Under Construction', 'Closed', 'Receiving'];
+    const layoutOptions = ['Final', 'Draft', 'Pending', 'N/A'];
+    const classOptions  = ['A', 'B', 'C', 'D'];
 
-  async function markCompleted() {
-    if(isViewer||!currentBranch) return;
-    if(!confirm(`Mark ${currentBranch} as Completed? It will be hidden from this tracker.`)) return;
-    const ts = new Date().toLocaleString('en-GB');
-    await fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'updateBranchStatus',branch:currentBranch,status:'Completed',user:currentUser,timestamp:ts})});
-    const b = branches.find(x=>x.code===currentBranch);
-    if(b) b.status='Completed';
-    closeModal();
-    updateSummary();
-    renderGrid();
-    showToast(`${currentBranch} marked as Completed`);
-  }
-
-  /* ══ TOAST ══ */
-  let toastTimer;
-  function showToast(msg,err=false) {
-    const t=document.getElementById('toast');
-    t.textContent=msg;
-    t.style.borderColor=err?'rgba(248,113,113,0.3)':'rgba(74,222,128,0.3)';
-    t.style.color=err?'#f87171':'#4ade80';
-    t.style.opacity='1';
-    clearTimeout(toastTimer);
-    toastTimer=setTimeout(()=>t.style.opacity='0',3000);
-  }
-
-  /* ══ FOLLOW-UP EMAIL ══ */
-  let emailThreads = {}; /* branchCode -> {to, cc, subject, threadId} */
-  let assetImages  = {}; /* assetName -> imageUrl */
-
-  async function loadEmailThreads() {
-    try {
-      const r = await fetch(`${APPS_URL}?sheet=Email%20Threads`).then(res=>res.json());
-      emailThreads = {};
-      (r.rows||[]).forEach(row=>{
-        const b=(row['Branch Code']||'').trim();
-        if(b) emailThreads[b]={ to:row['To']||'', cc:row['CC']||'', subject:row['Subject']||'', threadId:row['Thread ID']||'', lastSent:row['Last Sent']||'' };
-      });
-    } catch(e){ emailThreads={}; }
-  }
-
-  function openFollowupEmail(){
-    if(!currentBranch) return;
-    const branch = currentBranch;
-    document.getElementById('fu-email-branch').textContent = branch;
-    /* Pre-fill saved recipients */
-    const saved = emailThreads[branch]||{};
-    document.getElementById('fu-to').value      = saved.to      ||'';
-    document.getElementById('fu-cc').value      = saved.cc      ||'';
-    document.getElementById('fu-subject').value = saved.subject ||`Asset Receiving Follow-up — ${branch}`;
-    document.getElementById('fu-send-status').textContent='';
-    const hasThread=!!(saved.threadId);
-    document.getElementById('fu-subject').readOnly=hasThread;
-    document.getElementById('fu-subject').style.opacity=hasThread?'0.6':'1';
-    const threadStatus=document.getElementById('fu-thread-status');
-    threadStatus.textContent=hasThread?`🔗 Will reply to existing thread — Last sent: ${saved.lastSent||'unknown'}`:'📨 First email — new thread will be created';
-    threadStatus.style.color=hasThread?'#4ade80':'#fbbf24';
-    /* Build email HTML */
-    const assets   = checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
-    const fq       = qtyData[branch]||{};
-    const branchStatus = branches.find(b=>b.code===branch)?.status||'—';
-    const today    = new Date().toLocaleDateString('en-GB');
-
-    const tbl  = 'width:100%;border-collapse:collapse;margin:8px 0 16px;font-size:12px;';
-    const th   = 'padding:7px 10px;background:#1a3a5c;color:#fff;text-align:left;border:1px solid #ccc;font-weight:bold;';
-    const td   = 'padding:6px 10px;border:1px solid #ccc;';
-    const priColor = {Essential:'#c0392b',Critical:'#c0392b',High:'#e67e22',Medium:'#f39c12',Low:'#27ae60'};
-
-    function makeTable(headers,rows,colStyles=[]){
-      const head='<thead><tr>'+headers.map(h=>`<th style="${th}">${h}</th>`).join('')+'</tr></thead>';
-      const body='<tbody>'+rows.map((r,ri)=>`<tr style="background:${ri%2===0?'#fff':'#f7f9fc'};">`+r.map((c,ci)=>`<td style="${td}${colStyles[ci]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
-      return `<table style="${tbl}">${head}${body}</table>`;
-    }
-
-    const pending = assets.filter(r=>r['Asset Status']==='Not Received'||r['Asset Status']==='Delivered')
-      .sort((a,b)=>{const po={Essential:0,Critical:1,High:2,Medium:3,Low:4};return(po[a['Priority']]??5)-(po[b['Priority']]??5);});
-    const pendingRows = pending.map(r=>[r['Asset']||'',`<span style="color:${priColor[r['Priority']]||'#555'};font-weight:bold;">${r['Priority']||'—'}</span>`,r['Asset Status']||'']);
-
-    const QTY_E=[
-      {label:'Freebolt',req:'Freebolt Req',rec:'Freebolt Rec'},{label:'Heavy Rack',req:'Heavy Rack Req',rec:'Heavy Rack Rec'},
-      {label:'1D Fridge',req:'1D Fridge Req',rec:'1D Fridge Rec'},{label:'2D Fridge',req:'2D Fridge Req',rec:'2D Fridge Rec'},
-      {label:'3D Fridge',req:'3D Fridge Req',rec:'3D Fridge Rec'},{label:'1D Freezer',req:'1D Freezer Req',rec:'1D Freezer Rec'},
-      {label:'2D Freezer',req:'2D Freezer Req',rec:'2D Freezer Rec'},{label:'3D Freezer',req:'3D Freezer Req',rec:'3D Freezer Rec'},
-    ];
-    const shortageRows=QTY_E.map(item=>{
-      const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0,diff=rec-req;
-      return req>0&&diff<0?[item.label,String(req),String(rec),`<span style="color:#c0392b;font-weight:bold;">${diff}</span>`]:null;
-    }).filter(Boolean);
-
-    const dnRowsF=DN_GROUPS.map(g=>{
-      const ga=assets.filter(r=>g.assets.includes((r['Asset']||'').trim())&&r['Asset Status']&&r['Asset Status']!=='None');
-      if(!ga.length) return null;
-      const signed   =ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));
-      if(signed) return null;
-      const anyUnsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));
-      const status=anyUnsigned?`<span style="color:#e67e22;font-weight:bold;">📎 Uploaded — Awaiting Signature</span>`:`<span style="color:#c0392b;font-weight:bold;">✗ Missing</span>`;
-      return [g.name,status];
-    }).filter(Boolean);
-
-    const statusLine=branchStatus==='Live'?'The initial asset receiving process is still not complete due to the pending items listed below.':'The branch is currently in Receiving status. The following items are still pending.';
-    const p=(t,s='')=>`<p style="margin:8px 0;${s}">${t}</p>`;
-    const h=(t)=>`<p style="margin:14px 0 4px;font-weight:bold;font-size:13px;color:#1a3a5c;">${t}</p>`;
-    const sig = {'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
-
-    const html=`
-      ${p(`Subject: <strong>Asset Receiving Follow-up — ${branch} — ${today}</strong>`,'font-size:14px;')}
-      <hr style="border:none;border-top:1px solid #ddd;margin:12px 0;" />
-      ${p('Dear Team,')}
-      ${p(`I would like to follow up on the asset receiving status for <strong>${branch}</strong>.`)}
-      ${p(statusLine)}
-      ${h('Current Pending Assets:')}
-      ${pendingRows.length?makeTable(['Asset','Priority','Status'],pendingRows):p('No pending assets.','color:#27ae60;')}
-      ${h('Qty Shortages:')}
-      ${shortageRows.length?makeTable(['Item','Required','Received','Shortage'],shortageRows,['','text-align:center;','text-align:center;','text-align:center;']):p('No qty shortages.','color:#27ae60;')}
-      ${dnRowsF.length?h('Pending Delivery Notes:')+makeTable(['D.N. Group','Status'],dnRowsF):''}
-      ${p('Please find attached:')}
-      <ul style="margin:4px 0 12px 20px;"><li>Branch Status Report</li><li>Pending Assets Report</li>${dnRowsF.length?'<li>Pending Delivery Notes Report</li>':''}</ul>
-      ${p('Kindly review the attached reports and provide an update on the remaining items.')}
-      ${p('<strong>Area Manager:</strong> Please ensure the Store Manager is included in this email thread so they are aware of the pending items and can coordinate accordingly.')}
-      ${p('<strong>Area Manager and Store Manager:</strong> If any of the above assets have been received at the branch, please inform us as soon as possible so we can update our receiving records and complete the receiving process.')}
-      ${p('If any support or clarification is required from our side, please let me know.')}
-      ${p('Thank you for your support.')}
-      <br/>${p('Best regards,')}<br/><strong>${sig}</strong><br/><span style="font-size:12px;color:#555;">Space Planning & Store Improvement Team</span>`;
-
-    /* Show/hide Send button based on user */
-    const sendBtn = document.getElementById('fu-send-btn');
-    if(currentUser === 'Khalid'){
-      sendBtn.style.display = '';
-    } else {
-      sendBtn.style.display = 'none';
-    }
-    document.getElementById('fu-email-html').innerHTML=html;
-    document.getElementById('fu-email-modal').style.display='flex';
-  }
-
-  function copyFollowupEmail(){
-    const el=document.getElementById('fu-email-html');
-    const range=document.createRange();range.selectNodeContents(el);
-    const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
-    document.execCommand('copy');sel.removeAllRanges();
-    showToast('Copied to clipboard!');
-  }
-
-  async function sendFollowupEmailFU(){
-    const branch  = currentBranch;
-    const to      = document.getElementById('fu-to').value.trim();
-    const cc      = document.getElementById('fu-cc').value.trim();
-    const subject = document.getElementById('fu-subject').value.trim();
-    const htmlBody= document.getElementById('fu-email-html').innerHTML;
-    const saved   = emailThreads[branch]||{};
-    const btn     = document.getElementById('fu-send-btn');
-    const status  = document.getElementById('fu-send-status');
-    const sig     = {'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
-
-    if(!to)     { status.textContent='⚠ Please enter a To address.'; status.style.color='#f87171'; return; }
-    if(!subject){ status.textContent='⚠ Please enter a subject.';    status.style.color='#f87171'; return; }
-
-    const fullHtml = htmlBody + `<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
-    const sendId   = 'SEND_' + Date.now();
-    const today    = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
-
-    btn.disabled=true; btn.textContent='Preparing...';
-    status.textContent='Generating Excel...'; status.style.color='#64748b';
-
-    /* Generate Excel as base64 */
-    let xlsxBase64 = '', xlsxName = '';
-    try {
-      const assets = checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
-      const rows = [...assets]
-        .filter(r=>r['Asset Status']&&r['Asset Status']!=='')
-        .sort((a,b)=>{const sc=(a['Section']||'').localeCompare(b['Section']||'');return sc!==0?sc:(a['Asset']||'').localeCompare(b['Asset']||'');})
-        .map(r=>({'Category':r['Section']||'','Asset':r['Asset']||'','Status':r['Asset Status']||'','Updated Status':'','Photo':assetImages[(r['Asset']||'').trim()]||''}));
-      const ws = XLSX.utils.json_to_sheet(rows);
-      ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18},{wch:40}];
-      rows.forEach((r,i)=>{ if(r['Photo']){ const cell='E'+(i+2); ws[cell]={ v:'View Photo', t:'s', l:{ Target: r['Photo'] } }; } });
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, branch);
-      const wbArr = XLSX.write(wb, {bookType:'xlsx', type:'base64'});
-      xlsxBase64 = wbArr;
-      xlsxName   = `Receiving_Status_${branch}_${today}.xlsx`;
-    } catch(e){ /* send without Excel if generation fails */ }
-
-    btn.textContent='Sending...';
-    status.textContent='Sending email + generating PDF...'; status.style.color='#64748b';
-
-    /* Fire no-cors POST */
-    fetch(APPS_URL, {
-      method:'POST', mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        action:'sendFollowupEmail', sendId, branch, to, cc, subject,
-        htmlBody:fullHtml, threadId:saved.threadId||'',
-        xlsxBase64, xlsxName,
-        user:currentUser||'Khalid', timestamp:new Date().toLocaleString('en-GB')
-      })
-    });
-
-    /* Poll for result */
-    status.textContent='Waiting for email to send...';
-    let result = null;
-    for(let i=0; i<25; i++){
-      await new Promise(r=>setTimeout(r,3000));
-      status.textContent=`Waiting... (${(i+1)*3}s)`;
-      try {
-        const pollRes  = await fetch(`${APPS_URL}?action=getSendResult&sendId=${sendId}`);
-        const pollData = await pollRes.json();
-        if((pollData.success||pollData.error)&&!pollData.pending){ result=pollData; break; }
-      } catch(e){ /* keep polling */ }
-    }
-
-    btn.textContent='✉️ Send'; btn.disabled=false;
-
-    if(!result){
-      status.textContent='✓ Email dispatched — please verify in your Gmail Sent folder.';
-      status.style.color='#fbbf24';
-      showToast('Email dispatched!');
-      return;
-    }
-    if(result.error){ status.textContent='✗ Failed: '+result.error; status.style.color='#f87171'; return; }
-
-    emailThreads[branch]={ to, cc, subject, threadId:result.threadId||saved.threadId||'', lastSent:new Date().toLocaleString('en-GB') };
-    document.getElementById('fu-subject').readOnly=true;
-    document.getElementById('fu-subject').style.opacity='0.6';
-    document.getElementById('fu-thread-status').textContent=`🔗 Thread — Last sent: ${emailThreads[branch].lastSent}`;
-    document.getElementById('fu-thread-status').style.color='#4ade80';
-    status.textContent='✓ Email sent with PDF and Excel attached!'; status.style.color='#4ade80';
-    showToast('Email sent!');
-  }
-
-  /* ══ REPORT PDFs — identical to receiving tracker ══ */
-  function generateFollowupReport(){ if(currentBranch) _generateReportForBranch(currentBranch); }
-  function generateFollowupMissing(){ if(currentBranch) generateMissingPDF(currentBranch); }
-
-  function generateMissingPDF(branch){
-    const{jsPDF}=window.jspdf;
-    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
-    const today=new Date().toLocaleDateString('en-GB');
-    const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225]};
-    const assets=checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
-    const delivered=assets.filter(a=>a['Asset Status']==='Delivered');
-    const notRec=assets.filter(a=>a['Asset Status']==='Not Received');
-    const total=delivered.length+notRec.length;
-    const fq=qtyData[branch]||{};
-    function dH(){doc.setFillColor(...CLR.card);doc.rect(0,0,pageW,18,'F');doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Missing Assets Report',10,11);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.accent);doc.text(branch,pageW-10,7,{align:'right'});doc.setTextColor(...CLR.grey);doc.text(today,pageW-10,13,{align:'right'});doc.setDrawColor(...CLR.accent);doc.setLineWidth(0.5);doc.line(0,18,pageW,18);}
-    function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text('Missing Assets — '+branch,10,pageH-3);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
-    dH();let y=22;
-    const cards=[{label:'Delivered',value:delivered.length,color:CLR.amber},{label:'Not Received',value:notRec.length,color:CLR.red},{label:'Total Missing',value:total,color:CLR.accent}];
-    const cw=(pageW-20)/cards.length;
-    cards.forEach((c,i)=>{const x=10+i*cw;doc.setFillColor(...CLR.card);doc.roundedRect(x,y,cw-3,18,2,2,'F');doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.roundedRect(x,y,cw-3,18,2,2,'S');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(c.label.toUpperCase(),x+(cw-3)/2,y+5,{align:'center'});doc.setFontSize(16);doc.setFont('helvetica','bold');doc.setTextColor(...c.color);doc.text(String(c.value),x+(cw-3)/2,y+13,{align:'center'});});
-    y+=22;
-    const SECTION_ORDER=['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
-    const QTY_ASSETS={'Freebolt':{req:'Freebolt Req',rec:'Freebolt Rec'},'Heavy Rack':{req:'Heavy Rack Req',rec:'Heavy Rack Rec'},'1 Door Chiller':{req:'1D Fridge Req',rec:'1D Fridge Rec'},'2 Door Chiller':{req:'2D Fridge Req',rec:'2D Fridge Rec'},'1 Door Freezer':{req:'1D Freezer Req',rec:'1D Freezer Rec'},'2 Door Freezer':{req:'2D Freezer Req',rec:'2D Freezer Rec'}};
-    function drawST(title,rows,color){
-      if(!rows.length)return;if(y>pageH-50){doc.addPage();dH();y=22;}
-      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...color);doc.text(title+' ('+rows.length+')',10,y);y+=4;
-      rows.sort((a,b)=>{const si=SECTION_ORDER.indexOf(a['Section']||''),sj=SECTION_ORDER.indexOf(b['Section']||'');return(si===-1?99:si)-(sj===-1?99:sj)||(a['Asset']||'').localeCompare(b['Asset']||'');});
-      doc.autoTable({startY:y,head:[['Section','Asset','Priority','Qty']],body:rows.map(r=>{const qk=QTY_ASSETS[r['Asset']||''];return[r['Section']||'',r['Asset']||'',r['Priority']||'',qk?`Req:${parseInt(fq[qk.req]||0)||0}/Rec:${parseInt(fq[qk.rec]||0)||0}`:''];}),theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:40},1:{cellWidth:65},2:{cellWidth:22},3:{cellWidth:38}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.column.index===2&&d.section==='body'){const pc={Essential:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];if(pc){d.cell.styles.textColor=pc;d.cell.styles.fontStyle='bold';}}}});
-      y=doc.lastAutoTable.finalY+8;
-    }
-    drawST('Delivered — Awaiting Signature',delivered,CLR.amber);
-    drawST('Not Received',notRec,CLR.red);
-    if(total===0){doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.green);doc.text('✓ All assets received!',pageW/2,y+10,{align:'center'});}
-    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
-    doc.save(`Missing_${branch}_${today.replace(/\//g,'-')}.pdf`);
-  }
-
-  function _generateReportForBranch(branch){
-    if(!branch){alert('Please select a branch.');return;}
-    const{jsPDF}=window.jspdf;
-    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
-    const today=new Date().toLocaleDateString('en-GB');
-    const CLR={bg:[255,255,255],card:[240,242,247],text:[15,23,42],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],cyan:[14,116,144],grey:[100,116,139],rowOdd:[248,250,252],border:[203,213,225]};
-    const assets=checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
-    const fq=qtyData[branch]||{};
-    const counts={rec:assets.filter(r=>r['Asset Status']==='Received').length,del:assets.filter(r=>r['Asset Status']==='Delivered').length,nr:assets.filter(r=>r['Asset Status']==='Not Received').length,total:assets.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length};
-    counts.pct=counts.total>0?Math.round(counts.rec/counts.total*100):0;
-    function dH(){doc.setFillColor(...CLR.card);doc.rect(0,0,pageW,18,'F');doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Asset Receiving Report',10,11);doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.accent);doc.text(branch,pageW-10,7,{align:'right'});doc.setTextColor(...CLR.grey);doc.text(today,pageW-10,13,{align:'right'});doc.setDrawColor(...CLR.accent);doc.setLineWidth(0.5);doc.line(0,18,pageW,18);}
-    function dF(pg,tot){doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text('Asset Receiving Report - '+branch,10,pageH-3);doc.text(`Page ${pg} of ${tot}`,pageW/2,pageH-3,{align:'center'});doc.text(today,pageW-10,pageH-3,{align:'right'});}
-    dH();let y=22;
-    const kCards=[{label:'Total',value:counts.total,color:CLR.text},{label:'Received',value:counts.rec,color:CLR.green},{label:'Delivered',value:counts.del,color:CLR.amber},{label:'Not Received',value:counts.nr,color:CLR.red},{label:'Completion',value:counts.pct+'%',color:counts.pct>=80?CLR.green:counts.pct>=50?CLR.cyan:CLR.amber}];
-    const cw=(pageW-20)/kCards.length;
-    kCards.forEach((c,i)=>{const x=10+i*cw;doc.setFillColor(...CLR.card);doc.roundedRect(x,y,cw-3,18,2,2,'F');doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.roundedRect(x,y,cw-3,18,2,2,'S');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(c.label.toUpperCase(),x+(cw-3)/2,y+5,{align:'center'});doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...c.color);doc.text(String(c.value),x+(cw-3)/2,y+13,{align:'center'});});
-    y+=22;
-    const branchSections=[...new Set(assets.map(r=>r['Section']).filter(Boolean))];
-    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Section Breakdown',10,y);y+=4;
-    doc.autoTable({startY:y,head:[['Section','Total','Received','Delivered','Not Received','%']],body:branchSections.map(s=>{const sRows=assets.filter(r=>r['Section']===s);const t=sRows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length;const rc=sRows.filter(r=>r['Asset Status']==='Received').length;const dl=sRows.filter(r=>r['Asset Status']==='Delivered').length;const nr=sRows.filter(r=>r['Asset Status']==='Not Received').length;return[s,t,rc,dl,nr,t>0?Math.round(rc/t*100)+'%':'0%'];}),theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:50},1:{cellWidth:18},2:{cellWidth:22},3:{cellWidth:22},4:{cellWidth:28},5:{cellWidth:18}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2});
-    y=doc.lastAutoTable.finalY+6;
-    branchSections.forEach(s=>{const sAssets=assets.filter(r=>r['Section']===s);if(!sAssets.length)return;if(y>pageH-50){doc.addPage();dH();y=22;}doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text(s,10,y);y+=4;doc.autoTable({startY:y,head:[['Asset','Priority','Status']],body:sAssets.map(r=>[r['Asset']||'',r['Priority']||'',r['Asset Status']||'None']),theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:70},1:{cellWidth:25},2:{cellWidth:35}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.column.index===1&&d.section==='body'){const pc={Essential:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];if(pc){d.cell.styles.textColor=pc;d.cell.styles.fontStyle='bold';}}if(d.column.index===2&&d.section==='body'){const sc={Received:CLR.green,Delivered:CLR.amber,'Not Received':CLR.red}[d.cell.raw];if(sc){d.cell.styles.textColor=sc;d.cell.styles.fontStyle='bold';}}}});y=doc.lastAutoTable.finalY+6;});
-    const QTY_ITEMS_R=[{label:'Freebolt',req:'Freebolt Req',rec:'Freebolt Rec'},{label:'Heavy Rack',req:'Heavy Rack Req',rec:'Heavy Rack Rec'},{label:'1D Fridge',req:'1D Fridge Req',rec:'1D Fridge Rec'},{label:'2D Fridge',req:'2D Fridge Req',rec:'2D Fridge Rec'},{label:'3D Fridge',req:'3D Fridge Req',rec:'3D Fridge Rec'},{label:'1D Freezer',req:'1D Freezer Req',rec:'1D Freezer Rec'},{label:'2D Freezer',req:'2D Freezer Req',rec:'2D Freezer Rec'},{label:'3D Freezer',req:'3D Freezer Req',rec:'3D Freezer Rec'}];
-    const qtyRows=QTY_ITEMS_R.map(item=>{const req=parseInt(fq[item.req]||0)||0,rec=parseInt(fq[item.rec]||0)||0;if(req<=0)return null;const diff=rec-req;return[item.label,req,rec,diff>0?'+'+diff+' Extra':diff<0?diff+' Shortage':'✓ Exact'];}).filter(Boolean);
-    if(qtyRows.length){if(y>pageH-50){doc.addPage();dH();y=22;}doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Fridges & Shelves Quantities',10,y);y+=4;doc.autoTable({startY:y,head:[['Item','Requested','Received','Status']],body:qtyRows,theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:40},1:{cellWidth:25},2:{cellWidth:25},3:{cellWidth:40}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.column.index===3&&d.section==='body'){const v=String(d.cell.raw);if(v.includes('Extra')){d.cell.styles.textColor=CLR.cyan;d.cell.styles.fontStyle='bold';}else if(v.includes('Shortage')){d.cell.styles.textColor=CLR.red;d.cell.styles.fontStyle='bold';}else{d.cell.styles.textColor=CLR.green;d.cell.styles.fontStyle='bold';}}}});}
-    /* Append Missing Section */
-    const delivered2=assets.filter(a=>a['Asset Status']==='Delivered');
-    const notRec2=assets.filter(a=>a['Asset Status']==='Not Received');
-    const SECTION_ORDER2=['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
-    const QTY_ASSETS2={'Freebolt':{req:'Freebolt Req',rec:'Freebolt Rec'},'Heavy Rack':{req:'Heavy Rack Req',rec:'Heavy Rack Rec'},'1 Door Chiller':{req:'1D Fridge Req',rec:'1D Fridge Rec'},'2 Door Chiller':{req:'2D Fridge Req',rec:'2D Fridge Rec'},'1 Door Freezer':{req:'1D Freezer Req',rec:'1D Freezer Rec'},'2 Door Freezer':{req:'2D Freezer Req',rec:'2D Freezer Rec'}};
-    function drawMissSection(title,rows2,color){
-      if(!rows2.length)return;if(y>pageH-50){doc.addPage();dH();y=22;}
-      doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(...color);doc.text(title+' ('+rows2.length+')',10,y);y+=4;
-      rows2.sort((a,b)=>{const si=SECTION_ORDER2.indexOf(a['Section']||''),sj=SECTION_ORDER2.indexOf(b['Section']||'');return(si===-1?99:si)-(sj===-1?99:sj)||(a['Asset']||'').localeCompare(b['Asset']||'');});
-      doc.autoTable({startY:y,head:[['Section','Asset','Priority','Qty']],body:rows2.map(r=>{const qk=QTY_ASSETS2[r['Asset']||''];return[r['Section']||'',r['Asset']||'',r['Priority']||'',qk?`Req:${parseInt(fq[qk.req]||0)||0} / Rec:${parseInt(fq[qk.rec]||0)||0}`:''];}),theme:'plain',styles:{fontSize:8,textColor:CLR.text,fillColor:CLR.bg,cellPadding:2.5},headStyles:{fillColor:CLR.card,textColor:CLR.accent,fontStyle:'bold',fontSize:8},alternateRowStyles:{fillColor:CLR.rowOdd},columnStyles:{0:{cellWidth:40},1:{cellWidth:65},2:{cellWidth:22},3:{cellWidth:38}},margin:{left:10,right:10},tableWidth:'wrap',tableLineColor:CLR.border,tableLineWidth:0.2,didParseCell:d=>{if(d.column.index===2&&d.section==='body'){const pc={Essential:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]}[d.cell.raw];if(pc){d.cell.styles.textColor=pc;d.cell.styles.fontStyle='bold';}}}});
-      y=doc.lastAutoTable.finalY+8;
-    }
-    if(delivered2.length||notRec2.length){
-      doc.addPage();dH();y=22;
-      doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.text);doc.text('Missing Assets Summary',10,y);y+=8;
-      [[CLR.amber,'Delivered',delivered2.length],[CLR.red,'Not Received',notRec2.length],[CLR.accent,'Total Missing',delivered2.length+notRec2.length]].forEach((c,i)=>{const x=10+i*62;doc.setFillColor(...CLR.card);doc.roundedRect(x,y,59,16,2,2,'F');doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);doc.text(c[1].toUpperCase(),x+29,y+5,{align:'center'});doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...c[0]);doc.text(String(c[2]),x+29,y+13,{align:'center'});});
-      y+=22;
-      drawMissSection('Delivered — Awaiting Signature',delivered2,CLR.amber);
-      drawMissSection('Not Received',notRec2,CLR.red);
-    }
-    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
-    doc.save(`Report_${branch}_${today.replace(/\//g,'-')}.pdf`);
-  }
-
-  /* ══ WEEKLY SUMMARY ══ */
-  function getWeekLabel(){
-    const now=new Date();
-    const start=new Date(now.getFullYear(),0,1);
-    const week=Math.ceil(((now-start)/86400000+start.getDay()+1)/7);
-    return `Week ${week}, ${now.getFullYear()}`;
-  }
-
-  function buildWeeklyData(){
-    const activeBranches=branches.filter(b=>b.status==='Receiving'||b.status==='Live');
-    /* Per-branch stats */
-    const branchStats=activeBranches.map(b=>{
-      const rows=checklist.filter(r=>(r['Branch Code']||'').trim()===b.code);
-      const total=rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length||1;
-      const rec  =rows.filter(r=>r['Asset Status']==='Received').length;
-      const missing=rows.filter(r=>r['Asset Status']==='Not Received'||r['Asset Status']==='Delivered');
-      return { code:b.code, status:b.status, pct:Math.round(rec/total*100), missing, rows };
-    });
-    /* Asset summary — count branches missing each asset */
-    const assetMap={};
-    branchStats.forEach(b=>{
-      b.missing.forEach(r=>{
-        const asset=(r['Asset']||'').trim();
-        if(!asset) return;
-        if(!assetMap[asset]) assetMap[asset]={asset,priority:r['Priority']||'',branches:[]};
-        assetMap[asset].branches.push({code:b.code,status:r['Asset Status'],pct:b.pct});
-      });
-    });
-    const assetList=Object.values(assetMap).sort((a,b)=>b.branches.length-a.branches.length);
-    return { activeBranches, branchStats, assetList };
-  }
-
-  function openWeeklySummary(){
-    const {activeBranches,branchStats,assetList}=buildWeeklyData();
-    const week=getWeekLabel();
-    const total=activeBranches.length;
-    const avgPct=total?Math.round(branchStats.reduce((s,b)=>s+b.pct,0)/total):0;
-    const sig={'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
-    const DASHBOARD_URL='https://khalidaltalli.github.io/Space-Planning-Store-Improvement/Receiving_Dashboard.html';
-    const top3=assetList.slice(0,3);
-
-    const bulletsHtml=top3.map(a=>
-      `<li style="margin:5px 0;"><strong>${a.asset}</strong> — Missing from <strong>${a.branches.length}</strong> branches</li>`
-    ).join('');
-
-    const html=`
-      <p style="margin:0 0 12px;color:#888;font-size:11px;border-bottom:1px solid #eee;padding-bottom:8px;">Subject: Weekly Asset Receiving Summary — ${week}</p>
-      <p style="margin:8px 0;">Dear Team,</p>
-      <p style="margin:8px 0;">Please find this week's Asset Receiving Summary for <strong>${week}</strong>.</p>
-      <p style="margin:8px 0;">We currently have <strong>${total} active branches</strong> with an average asset receiving completion of <strong>${avgPct}%</strong>. The most critical gaps are summarized below:</p>
-      <ul style="margin:8px 0 14px 20px;">${bulletsHtml}</ul>
-      <p style="margin:8px 0;"><strong>Attached to this email:</strong></p>
-      <ul style="margin:4px 0 14px 20px;">
-        <li style="margin:4px 0;"><strong>Store Receiving Report</strong> — Overall receiving status by branch.</li>
-        <li style="margin:4px 0;"><strong>Asset Receiving Report</strong> — Missing and pending assets by category.</li>
-      </ul>
-      <p style="margin:8px 0;">For a more detailed and live view of the receiving status, including branch-level and asset-level information, please use the dashboard below:</p>
-      <p style="margin:8px 0;"><strong>Receiving Dashboard:</strong> <a href="${DASHBOARD_URL}" style="color:#0e7490;font-weight:600;">${DASHBOARD_URL}</a></p>
-      <br/>
-      <p style="margin:4px 0;">Thank you.</p>
-      <br/>
-      <p style="margin:4px 0;"><strong>${sig}</strong></p>
-      <p style="margin:0;font-size:11px;color:#555;">Space Planning &amp; Store Improvement Team</p>`;
-    document.getElementById('ws-email-html').innerHTML=html;
-    /* Show/hide Send button based on user */
-    const wsSendBtn = document.getElementById('ws-send-btn');
-    if(currentUser === 'Khalid'){
-      wsSendBtn.style.display = '';
-    } else {
-      wsSendBtn.style.display = 'none';
-    }
-    document.getElementById('weekly-modal').style.display='flex';
-  }
-
-  function copyWeeklyEmail(){
-    const el=document.getElementById('ws-email-html');
-    const range=document.createRange();range.selectNodeContents(el);
-    const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
-    document.execCommand('copy');sel.removeAllRanges();
-    showToast('Email copied to clipboard!');
-  }
-
-  /* ══ WEEKLY BRANCH REPORT PDF ══ */
-  function generateWeeklyBranchPDF(){
-    const{jsPDF}=window.jspdf;
-    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
-    const today=new Date().toLocaleDateString('en-GB');
-    const week=getWeekLabel();
-    const CLR={
-      bg:[255,255,255],card:[245,247,250],text:[15,23,42],
-      navy:[26,62,92],accent:[14,116,144],
-      green:[22,163,74],amber:[180,120,0],red:[185,28,28],
-      grey:[100,116,139],border:[203,213,225],rowOdd:[249,250,251]
-    };
-    const {activeBranches,branchStats}=buildWeeklyData();
-    const total=activeBranches.length;
-    const fullRec=branchStats.filter(b=>b.pct===100).length;
-    const avgPct=total?Math.round(branchStats.reduce((s,b)=>s+b.pct,0)/total):0;
-
-    function dH(title){
-      doc.setFillColor(...CLR.navy);doc.rect(0,0,pageW,18,'F');
-      doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-      doc.text(title,10,11);
-      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
-      doc.text(week,pageW/2,11,{align:'center'});doc.text(today,pageW-10,11,{align:'right'});
-    }
-    function dF(pg,tot){
-      doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');
-      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.line(0,pageH-8,pageW,pageH-8);
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
-      doc.text('Branch Report — '+week,10,pageH-3);
-      doc.text('Page '+pg+' of '+tot,pageW/2,pageH-3,{align:'center'});
-      doc.text(today,pageW-10,pageH-3,{align:'right'});
-    }
-
-    /* ── PAGE 1: KPI CARDS + DONUTS + HEATMAP GRID ── */
-    dH('Branch Report'); let y=24;
-
-    /* KPI cards — only 2: Active Branches + Avg Completion */
-    const low=branchStats.filter(b=>b.pct<50).length;
-    const mid=branchStats.filter(b=>b.pct>=50&&b.pct<80).length;
-    const high=branchStats.filter(b=>b.pct>=80).length;
-    const kpis=[
-      {label:'Active Branches',value:total,color:CLR.accent},
-      {label:'Avg Completion',value:avgPct+'%',color:avgPct>=80?CLR.green:avgPct>=50?CLR.accent:CLR.red},
-    ];
-    const kw=(pageW-20)/2;
-    kpis.forEach((k,i)=>{
-      const x=10+i*kw;
-      doc.setFillColor(...CLR.card);doc.roundedRect(x,y,kw-3,20,2,2,'F');
-      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.3);doc.roundedRect(x,y,kw-3,20,2,2,'S');
-      doc.setFillColor(...k.color);doc.roundedRect(x,y,kw-3,2,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
-      doc.text(k.label.toUpperCase(),x+(kw-3)/2,y+8,{align:'center'});
-      doc.setFontSize(15);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
-      doc.text(String(k.value),x+(kw-3)/2,y+17,{align:'center'});
-    });
-    y+=26;
-
-    /* ── DONUT CHARTS (2 only) ── */
-    function drawDonut(cx,cy,r,segments,title){
-      let angle=-Math.PI/2;
-      segments.forEach(s=>{
-        if(!s.val) return;
-        const sweep=(s.val/total)*2*Math.PI;
-        const steps=Math.max(4,Math.round(sweep*12));
-        doc.setFillColor(...s.color);
-        for(let i=0;i<steps;i++){
-          const a1=angle+(i/steps)*sweep, a2=angle+((i+1)/steps)*sweep;
-          doc.triangle(cx,cy,cx+r*Math.cos(a1),cy+r*Math.sin(a1),cx+r*Math.cos(a2),cy+r*Math.sin(a2),'F');
+    const field = (label, key, type = 'text', options = []) => {
+      const val = s[key] || '';
+      if (editMode && currentUser.canEdit) {
+        if (options.length) {
+          return `<div class="modal-field">
+            <span class="field-label">${label}</span>
+            <select class="field-select" data-key="${key}">
+              <option value="">—</option>
+              ${options.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('')}
+            </select></div>`;
         }
-        angle+=sweep;
-      });
-      doc.setFillColor(255,255,255);
-      const holeSteps=36;
-      for(let i=0;i<holeSteps;i++){
-        const a1=(i/holeSteps)*2*Math.PI, a2=((i+1)/holeSteps)*2*Math.PI;
-        doc.triangle(cx,cy,cx+(r*0.55)*Math.cos(a1),cy+(r*0.55)*Math.sin(a1),cx+(r*0.55)*Math.cos(a2),cy+(r*0.55)*Math.sin(a2),'F');
+        return `<div class="modal-field">
+          <span class="field-label">${label}</span>
+          <input class="field-input" type="${type}" data-key="${key}" value="${val}" /></div>`;
       }
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-      doc.text(title,cx,cy-r-3,{align:'center'});
-    }
+      if (type === 'url' && val) {
+        return `<div class="modal-field">
+          <span class="field-label">${label}</span>
+          <a class="field-link" href="${val}" target="_blank">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open link</a></div>`;
+      }
+      return `<div class="modal-field">
+        <span class="field-label">${label}</span>
+        <span class="field-value">${val || '—'}</span></div>`;
+    };
 
-    const donutR=18;
-    const donutY=y+donutR+4;
+    const fullField = (label, key, type = 'text') => {
+      const val = s[key] || '';
+      if (editMode && currentUser.canEdit) {
+        return `<div class="modal-field full">
+          <span class="field-label">${label}</span>
+          <input class="field-input" type="${type}" data-key="${key}" value="${val}" /></div>`;
+      }
+      if (type === 'url' && val) {
+        return `<div class="modal-field full">
+          <span class="field-label">${label}</span>
+          <a class="field-link" href="${val}" target="_blank">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            ${val}</a></div>`;
+      }
+      return `<div class="modal-field full">
+        <span class="field-label">${label}</span>
+        <span class="field-value">${val || '—'}</span></div>`;
+    };
 
-    /* Donut 1: Completion bands — centred left quarter */
-    drawDonut(pageW/4,donutY,donutR,[
-      {val:high,color:CLR.green},{val:mid,color:CLR.amber},{val:low,color:CLR.red}
-    ],'Completion Bands');
-    [[CLR.green,'80–100%: '+high],[CLR.amber,'50–79%: '+mid],[CLR.red,'<50%: '+low]].forEach((l,i)=>{
-      doc.setFillColor(...l[0]);doc.roundedRect(pageW/4+donutR+5,donutY-donutR+i*8,5,4,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
-      doc.text(l[1],pageW/4+donutR+12,donutY-donutR+i*8+3.5);
-    });
+    const canEdit = currentUser && currentUser.canEdit;
 
-    /* Donut 2: Receiving vs Live — centred right quarter */
-    const recCount=branchStats.filter(b=>b.status==='Receiving').length;
-    const liveCount=branchStats.filter(b=>b.status==='Live').length;
-    drawDonut(pageW*3/4,donutY,donutR,[
-      {val:liveCount,color:CLR.green},{val:recCount,color:CLR.accent}
-    ],'Branch Status');
-    [[CLR.green,'Live: '+liveCount],[CLR.accent,'Receiving: '+recCount]].forEach((l,i)=>{
-      doc.setFillColor(...l[0]);doc.roundedRect(pageW*3/4+donutR+5,donutY-donutR+i*8,5,4,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
-      doc.text(l[1],pageW*3/4+donutR+12,donutY-donutR+i*8+3.5);
-    });
-
-    y=donutY+donutR+10;
-
-    /* ── HEATMAP GRID ── */
-    doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Completion Heatmap — All Branches',10,y);y+=4;
-    const legItems=[[[22,163,74],'80–100%'],[[180,120,0],'50–79%'],[[185,28,28],'0–49%']];
-    legItems.forEach((l,i)=>{
-      doc.setFillColor(...l[0]);doc.roundedRect(pageW-75+i*26,y,4,4,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
-      doc.text(l[1],pageW-70+i*26,y+3.5);
-    });
-    y+=6;
-    const cols=4, cellW=(pageW-20)/cols, cellH=9;
-    const sortedStats=[...branchStats].sort((a,b)=>b.pct-a.pct);
-    sortedStats.forEach((b,i)=>{
-      const col=i%cols, row=Math.floor(i/cols);
-      const x=10+col*cellW, cellY=y+row*cellH;
-      const bgColor=b.pct>=80?[220,252,231]:b.pct>=50?[254,243,199]:[254,226,226];
-      const txtColor=b.pct>=80?[22,163,74]:b.pct>=50?[180,120,0]:[185,28,28];
-      doc.setFillColor(...bgColor);doc.roundedRect(x,cellY,cellW-2,cellH-1,1,1,'F');
-      doc.setDrawColor(...txtColor);doc.setLineWidth(0.3);doc.roundedRect(x,cellY,cellW-2,cellH-1,1,1,'S');
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      doc.text(b.code,x+3,cellY+4.5);
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...txtColor);
-      doc.text(b.pct+'%',x+cellW-4,cellY+4.5,{align:'right'});
-    });
-
-    /* ── PAGE 2+: BRANCH DETAIL — 3 branches per page, side by side ── */
-    const branchesWithMissing=branchStats.filter(b=>b.missing.length);
-    for(let bi=0;bi<branchesWithMissing.length;bi+=3){
-      doc.addPage(); dH('Branch Detail'); let y=24;
-      const group=branchesWithMissing.slice(bi,bi+3);
-      const tblW=(pageW-20-(group.length-1)*3)/group.length;
-
-      /* Find max rows for this group */
-      const maxRows=Math.max(...group.map(b=>b.missing.length));
-
-      group.forEach((b,gi)=>{
-        const x=10+gi*(tblW+3);
-        const pctColor=b.pct>=80?CLR.green:b.pct>=50?CLR.accent:CLR.red;
-
-        /* Branch header */
-        doc.setFillColor(...CLR.navy);doc.roundedRect(x,y,tblW,12,1,1,'F');
-        doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-        doc.text(b.code,x+tblW/2,y+5,{align:'center'});
-        doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
-        doc.text(b.pct+'%  •  '+b.status,x+tblW/2,y+10,{align:'center'});
-
-        /* Completion bar */
-        doc.setFillColor(220,225,232);doc.roundedRect(x,y+13,tblW,3,1,1,'F');
-        doc.setFillColor(...pctColor);doc.roundedRect(x,y+13,tblW*b.pct/100,3,1,1,'F');
-
-        /* Column header */
-        doc.setFillColor(245,247,250);doc.rect(x,y+17,tblW,7,'F');
-        doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.rect(x,y+17,tblW,7,'S');
-        doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.grey);
-        doc.text('Missing Assets ('+b.missing.length+')',x+tblW/2,y+22,{align:'center'});
-
-        /* Asset rows */
-        b.missing.forEach((r,ri)=>{
-          const rowY=y+24+ri*7;
-          const rowBg=ri%2===0?[255,255,255]:[249,250,251];
-          doc.setFillColor(...rowBg);doc.rect(x,rowY,tblW,7,'F');
-          doc.setDrawColor(...CLR.border);doc.setLineWidth(0.1);doc.rect(x,rowY,tblW,7,'S');
-          doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(15,23,42);
-          const asset=(r['Asset']||'').length>20?(r['Asset']||'').substring(0,19)+'…':(r['Asset']||'');
-          doc.text(asset,x+3,rowY+4.5);
-        });
-      });
-    }
-    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
-    doc.save('Branch_Report_'+week.split(',').join('').split(' ').join('_')+'_'+today.split('/').join('-')+'.pdf');
-    showToast('Branch Report PDF downloaded!');
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-section-title">General</div>
+      <div class="modal-fields">
+        ${field('Store Status', 'Store Status', 'text', statusOptions)}
+        ${field('Store Class', 'Store Class', 'text', classOptions)}
+        ${field('Region', 'Region')}
+        ${field('City', 'City')}
+        ${field('District', 'District')}
+        ${field('Opening Date', 'Opening Date', 'date')}
+        ${field('Pharmacy', 'Pharmacy', 'text', ['Yes', 'No'])}
+        ${field('Cold Room', 'Cold Room', 'text', ['Yes', 'No'])}
+      </div>
+      <div class="modal-section-title">Areas (m²)</div>
+      <div class="modal-fields">
+        ${field('Ground Floor Area', 'Ground Floor Area', 'number')}
+        ${field('Mezzanine Area', 'Mezannine Area', 'number')}
+      </div>
+      <div class="modal-section-title">Layout & Links</div>
+      <div class="modal-fields">
+        ${field('Layout Status', 'Layout Status', 'text', layoutOptions)}
+        ${fullField('PDF Link', 'PDF Link', 'url')}
+        ${fullField('Location', 'Location', 'url')}
+      </div>
+      <div class="modal-actions">
+        ${editMode && canEdit
+          ? `<button class="btn btn-ghost" onclick="cancelEdit()">Cancel</button>
+             <button class="btn btn-primary" id="save-btn" onclick="saveStore()">Save changes</button>`
+          : canEdit
+            ? `<button class="btn btn-ghost" onclick="closeModal()">Close</button>
+               <button class="btn btn-edit" onclick="enableEdit()">Edit store</button>`
+            : `<button class="btn btn-ghost" onclick="closeModal()">Close</button>`
+        }
+      </div>`;
   }
 
-  /* ══ WEEKLY ASSET REPORT PDF ══ */
-  function generateWeeklyAssetPDF(){
-    const{jsPDF}=window.jspdf;
-    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const pageW=doc.internal.pageSize.getWidth(),pageH=doc.internal.pageSize.getHeight();
-    const today=new Date().toLocaleDateString('en-GB');
-    const week=getWeekLabel();
-    const CLR={bg:[255,255,255],card:[245,247,250],text:[15,23,42],navy:[26,62,92],accent:[14,116,144],green:[22,163,74],amber:[180,120,0],red:[185,28,28],grey:[100,116,139],border:[203,213,225],rowOdd:[249,250,251]};
-    const priColor={Essential:[185,28,28],Critical:[185,28,28],High:[194,65,12],Medium:[161,98,7],Low:[22,163,74]};
+  function enableEdit()  { editMode = true;  renderModal(); }
+  function cancelEdit()  { editMode = false; renderModal(); }
 
-    const {activeBranches,assetList}=buildWeeklyData();
-    const total=activeBranches.length;
-
-    function dH(title){
-      doc.setFillColor(...CLR.navy);doc.rect(0,0,pageW,18,'F');
-      doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
-      doc.text(title,10,11);
-      doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(180,210,230);
-      doc.text(week,pageW/2,11,{align:'center'});doc.text(today,pageW-10,11,{align:'right'});
-    }
-    function dF(pg,tot){
-      doc.setFillColor(...CLR.card);doc.rect(0,pageH-8,pageW,8,'F');
-      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.line(0,pageH-8,pageW,pageH-8);
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
-      doc.text('Asset Report — '+week,10,pageH-3);
-      doc.text('Page '+pg+' of '+tot,pageW/2,pageH-3,{align:'center'});
-      doc.text(today,pageW-10,pageH-3,{align:'right'});
-    }
-
-    /* ── PAGE 1 ── */
-    dH('Asset Report'); let y=24;
-
-    /* KPI cards — 3 only (no Top Gap) */
-    const critCount=assetList.filter(a=>a.priority==='Essential'||a.priority==='Critical').length;
-    const kpis=[
-      {label:'Active Branches',value:total,color:CLR.accent},
-      {label:'Assets With Gaps',value:assetList.length,color:CLR.red},
-      {label:'Essential/Critical',value:critCount,color:[185,28,28]},
-    ];
-    const kw=(pageW-20)/3;
-    kpis.forEach((k,i)=>{
-      const x=10+i*kw;
-      doc.setFillColor(...CLR.card);doc.roundedRect(x,y,kw-3,20,2,2,'F');
-      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.3);doc.roundedRect(x,y,kw-3,20,2,2,'S');
-      doc.setFillColor(...k.color);doc.roundedRect(x,y,kw-3,2,1,1,'F');
-      doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
-      doc.text(k.label.toUpperCase(),x+(kw-3)/2,y+8,{align:'center'});
-      doc.setFontSize(14);doc.setFont('helvetica','bold');doc.setTextColor(...k.color);
-      doc.text(String(k.value),x+(kw-3)/2,y+17,{align:'center'});
-    });
-    y+=26;
-
-    /* ── CHART 1: Missing by Section ── */
-    const sectionMap={};
-    assetList.forEach(a=>{
-      a.branches.forEach(b=>{
-        const rows=checklist.filter(r=>(r['Branch Code']||'').trim()===b.code&&(r['Asset']||'').trim()===a.asset);
-        rows.forEach(r=>{
-          const sec=(r['Section']||'Other').trim();
-          if(!sectionMap[sec]) sectionMap[sec]={missing:0,received:0,total:0};
-          sectionMap[sec].missing++;
-        });
-      });
-    });
-    /* Also count received per section */
-    checklist.forEach(r=>{
-      const b=(r['Branch Code']||'').trim();
-      if(!activeBranches.find(ab=>ab.code===b)) return;
-      const sec=(r['Section']||'Other').trim();
-      const st=(r['Asset Status']||'').trim();
-      if(!sectionMap[sec]) sectionMap[sec]={missing:0,received:0,total:0};
-      if(st==='Received') sectionMap[sec].received++;
-      if(st&&st!=='None') sectionMap[sec].total++;
-    });
-
-    const sections=Object.entries(sectionMap)
-      .filter(([,v])=>v.missing>0)
-      .sort(([,a],[,b])=>b.missing-a.missing);
-    const maxMissing=sections[0]?.[1]?.missing||1;
-    const maxTotal=Math.max(...sections.map(([,v])=>v.total))||1;
-
-    const chartW=pageW-20, chartX=10;
-    const labelW2=45, barAreaW=chartW-labelW2-16;
-
-    /* ─ Chart 1 box ─ */
-    const c1H=sections.length*8+18;
-    doc.setFillColor(250,251,253);doc.roundedRect(chartX,y,chartW,c1H,2,2,'F');
-    doc.setDrawColor(...CLR.border);doc.setLineWidth(0.4);doc.roundedRect(chartX,y,chartW,c1H,2,2,'S');
-    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Missing Assets by Section',chartX+4,y+7);
-    doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
-    doc.text('Total missing (Not Received + Delivered)',chartX+chartW-4,y+7,{align:'right'});
-    let cy=y+12;
-    sections.forEach(([sec,v],i)=>{
-      const barW=Math.max(1,(v.missing/maxMissing)*barAreaW);
-      const rowBg=i%2===0?[255,255,255]:[248,250,252];
-      doc.setFillColor(...rowBg);doc.rect(chartX+1,cy,chartW-2,7,'F');
-      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      const lbl=sec.length>16?sec.substring(0,15)+'…':sec;
-      doc.text(lbl,chartX+3,cy+5);
-      doc.setFillColor(225,228,232);doc.roundedRect(chartX+labelW2,cy+1,barAreaW,5,1,1,'F');
-      doc.setFillColor(...CLR.red);doc.roundedRect(chartX+labelW2,cy+1,barW,5,1,1,'F');
-      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      doc.text(String(v.missing),chartX+labelW2+barAreaW+2,cy+5);
-      cy+=8;
-    });
-    y+=c1H+6;
-
-    /* ─ Chart 2 box ─ */
-    const c2H=sections.length*8+18;
-    doc.setFillColor(250,251,253);doc.roundedRect(chartX,y,chartW,c2H,2,2,'F');
-    doc.setDrawColor(...CLR.border);doc.setLineWidth(0.4);doc.roundedRect(chartX,y,chartW,c2H,2,2,'S');
-    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Received vs Not Received — by Section',chartX+4,y+7);
-    /* legend */
-    doc.setFillColor(...CLR.green);doc.roundedRect(chartX+chartW-50,y+3,5,4,1,1,'F');
-    doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.text);
-    doc.text('Received',chartX+chartW-44,y+7);
-    doc.setFillColor(...CLR.red);doc.roundedRect(chartX+chartW-26,y+3,5,4,1,1,'F');
-    doc.text('Missing',chartX+chartW-20,y+7);
-    cy=y+12;
-    sections.forEach(([sec,v],i)=>{
-      const total2=v.total||1;
-      const recW=(v.received/total2)*barAreaW;
-      const misW=(v.missing/total2)*barAreaW;
-      const rowBg=i%2===0?[255,255,255]:[248,250,252];
-      doc.setFillColor(...rowBg);doc.rect(chartX+1,cy,chartW-2,7,'F');
-      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      const lbl=sec.length>16?sec.substring(0,15)+'…':sec;
-      doc.text(lbl,chartX+3,cy+5);
-      /* track */
-      doc.setFillColor(225,228,232);doc.roundedRect(chartX+labelW2,cy+1,barAreaW,5,1,1,'F');
-      /* received bar */
-      if(recW>0){doc.setFillColor(...CLR.green);doc.roundedRect(chartX+labelW2,cy+1,recW,5,1,1,'F');}
-      /* missing stacked */
-      if(misW>0){doc.setFillColor(...CLR.red);doc.roundedRect(chartX+labelW2+recW,cy+1,Math.min(misW,barAreaW-recW),5,0,0,'F');}
-      /* pct label */
-      const recPct=Math.round(v.received/total2*100);
-      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      doc.text(recPct+'%',chartX+labelW2+barAreaW+2,cy+5);
-      cy+=8;
-    });
-    y+=c2H+6;
-
-    /* ─ Chart 3: Top 8 Most Missing Assets ─ */
-    const top8=assetList.slice(0,8);
-    const maxCount=top8[0]?.branches.length||1;
-    const c3H=top8.length*8+18;
-    doc.setFillColor(250,251,253);doc.roundedRect(chartX,y,chartW,c3H,2,2,'F');
-    doc.setDrawColor(...CLR.border);doc.setLineWidth(0.4);doc.roundedRect(chartX,y,chartW,c3H,2,2,'S');
-    doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(...CLR.navy);
-    doc.text('Top 8 Most Missing Assets',chartX+4,y+7);
-    doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...CLR.grey);
-    doc.text('Across all active branches',chartX+chartW-4,y+7,{align:'right'});
-    cy=y+12;
-    top8.forEach((a,i)=>{
-      const pc=priColor[a.priority]||CLR.grey;
-      const barW=Math.max(1,(a.branches.length/maxCount)*barAreaW);
-      const rowBg=i%2===0?[255,255,255]:[248,250,252];
-      doc.setFillColor(...rowBg);doc.rect(chartX+1,cy,chartW-2,7,'F');
-      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      const lbl=a.asset.length>18?a.asset.substring(0,17)+'…':a.asset;
-      doc.text(lbl,chartX+3,cy+5);
-      doc.setFillColor(225,228,232);doc.roundedRect(chartX+labelW2,cy+1,barAreaW,5,1,1,'F');
-      doc.setFillColor(...pc);doc.roundedRect(chartX+labelW2,cy+1,barW,5,1,1,'F');
-      doc.setFontSize(6);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      doc.text(a.branches.length+'/'+total,chartX+labelW2+barAreaW+2,cy+5);
-      cy+=8;
-    });
-    y+=c3H+6;
-
-    /* ── PAGE 2+: ASSET CARDS — multiple per page ── */
-    /* Each asset: navy header (name + priority + count) + severity bar + branch count label */
-    /* Fit as many as possible — each card is ~22mm tall */
-    const cardH=22, cols=3, cw=(pageW-20-(cols-1)*3)/cols;
-    let col=0;
-    let pageStarted=false;
-
-    assetList.forEach((a,ai)=>{
-      if(!a.branches.length) return;
-      /* New page when needed */
-      if(!pageStarted || col===0&&y+cardH>pageH-12){
-        doc.addPage(); dH('Asset Detail'); y=24; pageStarted=true; col=0;
-      }
-      const x=10+col*(cw+3);
-      const pc=priColor[a.priority]||CLR.grey;
-      const sevPct=Math.round(a.branches.length/total*100);
-
-      /* Card background */
-      doc.setFillColor(...CLR.card);doc.roundedRect(x,y,cw,cardH,2,2,'F');
-      doc.setDrawColor(...CLR.border);doc.setLineWidth(0.2);doc.roundedRect(x,y,cw,cardH,2,2,'S');
-
-      /* Color accent top bar */
-      doc.setFillColor(...pc);doc.roundedRect(x,y,cw,2,1,1,'F');
-
-      /* Asset name */
-      const name=a.asset.length>18?a.asset.substring(0,17)+'…':a.asset;
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      doc.text(name,x+3,y+8);
-
-      /* Priority pill */
-      doc.setFontSize(6);doc.setFont('helvetica','normal');doc.setTextColor(...pc);
-      doc.text(a.priority||'',x+cw-3,y+8,{align:'right'});
-
-      /* Severity bar */
-      doc.setFillColor(220,225,232);doc.roundedRect(x+3,y+10,cw-6,3,1,1,'F');
-      doc.setFillColor(...pc);doc.roundedRect(x+3,y+10,(cw-6)*sevPct/100,3,1,1,'F');
-
-      /* Branch count */
-      doc.setFontSize(7);doc.setFont('helvetica','bold');doc.setTextColor(15,23,42);
-      doc.text(a.branches.length+'/'+total+' branches ('+sevPct+'%)',x+cw/2,y+18,{align:'center'});
-
-      col++;
-      if(col>=cols){ col=0; y+=cardH+3; }
-    });
-
-    const pages=doc.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);dF(i,pages);}
-    doc.save('Asset_Report_'+week.split(',').join('').split(' ').join('_')+'_'+today.split('/').join('-')+'.pdf');
-    showToast('Asset Report PDF downloaded!');
+  function getEditedValues() {
+    const inputs  = document.querySelectorAll('#modal-body [data-key]');
+    const updated = { ...currentStore };
+    inputs.forEach(el => { updated[el.dataset.key] = el.value; });
+    return updated;
   }
 
-
-  /* ══ FOLLOW-UP EXCEL ══ */
-  function generateFollowupExcel(){
-    if(!currentBranch) return;
-    const branch = currentBranch;
-    const assets = checklist.filter(r=>(r['Branch Code']||'').trim()===branch);
-    const today  = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
-
-    const sorted = [...assets]
-      .filter(r=>r['Asset Status']&&r['Asset Status']!=='')
-      .sort((a,b)=>{
-        const sc=(a['Section']||'').localeCompare(b['Section']||'');
-        return sc!==0?sc:(a['Asset']||'').localeCompare(b['Asset']||'');
-      });
-
-    const rows = sorted.map(r=>({
-      'Category':       r['Section']      ||'',
-      'Asset':          r['Asset']        ||'',
-      'Status':         r['Asset Status'] ||'',
-      'Updated Status': '',
-      'Photo':          assetImages[(r['Asset']||'').trim()]||''
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18},{wch:40}];
-
-    /* Add hyperlinks to Photo column */
-    rows.forEach((r,i)=>{
-      if(r['Photo']){
-        const cell='E'+(i+2);
-        ws[cell]={ v:'View Photo', t:'s', l:{ Target: r['Photo'] },
-          s:{ font:{ color:{ rgb:'0E7490' }, underline:true } } };
-      }
-    });
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, branch);
-    XLSX.writeFile(wb, `Receiving_Status_${branch}_${today}.xlsx`);
-    showToast('Excel downloaded!');
+  async function saveStore() {
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    const updated = getEditedValues();
+    try {
+      const result = await jsonp({ payload: JSON.stringify({ action: 'updateStore', data: updated, user: currentUser.name }) });
+      if (result.success) {
+        const idx = allStores.findIndex(s => s['Store Code'] === currentStore['Store Code']);
+        if (idx !== -1) allStores[idx] = updated;
+        currentStore = updated;
+        editMode = false;
+        renderModal();
+        applyFilters();
+        showToast('Changes saved');
+      } else throw new Error(result.error || 'Unknown error');
+    } catch (e) {
+      showToast('Save failed: ' + e.message, true);
+      btn.disabled = false; btn.textContent = 'Save changes';
+    }
   }
 
-  window.addEventListener('DOMContentLoaded', ()=>{ loadUsersFU(); });
+  // ─── TOAST ────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-dot').className = 'toast-dot' + (isError ? ' error' : '');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
 </script>
-
-<!-- ══ NOTES ALL POPUP ══ -->
-<div id="notes-all-modal" class="modal-overlay" style="z-index:300;">
-  <div class="modal-box" style="width:520px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-      <h3 style="margin:0;">📝 All Follow-up Notes</h3>
-      <button onclick="document.getElementById('notes-all-modal').style.display='none';" style="background:none;border:none;color:#64748b;font-size:18px;cursor:pointer;">✕</button>
-    </div>
-    <div style="overflow-y:auto;max-height:500px;" id="notes-all-list"></div>
-  </div>
-</div>
-
-<!-- ══ EMAIL MODAL ══ -->
-<div id="fu-email-modal" class="modal-overlay" style="z-index:300;">
-  <div class="modal-box" style="width:700px;max-height:92vh;">
-    <h3>📧 Follow-up Email — <span id="fu-email-branch"></span></h3>
-    <div style="display:grid;gap:6px;margin-bottom:10px;">
-      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
-        <label class="form-label" style="margin:0;">To</label>
-        <input id="fu-to" class="form-input" placeholder="manager@example.com" />
-      </div>
-      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
-        <label class="form-label" style="margin:0;">CC</label>
-        <input id="fu-cc" class="form-input" placeholder="optional@example.com" />
-      </div>
-      <div style="display:grid;grid-template-columns:60px 1fr;align-items:center;gap:8px;">
-        <label class="form-label" style="margin:0;">Subject</label>
-        <input id="fu-subject" class="form-input" placeholder="Asset Receiving Follow-up — BRANCH" />
-      </div>
-    </div>
-    <div style="font-size:10px;color:#64748b;margin-bottom:4px;" id="fu-thread-status"></div>
-    <div style="font-size:10px;color:#64748b;margin-bottom:4px;">Email Preview:</div>
-    <div style="flex:1;overflow-y:auto;background:#fff;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);max-height:360px;">
-      <div id="fu-email-html" style="padding:20px 24px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);align-items:center;flex-wrap:wrap;">
-      <span id="fu-send-status" style="font-size:11px;color:#64748b;margin-right:auto;"></span>
-      <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('fu-email-modal').style.display='none'">Close</button>
-      <button class="btn" style="background:rgba(52,211,153,0.1);border-color:rgba(52,211,153,0.3);color:#34d399;" onclick="generateFollowupExcel()">⬇ Excel</button>
-      <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="copyFollowupEmail()">📋 Copy</button>
-      <button class="btn" id="fu-send-btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="sendFollowupEmailFU()">✉️ Send</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ WEEKLY SUMMARY MODAL ══ -->
-<div id="weekly-modal" class="modal-overlay" style="z-index:300;">
-  <div class="modal-box" style="width:720px;max-height:92vh;">
-    <h3>📊 Weekly Asset Receiving Summary</h3>
-    <div style="font-size:10px;color:#64748b;margin-bottom:4px;">Email Preview — copy and paste into your email client:</div>
-    <div style="overflow-y:auto;background:#fff;border-radius:8px;border:0.5px solid rgba(255,255,255,0.1);max-height:420px;">
-      <div id="ws-email-html" style="padding:20px 24px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a1a;line-height:1.7;"></div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);align-items:center;flex-wrap:wrap;">
-      <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('weekly-modal').style.display='none'">Close</button>
-      <button class="btn" style="background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#4ade80;" onclick="copyWeeklyEmail()">📋 Copy Email</button>
-      <button class="btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="generateWeeklyBranchPDF()">⬇ Branch Report PDF</button>
-      <button class="btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" onclick="generateWeeklyAssetPDF()">⬇ Asset Report PDF</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
