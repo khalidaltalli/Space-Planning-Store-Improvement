@@ -7,781 +7,508 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0f1117;
-      --surface: #1a1f2e;
-      --surface2: #222840;
-      --border: rgba(255,255,255,0.08);
-      --border-hover: rgba(255,255,255,0.16);
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --heading: #f1f5f9;
-      --cyan: #22d3ee;
-      --cyan-dim: rgba(34,211,238,0.12);
-      --green: #4ade80;
-      --green-dim: rgba(74,222,128,0.12);
-      --mint: #6ee7b7;
-      --mint-dim: rgba(110,231,183,0.13);
-      --amber: #fbbf24;
-      --amber-dim: rgba(251,191,36,0.12);
-      --red: #f87171;
-      --red-dim: rgba(248,113,113,0.12);
-      --grey: #94a3b8;
-      --grey-dim: rgba(148,163,184,0.12);
-      --purple: #a78bfa;
-      --purple-dim: rgba(167,139,250,0.12);
-      --radius: 10px;
-      --radius-sm: 6px;
+      --bg:#0f1117;--surface:#1a1f2e;--surface2:#222840;--border:rgba(255,255,255,0.08);
+      --border-hover:rgba(255,255,255,0.16);--text:#e2e8f0;--muted:#64748b;--heading:#f1f5f9;
+      --cyan:#22d3ee;--cyan-dim:rgba(34,211,238,0.12);--green:#4ade80;--green-dim:rgba(74,222,128,0.12);
+      --mint:#6ee7b7;--mint-dim:rgba(110,231,183,0.13);--amber:#fbbf24;--amber-dim:rgba(251,191,36,0.12);
+      --red:#f87171;--red-dim:rgba(248,113,113,0.12);--grey:#94a3b8;--grey-dim:rgba(148,163,184,0.12);
+      --purple:#a78bfa;--purple-dim:rgba(167,139,250,0.12);--radius:10px;--radius-sm:6px;
     }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* ── SIGN-IN OVERLAY ── */
-    .signin-overlay {
-      position: fixed; inset: 0;
-      background: var(--bg);
-      z-index: 1000;
-      display: flex; align-items: center; justify-content: center;
-      padding: 1.5rem;
-    }
-    .signin-overlay.hidden { display: none; }
-
-    .signin-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 36px 32px;
-      width: 100%; max-width: 380px;
-      animation: modalIn 0.2s ease;
-    }
-    .signin-title {
-      font-size: 20px; font-weight: 700; color: var(--heading);
-      margin-bottom: 4px;
-    }
-    .signin-sub {
-      font-size: 13px; color: var(--muted); margin-bottom: 28px;
-    }
-    .signin-label {
-      font-size: 11px; color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      text-transform: uppercase; letter-spacing: 0.6px;
-      display: block; margin-bottom: 6px;
-    }
-    .signin-select, .signin-input {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      padding: 10px 12px;
-      outline: none;
-      transition: border-color 0.15s;
-      margin-bottom: 16px;
-    }
-    .signin-select:focus, .signin-input:focus { border-color: var(--cyan); }
-    .signin-select option { background: var(--surface2); }
-    .signin-passcode-wrap { display: none; }
-    .signin-passcode-wrap.visible { display: block; }
-    .signin-btn {
-      width: 100%;
-      background: var(--cyan);
-      color: #0f1117;
-      border: none; border-radius: var(--radius-sm);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 15px; font-weight: 700;
-      padding: 11px;
-      cursor: pointer;
-      transition: opacity 0.15s;
-      margin-top: 4px;
-    }
-    .signin-btn:hover { opacity: 0.88; }
-    .signin-error {
-      font-size: 12px; color: var(--red);
-      margin-top: 10px; text-align: center;
-      min-height: 18px;
-    }
+    /* ── SIGN-IN ── */
+    .signin-overlay { position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1.5rem; }
+    .signin-overlay.hidden { display:none; }
+    .signin-box { background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px 32px;width:100%;max-width:380px;animation:modalIn 0.2s ease; }
+    .signin-title { font-size:20px;font-weight:700;color:var(--heading);margin-bottom:4px; }
+    .signin-sub { font-size:13px;color:var(--muted);margin-bottom:28px; }
+    .signin-label { font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.6px;display:block;margin-bottom:6px; }
+    .signin-select,.signin-input { width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:10px 12px;outline:none;transition:border-color 0.15s;margin-bottom:16px; }
+    .signin-select:focus,.signin-input:focus { border-color:var(--cyan); }
+    .signin-select option { background:var(--surface2); }
+    .signin-passcode-wrap { display:none; }
+    .signin-passcode-wrap.visible { display:block; }
+    .signin-btn { width:100%;background:var(--cyan);color:#0f1117;border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;padding:11px;cursor:pointer;transition:opacity 0.15s;margin-top:4px; }
+    .signin-btn:hover { opacity:0.88; }
+    .signin-error { font-size:12px;color:var(--red);margin-top:10px;text-align:center;min-height:18px; }
 
     /* ── HEADER ── */
-    .header {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 0.5px solid rgba(255,255,255,0.08);
-    }
-    .header-logo-link { display: flex; align-items: center; text-decoration: none; }
-    .header-logo { height: 60px; object-fit: contain; }
-    .header-center { text-align: center; }
-    .header-title { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-    .header-sub { font-size: 12px; color: #f1f5f9; margin-top: 3px; font-weight: 500; }
-    .header-right { display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
-    .live-badge {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 11px; color: #22d3ee;
-      background: rgba(34,211,238,0.08);
-      border: 0.5px solid rgba(34,211,238,0.2);
-      padding: 5px 12px; border-radius: 20px;
-    }
-    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22d3ee; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .user-badge-header {
-      font-size: 11px; padding: 4px 10px; border-radius: 10px; font-weight: 600;
-    }
-    .user-badge-header.editor { background: rgba(110,231,183,0.12); color: #6ee7b7; }
-    .user-badge-header.viewer { background: rgba(148,163,184,0.12); color: #94a3b8; }
-    .signout-btn {
-      background: rgba(248,113,113,0.08); border: 0.5px solid rgba(248,113,113,0.2);
-      color: #f87171; font-size: 11px; font-family: 'DM Sans', sans-serif;
-      padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s;
-    }
-    .signout-btn:hover { background: rgba(248,113,113,0.15); }
+    .header { display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:1.5rem;padding:1rem 2rem 1rem;border-bottom:0.5px solid rgba(255,255,255,0.08); }
+    .header-logo-link { display:flex;align-items:center;text-decoration:none; }
+    .header-logo { height:60px;object-fit:contain; }
+    .header-center { text-align:center; }
+    .header-title { font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.3px; }
+    .header-sub { font-size:12px;color:#f1f5f9;margin-top:3px;font-weight:500; }
+    .header-right { display:flex;gap:8px;align-items:center;justify-content:flex-end; }
+    .live-badge { display:flex;align-items:center;gap:6px;font-size:11px;color:#22d3ee;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);padding:5px 12px;border-radius:20px; }
+    .live-dot { width:6px;height:6px;border-radius:50%;background:#22d3ee;animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+    .user-badge-header { font-size:11px;padding:4px 10px;border-radius:10px;font-weight:600; }
+    .user-badge-header.editor { background:rgba(110,231,183,0.12);color:#6ee7b7; }
+    .user-badge-header.viewer { background:rgba(148,163,184,0.12);color:#94a3b8; }
+    .signout-btn { background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;font-size:11px;font-family:'DM Sans',sans-serif;padding:5px 10px;border-radius:6px;cursor:pointer;transition:background 0.15s; }
+    .signout-btn:hover { background:rgba(248,113,113,0.15); }
 
     /* ── TOOLBAR ── */
-    .toolbar {
-      padding: 1.25rem 2rem 0;
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-    }
-    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 360px; }
-    .search-wrap svg {
-      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-      color: var(--muted); pointer-events: none;
-    }
-    .search-input {
-      width: 100%; background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--text);
-      font-family: 'DM Sans', sans-serif; font-size: 14px;
-      padding: 9px 12px 9px 38px; outline: none; transition: border-color 0.15s;
-    }
-    .search-input:focus { border-color: var(--cyan); }
-    .search-input::placeholder { color: var(--muted); }
-    .filter-select {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--text);
-      font-family: 'DM Sans', sans-serif; font-size: 13px;
-      padding: 9px 12px; outline: none; cursor: pointer;
-      transition: border-color 0.15s; min-width: 140px;
-    }
-    .filter-select:focus { border-color: var(--cyan); }
-    .filter-select option { background: var(--surface2); }
-    .count-badge {
-      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted);
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 5px 12px; white-space: nowrap; margin-left: auto;
-    }
+    .toolbar { padding:0 2rem 1rem;display:flex;flex-wrap:wrap;gap:10px;align-items:center; }
+    .search-wrap { position:relative;flex:1;min-width:200px;max-width:360px; }
+    .search-wrap svg { position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none; }
+    .search-input { width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:9px 12px 9px 38px;outline:none;transition:border-color 0.15s; }
+    .search-input:focus { border-color:var(--cyan); }
+    .search-input::placeholder { color:var(--muted); }
+    .filter-select { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;outline:none;cursor:pointer;transition:border-color 0.15s;min-width:140px; }
+    .filter-select:focus { border-color:var(--cyan); }
+    .filter-select option { background:var(--surface2); }
+    .count-badge { font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 12px;white-space:nowrap;margin-left:auto; }
 
-    /* ── STORE GRID ── */
-    .store-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 14px; padding: 1.25rem 2rem 2rem;
-    }
-    .store-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px; cursor: pointer;
-      transition: border-color 0.15s, transform 0.1s, background 0.15s;
-      position: relative; overflow: hidden;
-    }
-    .store-card::before {
-      content: ''; position: absolute; top: 0; left: 0;
-      width: 3px; height: 100%;
-      background: var(--card-accent, var(--grey)); opacity: 0.85;
-    }
-    .store-card:hover { border-color: var(--border-hover); background: var(--surface2); transform: translateY(-1px); }
-    .card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .card-code { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.3px; }
-    .status-pill { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; font-family: 'DM Sans', sans-serif; flex-shrink: 0; }
-    .status-live         { background: var(--mint-dim);  color: var(--mint); }
-    .status-soon         { background: var(--amber-dim); color: var(--amber); }
-    .status-construction { background: var(--cyan-dim);  color: var(--cyan); }
-    .status-closed       { background: var(--red-dim);   color: var(--red); }
-    .status-default      { background: var(--grey-dim);  color: var(--grey); }
-    .card-location {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 12px; color: var(--muted); margin-bottom: 10px;
-    }
-    .card-location svg { flex-shrink: 0; }
-    .card-pills { display: flex; flex-wrap: wrap; gap: 5px; }
-    .pill { font-size: 11px; padding: 3px 8px; border-radius: 20px; font-family: 'DM Mono', monospace; white-space: nowrap; }
-    .pill-class-a  { background: rgba(251,191,36,0.13);        color: #fbbf24; }
-    .pill-class-b  { background: rgba(34,211,238,0.12);        color: var(--cyan); }
-    .pill-class-c  { background: rgba(148,163,184,0.13);       color: var(--grey); }
-    .pill-class-d  { background: rgba(248,113,113,0.12);       color: var(--red); }
-    .pill-mezz     { background: var(--grey-dim);               color: var(--grey); }
-    .pill-pharmacy { background: var(--purple-dim);             color: var(--purple); }
-    .pill-cold     { background: rgba(96,165,250,0.12);         color: #60a5fa; }
-    .pill-region-central { background: rgba(52,211,153,0.12);  color: #34d399; }
-    .pill-region-western { background: rgba(251,146,60,0.12);  color: #fb923c; }
-    .pill-region-eastern { background: rgba(56,189,248,0.12);  color: #38bdf8; }
-    .pill-region-remote  { background: rgba(167,139,250,0.12); color: #a78bfa; }
-    .pill-region-default { background: var(--grey-dim);        color: var(--grey); }
-    .pill-location {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 11px; padding: 3px 8px; border-radius: 20px;
-      font-family: 'DM Mono', monospace;
-      background: rgba(251,191,36,0.10); color: var(--amber);
-    }
+    /* ── GRID ── */
+    .store-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;padding:0 2rem 2rem; }
+    .store-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:border-color 0.15s,transform 0.1s,background 0.15s;position:relative;overflow:hidden; }
+    .store-card::before { content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--card-accent,var(--grey));opacity:0.85; }
+    .store-card:hover { border-color:var(--border-hover);background:var(--surface2);transform:translateY(-1px); }
+    .card-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
+    .card-code { font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:#fff;letter-spacing:0.3px; }
+    .status-pill { font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;font-family:'DM Sans',sans-serif;flex-shrink:0; }
+    .status-live{background:var(--mint-dim);color:var(--mint);}
+    .status-soon{background:var(--amber-dim);color:var(--amber);}
+    .status-construction{background:var(--cyan-dim);color:var(--cyan);}
+    .status-closed{background:var(--red-dim);color:var(--red);}
+    .status-default{background:var(--grey-dim);color:var(--grey);}
+    .card-location { display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);margin-bottom:10px; }
+    .card-pills { display:flex;flex-wrap:wrap;gap:5px; }
+    .pill { font-size:11px;padding:3px 8px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap; }
+    .pill-class-a{background:rgba(251,191,36,0.13);color:#fbbf24;}
+    .pill-class-b{background:rgba(34,211,238,0.12);color:var(--cyan);}
+    .pill-class-c{background:rgba(148,163,184,0.13);color:var(--grey);}
+    .pill-class-d{background:rgba(248,113,113,0.12);color:var(--red);}
+    .pill-mezz{background:var(--grey-dim);color:var(--grey);}
+    .pill-pharmacy{background:var(--purple-dim);color:var(--purple);}
+    .pill-cold{background:rgba(96,165,250,0.12);color:#60a5fa;}
+    .pill-region-central{background:rgba(52,211,153,0.12);color:#34d399;}
+    .pill-region-western{background:rgba(251,146,60,0.12);color:#fb923c;}
+    .pill-region-eastern{background:rgba(56,189,248,0.12);color:#38bdf8;}
+    .pill-region-remote{background:rgba(167,139,250,0.12);color:#a78bfa;}
+    .pill-region-default{background:var(--grey-dim);color:var(--grey);}
+    .pill-location { display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:20px;font-family:'DM Mono',monospace;background:rgba(251,191,36,0.10);color:var(--amber); }
 
-    /* ── EMPTY / LOADING ── */
-    .empty-state { text-align: center; padding: 4rem 2rem; color: var(--muted); display: none; }
-    .empty-state p { font-size: 14px; }
-    .loading-state { text-align: center; padding: 4rem 2rem; color: var(--muted); }
-    .spinner {
-      width: 28px; height: 28px; border: 2px solid var(--border);
-      border-top-color: var(--cyan); border-radius: 50%;
-      animation: spin 0.7s linear infinite; margin: 0 auto 12px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* ── EMPTY/LOADING ── */
+    .empty-state { text-align:center;padding:4rem 2rem;color:var(--muted);display:none; }
+    .loading-state { text-align:center;padding:4rem 2rem;color:var(--muted); }
+    .spinner { width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto 12px; }
+    @keyframes spin { to{transform:rotate(360deg)} }
 
     /* ── MODAL ── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-      z-index: 200; align-items: center; justify-content: center; padding: 1.5rem;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; width: 100%; max-width: 640px;
-      max-height: 90vh; overflow-y: auto; position: relative;
-      animation: modalIn 0.18s ease;
-    }
-    @keyframes modalIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .modal-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      padding: 20px 24px 0; margin-bottom: 20px;
-    }
-    .modal-code { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
-    .modal-name { font-size: 20px; font-weight: 700; color: var(--heading); }
-    .modal-close {
-      background: none; border: none; color: var(--muted); cursor: pointer;
-      padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s;
-      flex-shrink: 0; margin-left: 12px;
-    }
-    .modal-close:hover { color: var(--text); background: var(--surface2); }
-    .modal-body { padding: 0 24px 24px; }
-    .modal-section-title {
-      font-size: 11px; font-weight: 600; color: var(--muted);
-      letter-spacing: 0.8px; text-transform: uppercase; margin: 20px 0 10px;
-    }
-    .modal-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .modal-field { display: flex; flex-direction: column; gap: 4px; }
-    .modal-field.full { grid-column: 1 / -1; }
-    .field-label { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
-    .field-value { font-size: 14px; color: var(--text); font-weight: 500; }
-    .field-link { font-size: 13px; color: var(--cyan); text-decoration: none; display: flex; align-items: center; gap: 5px; }
-    .field-link:hover { text-decoration: underline; }
-    .field-input, .field-select {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--text);
-      font-family: 'DM Sans', sans-serif; font-size: 14px;
-      padding: 7px 10px; outline: none; width: 100%; transition: border-color 0.15s;
-    }
-    .field-input:focus, .field-select:focus { border-color: var(--cyan); }
-    .field-select option { background: var(--surface2); }
-    .modal-actions {
-      display: flex; gap: 10px; margin-top: 24px;
-      padding-top: 20px; border-top: 1px solid var(--border);
-    }
-    .btn {
-      padding: 9px 20px; border-radius: var(--radius-sm);
-      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
-      cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
-    }
-    .btn:active { transform: scale(0.97); }
-    .btn-primary { background: var(--cyan); color: #0f1117; }
-    .btn-primary:hover { opacity: 0.9; }
-    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-    .btn-ghost:hover { border-color: var(--border-hover); }
-    .btn-edit { background: var(--surface2); color: var(--cyan); border: 1px solid rgba(34,211,238,0.3); margin-left: auto; }
-    .btn-edit:hover { background: var(--cyan-dim); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:center;justify-content:center;padding:1.5rem; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface);border:1px solid var(--border);border-radius:14px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;position:relative;animation:modalIn 0.18s ease; }
+    @keyframes modalIn { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
+    .modal-header { display:flex;align-items:flex-start;justify-content:space-between;padding:20px 24px 0;margin-bottom:20px; }
+    .modal-code { font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:4px; }
+    .modal-name { font-size:20px;font-weight:700;color:var(--heading); }
+    .modal-close { background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:6px;transition:color 0.15s,background 0.15s;flex-shrink:0;margin-left:12px; }
+    .modal-close:hover { color:var(--text);background:var(--surface2); }
+    .modal-body { padding:0 24px 24px; }
+    .modal-section-title { font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.8px;text-transform:uppercase;margin:20px 0 10px; }
+    .modal-fields { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+    .modal-field { display:flex;flex-direction:column;gap:4px; }
+    .modal-field.full { grid-column:1/-1; }
+    .field-label { font-size:11px;color:var(--muted);font-family:'DM Mono',monospace; }
+    .field-value { font-size:14px;color:var(--text);font-weight:500; }
+    .field-link { font-size:13px;color:var(--cyan);text-decoration:none;display:flex;align-items:center;gap:5px; }
+    .field-link:hover { text-decoration:underline; }
+    .field-input,.field-select { background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:7px 10px;outline:none;width:100%;transition:border-color 0.15s; }
+    .field-input:focus,.field-select:focus { border-color:var(--cyan); }
+    .field-select option { background:var(--surface2); }
+    .modal-actions { display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border); }
+    .btn { padding:9px 20px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity 0.15s,transform 0.1s; }
+    .btn:active { transform:scale(0.97); }
+    .btn-primary { background:var(--cyan);color:#0f1117; }
+    .btn-primary:hover { opacity:0.9; }
+    .btn-ghost { background:var(--surface2);color:var(--text);border:1px solid var(--border); }
+    .btn-ghost:hover { border-color:var(--border-hover); }
+    .btn-edit { background:var(--surface2);color:var(--cyan);border:1px solid rgba(34,211,238,0.3);margin-left:auto; }
+    .btn-edit:hover { background:var(--cyan-dim); }
+    .btn:disabled { opacity:0.4;cursor:not-allowed; }
 
     /* ── TOAST ── */
-    .toast {
-      position: fixed; bottom: 24px; right: 24px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); padding: 10px 18px;
-      font-size: 13px; font-weight: 500; color: var(--text);
-      display: flex; align-items: center; gap: 8px;
-      z-index: 999; opacity: 0; transform: translateY(8px);
-      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
-    .toast-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-    .toast-dot.error { background: var(--red); }
-
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    .toast { position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 18px;font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:8px;z-index:999;opacity:0;transform:translateY(8px);transition:opacity 0.2s,transform 0.2s;pointer-events:none; }
+    .toast.show { opacity:1;transform:translateY(0); }
+    .toast-dot { width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0; }
+    .toast-dot.error { background:var(--red); }
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
   </style>
 </head>
 <body>
 
-  <!-- SIGN-IN OVERLAY -->
-  <div class="signin-overlay" id="signin-overlay">
-    <div class="signin-box">
-      <div class="signin-title">Store Info</div>
-      <div class="signin-sub">Select your name to continue</div>
-
-      <label class="signin-label">Who are you?</label>
-      <select class="signin-select" id="signin-user" onchange="onUserSelect()">
-        <option value="">— Select —</option>
-        <option value="Viewer">Viewer</option>
-        <option value="Khalid">Khalid</option>
-        <option value="Eissa">Eissa</option>
-        <option value="Abdulrahman">Abdulrahman</option>
-        <option value="Mahmmoud">Mahmmoud</option>
-      </select>
-
-      <div class="signin-passcode-wrap" id="passcode-wrap">
-        <label class="signin-label">Passcode</label>
-        <input class="signin-input" id="signin-passcode" type="password" placeholder="Enter passcode" onkeydown="if(event.key==='Enter') attemptSignIn()" />
-      </div>
-
-      <button class="signin-btn" onclick="attemptSignIn()">Continue</button>
-      <div class="signin-error" id="signin-error"></div>
+<!-- SIGN-IN -->
+<div class="signin-overlay" id="signin-overlay">
+  <div class="signin-box">
+    <div class="signin-title">Store Info</div>
+    <div class="signin-sub">Select your name to continue</div>
+    <label class="signin-label">Who are you?</label>
+    <select class="signin-select" id="signin-user" onchange="onUserSelect()">
+      <option value="">— Select —</option>
+    </select>
+    <div class="signin-passcode-wrap" id="passcode-wrap">
+      <label class="signin-label">Passcode</label>
+      <input class="signin-input" id="signin-passcode" type="password" placeholder="Enter passcode" onkeydown="if(event.key==='Enter') attemptSignIn()" />
     </div>
+    <button class="signin-btn" onclick="attemptSignIn()">Continue</button>
+    <div class="signin-error" id="signin-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <header class="header">
+    <div><a class="header-logo-link" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/" target="_blank">
+      <img class="header-logo" src="logo.png" alt="Logo" onerror="this.style.display='none'" />
+    </a></div>
+    <div class="header-center">
+      <div class="header-title">Store Info</div>
+      <div class="header-sub">Space Planning &amp; Store Improvement</div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div> Live</div>
+      <span class="user-badge-header" id="user-badge-header" style="display:none;"></span>
+      <button class="signout-btn" onclick="signOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" id="search" type="text" placeholder="Search by code, city, district…" oninput="applyFilters()" />
+    </div>
+    <select class="filter-select" id="filter-status" onchange="applyFilters()">
+      <option value="">All Statuses</option>
+    </select>
+    <div class="count-badge" id="count-badge">— stores</div>
   </div>
 
-  <!-- MAIN APP (hidden until signed in) -->
-  <div id="app" style="display:none">
-
-    <!-- HEADER -->
-    <header class="header">
-      <div>
-        <a class="header-logo-link" href="https://khalidaltalli.github.io/Space-Planning-Store-Improvement/" target="_blank">
-          <img class="header-logo" src="logo.png" alt="Logo" onerror="this.style.display='none'" />
-        </a>
-      </div>
-      <div class="header-center">
-        <div class="header-title">Store Info</div>
-        <div class="header-sub" id="header-sub">Space Planning & Store Improvement</div>
-      </div>
-      <div class="header-right">
-        <div class="live-badge"><div class="live-dot"></div> Live</div>
-        <span class="user-badge-header" id="user-badge-header" style="display:none;"></span>
-        <button class="signout-btn" onclick="signOut()">Sign Out</button>
-      </div>
-    </header>
-
-    <!-- TOOLBAR -->
-    <div class="toolbar">
-      <div class="search-wrap">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input class="search-input" id="search" type="text" placeholder="Search by code, city, district…" oninput="applyFilters()" />
-      </div>
-      <select class="filter-select" id="filter-status" onchange="applyFilters()">
-        <option value="">All Statuses</option>
-      </select>
-      <div class="count-badge" id="count-badge">— stores</div>
-    </div>
-
-    <!-- STORE GRID -->
-    <div class="store-grid" id="store-grid">
-      <div class="loading-state" style="grid-column:1/-1">
-        <div class="spinner"></div>
-        <p>Loading stores…</p>
-      </div>
-    </div>
-    <div class="empty-state" id="empty-state">
-      <p>No stores match your filters.</p>
-    </div>
-
-    <!-- DETAIL MODAL -->
-    <div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
-      <div class="modal" id="modal">
-        <div class="modal-header">
-          <div>
-            <div class="modal-code" id="modal-code"></div>
-            <div class="modal-name" id="modal-name"></div>
-          </div>
-          <button class="modal-close" onclick="closeModal()">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path d="M18 6 6 18M6 6l12 12"/>
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body" id="modal-body"></div>
-      </div>
-    </div>
-
-  </div><!-- /app -->
-
-  <!-- TOAST -->
-  <div class="toast" id="toast">
-    <div class="toast-dot" id="toast-dot"></div>
-    <span id="toast-msg"></span>
+  <div class="store-grid" id="store-grid">
+    <div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div><p>Loading stores…</p></div>
   </div>
+  <div class="empty-state" id="empty-state"><p>No stores match your filters.</p></div>
+
+  <div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <div><div class="modal-code" id="modal-code"></div><div class="modal-name" id="modal-name"></div></div>
+        <button class="modal-close" onclick="closeModal()">
+          <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><div class="toast-dot" id="toast-dot"></div><span id="toast-msg"></span></div>
 
 <script>
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZ4DlhFv-RHsGhvEHT6766aCprbrWn8shmOLRZTaKqOtdhHUERfV01Ih3sG29hj0M/exec';
+  const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
+  const STORES_URL = 'https://script.google.com/macros/s/AKfycbxZ4DlhFv-RHsGhvEHT6766aCprbrWn8shmOLRZTaKqOtdhHUERfV01Ih3sG29hj0M/exec';
 
-  // ─── USERS ────────────────────────────────────────────────────────
-  const USERS = {
-    'Viewer':       { passcode: null,   canEdit: false },
-    'Khalid':       { passcode: '6969', canEdit: true },
-    'Eissa':        { passcode: '1234', canEdit: true },
-    'Abdulrahman':  { passcode: '8852', canEdit: true },
-    'Mahmmoud':     { passcode: '9999', canEdit: true },
-  };
-
-  let currentUser = null;   // { name, canEdit }
+  let sheetUsers  = {};
+  let currentUser = null;
   let allStores   = [];
-  let currentStore = null;
-  let editMode = false;
+  let currentStore= null;
+  let editMode    = false;
 
-  // ─── SIGN-IN ──────────────────────────────────────────────────────
-  function onUserSelect() {
-    const name = document.getElementById('signin-user').value;
-    const wrap = document.getElementById('passcode-wrap');
-    wrap.classList.toggle('visible', name && USERS[name] && USERS[name].passcode !== null);
-    document.getElementById('signin-error').textContent = '';
-    document.getElementById('signin-passcode').value = '';
+  /* ── LOAD USERS FROM SHEET ── */
+  async function loadUsersStoreInfo(){
+    try {
+      const res = await fetch(`${APPS_URL}?sheet=Users`);
+      const data= await res.json();
+      sheetUsers = {};
+      (data.rows||[]).forEach(u=>{
+        const name = (u['Name']||'').trim();
+        const pin  = (u['PIN']||'').toString().trim();
+        const role = (u['Role']||'').trim().toLowerCase();
+        const si   = (u['Stores Info']||'').trim().toLowerCase();
+        if(!name) return;
+        if(si==='editor'||si==='viewer'||role==='admin'){
+          sheetUsers[name]={ pin, canEdit: si==='editor'||role==='admin' };
+        }
+      });
+    } catch(e){
+      /* fallback hardcoded */
+      sheetUsers = {
+        'Viewer':      { pin:'',     canEdit:false },
+        'Khalid':      { pin:'6969', canEdit:true  },
+        'Eissa':       { pin:'1234', canEdit:true  },
+        'Abdulrahman': { pin:'8852', canEdit:true  },
+        'Mahmmoud':    { pin:'9999', canEdit:true  },
+      };
+    }
+    /* Populate dropdown */
+    const sel = document.getElementById('signin-user');
+    sel.innerHTML = '<option value="">— Select —</option>';
+    Object.keys(sheetUsers).forEach(name=>{
+      const o=document.createElement('option');
+      o.value=name; o.textContent=name; sel.appendChild(o);
+    });
   }
 
-  function attemptSignIn() {
+  /* ── SIGN-IN ── */
+  function onUserSelect(){
     const name = document.getElementById('signin-user').value;
-    if (!name) { document.getElementById('signin-error').textContent = 'Please select a name.'; return; }
+    const wrap = document.getElementById('passcode-wrap');
+    const u    = sheetUsers[name];
+    wrap.classList.toggle('visible', !!(name && u && u.pin));
+    document.getElementById('signin-error').textContent='';
+    document.getElementById('signin-passcode').value='';
+  }
 
-    const user = USERS[name];
-    if (user.passcode !== null) {
+  function attemptSignIn(){
+    const name = document.getElementById('signin-user').value;
+    if(!name){ document.getElementById('signin-error').textContent='Please select a name.'; return; }
+    const u = sheetUsers[name];
+    if(!u){ document.getElementById('signin-error').textContent='User not found.'; return; }
+    if(u.pin){
       const entered = document.getElementById('signin-passcode').value;
-      if (entered !== user.passcode) {
-        document.getElementById('signin-error').textContent = 'Wrong passcode. Try again.';
-        document.getElementById('signin-passcode').value = '';
+      if(entered !== u.pin){
+        document.getElementById('signin-error').textContent='Wrong passcode. Try again.';
+        document.getElementById('signin-passcode').value='';
         document.getElementById('signin-passcode').focus();
         return;
       }
     }
-
-    currentUser = { name, canEdit: user.canEdit };
+    currentUser = { name, canEdit: u.canEdit };
     document.getElementById('signin-overlay').classList.add('hidden');
-    document.getElementById('app').style.display = 'block';
-
-    // update header badge
-    const badge = document.getElementById('user-badge-header');
-    badge.textContent = name;
-    badge.className = 'user-badge-header ' + (user.canEdit ? 'editor' : 'viewer');
-    badge.style.display = 'inline-block';
-
+    document.getElementById('app').style.display='block';
+    const badge=document.getElementById('user-badge-header');
+    badge.textContent=name;
+    badge.className='user-badge-header '+(u.canEdit?'editor':'viewer');
+    badge.style.display='inline-block';
     fetchStores();
   }
 
-  function signOut() {
-    currentUser = null;
-    allStores = [];
-    document.getElementById('signin-user').value = '';
+  function signOut(){
+    currentUser=null; allStores=[];
+    document.getElementById('signin-user').value='';
     document.getElementById('passcode-wrap').classList.remove('visible');
-    document.getElementById('signin-error').textContent = '';
+    document.getElementById('signin-error').textContent='';
     document.getElementById('signin-overlay').classList.remove('hidden');
-    document.getElementById('app').style.display = 'none';
-    const badge = document.getElementById('user-badge-header');
-    if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
-    document.getElementById('store-grid').innerHTML =
-      `<div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div><p>Loading stores…</p></div>`;
-    document.getElementById('filter-status').innerHTML = '<option value="">All Statuses</option>';
+    document.getElementById('app').style.display='none';
+    const badge=document.getElementById('user-badge-header');
+    if(badge){badge.style.display='none';badge.textContent='';}
+    document.getElementById('store-grid').innerHTML='<div class="loading-state" style="grid-column:1/-1"><div class="spinner"></div><p>Loading stores…</p></div>';
+    document.getElementById('filter-status').innerHTML='<option value="">All Statuses</option>';
   }
 
-  // ─── STATUS HELPERS ───────────────────────────────────────────────
-  function statusClass(status) {
-    if (!status) return 'status-default';
-    const s = status.toLowerCase();
-    if (s.includes('live') || s.includes('open'))                            return 'status-live';
-    if (s.includes('soon') || s.includes('receiv') || s.includes('opening')) return 'status-soon';
-    if (s.includes('construct'))                                             return 'status-construction';
-    if (s.includes('closed'))                                                return 'status-closed';
+  /* ── STATUS HELPERS ── */
+  function statusClass(s){
+    if(!s) return 'status-default';
+    const l=s.toLowerCase();
+    if(l.includes('live')||l.includes('open')) return 'status-live';
+    if(l.includes('soon')||l.includes('receiv')||l.includes('opening')) return 'status-soon';
+    if(l.includes('construct')) return 'status-construction';
+    if(l.includes('closed')) return 'status-closed';
     return 'status-default';
   }
-  function accentColor(status) {
-    if (!status) return 'var(--grey)';
-    const s = status.toLowerCase();
-    if (s.includes('live') || s.includes('open'))                            return 'var(--mint)';
-    if (s.includes('soon') || s.includes('receiv') || s.includes('opening')) return 'var(--amber)';
-    if (s.includes('construct'))                                             return 'var(--cyan)';
-    if (s.includes('closed'))                                                return 'var(--red)';
+  function accentColor(s){
+    if(!s) return 'var(--grey)';
+    const l=s.toLowerCase();
+    if(l.includes('live')||l.includes('open')) return 'var(--mint)';
+    if(l.includes('soon')||l.includes('receiv')||l.includes('opening')) return 'var(--amber)';
+    if(l.includes('construct')) return 'var(--cyan)';
+    if(l.includes('closed')) return 'var(--red)';
     return 'var(--grey)';
   }
-  function statusLabel(status) {
-    if (!status) return 'Unknown';
-    const s = status.toLowerCase();
-    if (s.includes('live') || s.includes('open')) return 'Open';
-    if (s.includes('soon') || s.includes('receiv') || s.includes('opening')) return 'Opening Soon';
-    return status;
+  function statusLabel(s){
+    if(!s) return 'Unknown';
+    const l=s.toLowerCase();
+    if(l.includes('live')||l.includes('open')) return 'Open';
+    if(l.includes('soon')||l.includes('receiv')||l.includes('opening')) return 'Opening Soon';
+    return s;
   }
-
-  // ─── API CALL ─────────────────────────────────────────────────────
-  // Apps Script with text/plain mime type allows CORS reads after redirect.
-  async function jsonp(params) {
-    const qs  = new URLSearchParams(params).toString();
-    const url = APPS_SCRIPT_URL + '?' + qs;
-    const res  = await fetch(url, { redirect: 'follow' });
-    const text = await res.text();
-    try {
-      return JSON.parse(text);
-    } catch {
-      // strip JSONP wrapper if present: callback({...});
-      const clean = text.replace(/^[\w$]+\(/, '').replace(/\);?\s*$/, '');
-      return JSON.parse(clean);
-    }
-  }
-
-  // ─── FETCH ────────────────────────────────────────────────────────
-  async function fetchStores() {
-    try {
-      const data = await jsonp({ action: 'getStores' });
-      allStores  = data;
-      populateStatusFilter();
-      applyFilters();
-    } catch (e) {
-      document.getElementById('store-grid').innerHTML =
-        '<div class="loading-state" style="grid-column:1/-1;color:var(--red)"><p>Error: ' + e.message + '</p></div>';
-      console.error('fetchStores failed:', e);
-    }
-  }
-
-  function populateStatusFilter() {
-    const statuses = [...new Set(allStores.map(s => s['Store Status']).filter(Boolean))].sort();
-    const sel = document.getElementById('filter-status');
-    sel.innerHTML = '<option value="">All Statuses</option>';
-    statuses.forEach(st => {
-      const o = document.createElement('option');
-      o.value = st; o.textContent = st;
-      sel.appendChild(o);
-    });
-  }
-
-  // ─── FILTERS ──────────────────────────────────────────────────────
-  function applyFilters() {
-    const q      = document.getElementById('search').value.trim().toLowerCase();
-    const status = document.getElementById('filter-status').value;
-    let filtered = allStores;
-    if (status) filtered = filtered.filter(s => s['Store Status'] === status);
-    if (q)      filtered = filtered.filter(s =>
-      Object.values(s).some(v => v && v.toString().toLowerCase().includes(q))
-    );
-    renderGrid(filtered);
-  }
-
-  // ─── REGION PILL HELPER ──────────────────────────────────────────
-  function regionPillClass(region) {
-    if (!region) return 'pill-region-default';
-    const r = region.toLowerCase().replace(/\s/g, '');
-    if (r.includes('central'))       return 'pill-region-central';
-    if (r.includes('west'))          return 'pill-region-western';
-    if (r.includes('east'))          return 'pill-region-eastern';
-    if (r.includes('remote'))        return 'pill-region-remote';
+  function regionPillClass(r){
+    if(!r) return 'pill-region-default';
+    const l=r.toLowerCase().replace(/\s/g,'');
+    if(l.includes('central')) return 'pill-region-central';
+    if(l.includes('west'))    return 'pill-region-western';
+    if(l.includes('east'))    return 'pill-region-eastern';
+    if(l.includes('remote'))  return 'pill-region-remote';
     return 'pill-region-default';
   }
 
-  // ─── RENDER GRID ──────────────────────────────────────────────────
-  function renderGrid(stores) {
-    const grid  = document.getElementById('store-grid');
-    const empty = document.getElementById('empty-state');
-    document.getElementById('count-badge').textContent =
-      `${stores.length} store${stores.length !== 1 ? 's' : ''}`;
-
-    if (stores.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
-    empty.style.display = 'none';
-
-    grid.innerHTML = stores.map(s => {
-      const idx         = allStores.indexOf(s);
-      const hasMezz     = s['Mezannine Area'] && parseFloat(s['Mezannine Area']) > 0;
-      const pharmacyVal = (s['Pharmacy'] || '').toString().trim().toLowerCase();
-      const hasPharmacy = pharmacyVal && pharmacyVal !== 'none' && pharmacyVal !== '';
-      const pharmacyLabel = pharmacyVal === 'open' ? 'Pharmacy' : pharmacyVal === 'soon' ? 'Pharmacy Soon' : pharmacyVal === 'yes' ? 'Pharmacy' : '';
-      const hasColdRoom = s['Cold Room'] && s['Cold Room'].toString().toLowerCase() === 'yes';
-      const hasLocation = s['Location']  && s['Location'].toString().trim() !== '';
-      const rawClass    = (s['Store Class'] || '').toString().trim().toUpperCase();
-      // Convert CLASS_A → A, CLASS_B → B etc, then display as "Class A"
-      const classLetter = rawClass.replace(/^CLASS_?/, '') || rawClass;
-      const classCss    = classLetter ? 'pill-class-' + classLetter.toLowerCase() : '';
-      const locationText = [s['City'], s['District']].filter(Boolean).join(' · ');
-      const region      = (s['Region'] || '').toString().trim();
-
-      return `
-        <div class="store-card" style="--card-accent:${accentColor(s['Store Status'])}" onclick="openModal(${idx})">
-          <div class="card-top">
-            <span class="card-code">${s['Store Code'] || '—'}</span>
-            <span class="status-pill ${statusClass(s['Store Status'])}">${statusLabel(s['Store Status'])}</span>
-          </div>
-          ${locationText ? `<div class="card-location">
-            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-            </svg>${locationText}</div>` : ''}
-          <div class="card-pills">
-            ${classLetter ? `<span class="pill ${classCss}">Class ${classLetter}</span>` : ''}
-            ${region      ? `<span class="pill ${regionPillClass(region)}">${region}</span>` : ''}
-            ${hasMezz     ? `<span class="pill pill-mezz">Mezz Floor</span>` : ''}
-            ${hasPharmacy && pharmacyLabel ? `<span class="pill pill-pharmacy">${pharmacyLabel}</span>` : ''}
-            ${hasColdRoom ? `<span class="pill pill-cold">Cold Room</span>` : ''}
-            ${hasLocation ? `<span class="pill-location">
-              <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-              </svg>Map</span>` : ''}
-          </div>
-        </div>`;
-    }).join('');
-  }
-
-  // ─── MODAL ────────────────────────────────────────────────────────
-  function openModal(idx) {
-    currentStore = allStores[idx];
-    editMode = false;
-    renderModal();
-    document.getElementById('modal-overlay').classList.add('open');
-  }
-  function closeModal() {
-    document.getElementById('modal-overlay').classList.remove('open');
-    currentStore = null; editMode = false;
-  }
-  function handleOverlayClick(e) {
-    if (e.target === document.getElementById('modal-overlay')) closeModal();
-  }
-
-  function renderModal() {
-    const s = currentStore;
-    document.getElementById('modal-code').textContent = s['Store Code'] || '';
-    document.getElementById('modal-name').textContent = s['Name'] || 'Store Details';
-
-    const statusOptions = ['Live', 'Opening Soon', 'Under Construction', 'Closed', 'Receiving'];
-    const layoutOptions = ['Final', 'Draft', 'Pending', 'N/A'];
-    const classOptions  = ['A', 'B', 'C', 'D'];
-
-    const field = (label, key, type = 'text', options = []) => {
-      const val = s[key] || '';
-      if (editMode && currentUser.canEdit) {
-        if (options.length) {
-          return `<div class="modal-field">
-            <span class="field-label">${label}</span>
-            <select class="field-select" data-key="${key}">
-              <option value="">—</option>
-              ${options.map(o => `<option value="${o}" ${o === val ? 'selected' : ''}>${o}</option>`).join('')}
-            </select></div>`;
-        }
-        return `<div class="modal-field">
-          <span class="field-label">${label}</span>
-          <input class="field-input" type="${type}" data-key="${key}" value="${val}" /></div>`;
-      }
-      if (type === 'url' && val) {
-        return `<div class="modal-field">
-          <span class="field-label">${label}</span>
-          <a class="field-link" href="${val}" target="_blank">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            Open link</a></div>`;
-      }
-      return `<div class="modal-field">
-        <span class="field-label">${label}</span>
-        <span class="field-value">${val || '—'}</span></div>`;
-    };
-
-    const fullField = (label, key, type = 'text') => {
-      const val = s[key] || '';
-      if (editMode && currentUser.canEdit) {
-        return `<div class="modal-field full">
-          <span class="field-label">${label}</span>
-          <input class="field-input" type="${type}" data-key="${key}" value="${val}" /></div>`;
-      }
-      if (type === 'url' && val) {
-        return `<div class="modal-field full">
-          <span class="field-label">${label}</span>
-          <a class="field-link" href="${val}" target="_blank">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            ${val}</a></div>`;
-      }
-      return `<div class="modal-field full">
-        <span class="field-label">${label}</span>
-        <span class="field-value">${val || '—'}</span></div>`;
-    };
-
-    const canEdit = currentUser && currentUser.canEdit;
-
-    document.getElementById('modal-body').innerHTML = `
-      <div class="modal-section-title">General</div>
-      <div class="modal-fields">
-        ${field('Store Status', 'Store Status', 'text', statusOptions)}
-        ${field('Store Class', 'Store Class', 'text', classOptions)}
-        ${field('Region', 'Region')}
-        ${field('City', 'City')}
-        ${field('District', 'District')}
-        ${field('Opening Date', 'Opening Date', 'date')}
-        ${field('Pharmacy', 'Pharmacy', 'text', ['Yes', 'No'])}
-        ${field('Cold Room', 'Cold Room', 'text', ['Yes', 'No'])}
-      </div>
-      <div class="modal-section-title">Areas (m²)</div>
-      <div class="modal-fields">
-        ${field('Ground Floor Area', 'Ground Floor Area', 'number')}
-        ${field('Mezzanine Area', 'Mezannine Area', 'number')}
-      </div>
-      <div class="modal-section-title">Layout & Links</div>
-      <div class="modal-fields">
-        ${field('Layout Status', 'Layout Status', 'text', layoutOptions)}
-        ${fullField('PDF Link', 'PDF Link', 'url')}
-        ${fullField('Location', 'Location', 'url')}
-      </div>
-      <div class="modal-actions">
-        ${editMode && canEdit
-          ? `<button class="btn btn-ghost" onclick="cancelEdit()">Cancel</button>
-             <button class="btn btn-primary" id="save-btn" onclick="saveStore()">Save changes</button>`
-          : canEdit
-            ? `<button class="btn btn-ghost" onclick="closeModal()">Close</button>
-               <button class="btn btn-edit" onclick="enableEdit()">Edit store</button>`
-            : `<button class="btn btn-ghost" onclick="closeModal()">Close</button>`
-        }
-      </div>`;
-  }
-
-  function enableEdit()  { editMode = true;  renderModal(); }
-  function cancelEdit()  { editMode = false; renderModal(); }
-
-  function getEditedValues() {
-    const inputs  = document.querySelectorAll('#modal-body [data-key]');
-    const updated = { ...currentStore };
-    inputs.forEach(el => { updated[el.dataset.key] = el.value; });
-    return updated;
-  }
-
-  async function saveStore() {
-    const btn = document.getElementById('save-btn');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    const updated = getEditedValues();
+  /* ── FETCH STORES ── */
+  async function fetchStores(){
     try {
-      const result = await jsonp({ payload: JSON.stringify({ action: 'updateStore', data: updated, user: currentUser.name }) });
-      if (result.success) {
-        const idx = allStores.findIndex(s => s['Store Code'] === currentStore['Store Code']);
-        if (idx !== -1) allStores[idx] = updated;
-        currentStore = updated;
-        editMode = false;
-        renderModal();
-        applyFilters();
-        showToast('Changes saved');
-      } else throw new Error(result.error || 'Unknown error');
-    } catch (e) {
-      showToast('Save failed: ' + e.message, true);
-      btn.disabled = false; btn.textContent = 'Save changes';
+      const qs  = new URLSearchParams({action:'getStores'}).toString();
+      const res = await fetch(STORES_URL+'?'+qs,{redirect:'follow'});
+      const text= await res.text();
+      let data;
+      try { data=JSON.parse(text); }
+      catch { data=JSON.parse(text.replace(/^[\w$]+\(/,'').replace(/\);?\s*$/,'')); }
+      allStores=data;
+      populateStatusFilter();
+      applyFilters();
+    } catch(e){
+      document.getElementById('store-grid').innerHTML=
+        '<div class="loading-state" style="grid-column:1/-1;color:var(--red)"><p>Error: '+e.message+'</p></div>';
     }
   }
 
-  // ─── TOAST ────────────────────────────────────────────────────────
+  function populateStatusFilter(){
+    const statuses=[...new Set(allStores.map(s=>s['Store Status']).filter(Boolean))].sort();
+    const sel=document.getElementById('filter-status');
+    sel.innerHTML='<option value="">All Statuses</option>';
+    statuses.forEach(st=>{const o=document.createElement('option');o.value=st;o.textContent=st;sel.appendChild(o);});
+  }
+
+  function applyFilters(){
+    const q=document.getElementById('search').value.trim().toLowerCase();
+    const status=document.getElementById('filter-status').value;
+    let filtered=allStores;
+    if(status) filtered=filtered.filter(s=>s['Store Status']===status);
+    if(q) filtered=filtered.filter(s=>Object.values(s).some(v=>v&&v.toString().toLowerCase().includes(q)));
+    renderGrid(filtered);
+  }
+
+  function renderGrid(stores){
+    const grid=document.getElementById('store-grid');
+    const empty=document.getElementById('empty-state');
+    document.getElementById('count-badge').textContent=`${stores.length} store${stores.length!==1?'s':''}`;
+    if(!stores.length){grid.innerHTML='';empty.style.display='block';return;}
+    empty.style.display='none';
+    grid.innerHTML=stores.map(s=>{
+      const idx=allStores.indexOf(s);
+      const hasMezz=s['Mezannine Area']&&parseFloat(s['Mezannine Area'])>0;
+      const pharmacyVal=(s['Pharmacy']||'').toString().trim().toLowerCase();
+      const hasPharmacy=pharmacyVal&&pharmacyVal!=='none'&&pharmacyVal!=='';
+      const pharmacyLabel=pharmacyVal==='open'?'Pharmacy':pharmacyVal==='soon'?'Pharmacy Soon':pharmacyVal==='yes'?'Pharmacy':'';
+      const hasColdRoom=s['Cold Room']&&s['Cold Room'].toString().toLowerCase()==='yes';
+      const hasLocation=s['Location']&&s['Location'].toString().trim()!=='';
+      const rawClass=(s['Store Class']||'').toString().trim().toUpperCase();
+      const classLetter=rawClass.replace(/^CLASS_?/,'')||rawClass;
+      const classCss=classLetter?'pill-class-'+classLetter.toLowerCase():'';
+      const locationText=[s['City'],s['District']].filter(Boolean).join(' · ');
+      const region=(s['Region']||'').toString().trim();
+      return `<div class="store-card" style="--card-accent:${accentColor(s['Store Status'])}" onclick="openModal(${idx})">
+        <div class="card-top">
+          <span class="card-code">${s['Store Code']||'—'}</span>
+          <span class="status-pill ${statusClass(s['Store Status'])}">${statusLabel(s['Store Status'])}</span>
+        </div>
+        ${locationText?`<div class="card-location"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${locationText}</div>`:''}
+        <div class="card-pills">
+          ${classLetter?`<span class="pill ${classCss}">Class ${classLetter}</span>`:''}
+          ${region?`<span class="pill ${regionPillClass(region)}">${region}</span>`:''}
+          ${hasMezz?`<span class="pill pill-mezz">Mezz Floor</span>`:''}
+          ${hasPharmacy&&pharmacyLabel?`<span class="pill pill-pharmacy">${pharmacyLabel}</span>`:''}
+          ${hasColdRoom?`<span class="pill pill-cold">Cold Room</span>`:''}
+          ${hasLocation?`<span class="pill-location"><svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Map</span>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ── MODAL ── */
+  function openModal(idx){ currentStore=allStores[idx]; editMode=false; renderModal(); document.getElementById('modal-overlay').classList.add('open'); }
+  function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); currentStore=null; editMode=false; }
+  function handleOverlayClick(e){ if(e.target===document.getElementById('modal-overlay')) closeModal(); }
+
+  function renderModal(){
+    const s=currentStore;
+    document.getElementById('modal-code').textContent=s['Store Code']||'';
+    document.getElementById('modal-name').textContent=s['Name']||'Store Details';
+    const statusOptions=['Live','Opening Soon','Under Construction','Closed','Receiving'];
+    const layoutOptions=['Final','Draft','Pending','N/A'];
+    const classOptions=['A','B','C','D'];
+    const field=(label,key,type='text',options=[])=>{
+      const val=s[key]||'';
+      if(editMode&&currentUser.canEdit){
+        if(options.length) return `<div class="modal-field"><span class="field-label">${label}</span><select class="field-select" data-key="${key}"><option value="">—</option>${options.map(o=>`<option value="${o}" ${o===val?'selected':''}>${o}</option>`).join('')}</select></div>`;
+        return `<div class="modal-field"><span class="field-label">${label}</span><input class="field-input" type="${type}" data-key="${key}" value="${val}" /></div>`;
+      }
+      if(type==='url'&&val) return `<div class="modal-field"><span class="field-label">${label}</span><a class="field-link" href="${val}" target="_blank"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open link</a></div>`;
+      return `<div class="modal-field"><span class="field-label">${label}</span><span class="field-value">${val||'—'}</span></div>`;
+    };
+    const fullField=(label,key,type='text')=>{
+      const val=s[key]||'';
+      if(editMode&&currentUser.canEdit) return `<div class="modal-field full"><span class="field-label">${label}</span><input class="field-input" type="${type}" data-key="${key}" value="${val}" /></div>`;
+      if(type==='url'&&val) return `<div class="modal-field full"><span class="field-label">${label}</span><a class="field-link" href="${val}" target="_blank"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${val}</a></div>`;
+      return `<div class="modal-field full"><span class="field-label">${label}</span><span class="field-value">${val||'—'}</span></div>`;
+    };
+    const canEdit=currentUser&&currentUser.canEdit;
+    document.getElementById('modal-body').innerHTML=`
+      <div class="modal-section-title">General</div>
+      <div class="modal-fields">
+        ${field('Store Status','Store Status','text',statusOptions)}
+        ${field('Store Class','Store Class','text',classOptions)}
+        ${field('Region','Region')}${field('City','City')}
+        ${field('District','District')}${field('Opening Date','Opening Date','date')}
+        ${field('Pharmacy','Pharmacy','text',['Yes','No'])}
+        ${field('Cold Room','Cold Room','text',['Yes','No'])}
+      </div>
+      <div class="modal-section-title">Areas (m²)</div>
+      <div class="modal-fields">
+        ${field('Ground Floor Area','Ground Floor Area','number')}
+        ${field('Mezzanine Area','Mezannine Area','number')}
+      </div>
+      <div class="modal-section-title">Layout & Links</div>
+      <div class="modal-fields">
+        ${field('Layout Status','Layout Status','text',layoutOptions)}
+        ${fullField('PDF Link','PDF Link','url')}
+        ${fullField('Location','Location','url')}
+      </div>
+      <div class="modal-actions">
+        ${editMode&&canEdit
+          ?`<button class="btn btn-ghost" onclick="cancelEdit()">Cancel</button><button class="btn btn-primary" id="save-btn" onclick="saveStore()">Save changes</button>`
+          :canEdit
+            ?`<button class="btn btn-ghost" onclick="closeModal()">Close</button><button class="btn btn-edit" onclick="enableEdit()">Edit store</button>`
+            :`<button class="btn btn-ghost" onclick="closeModal()">Close</button>`}
+      </div>`;
+  }
+
+  function enableEdit(){ editMode=true; renderModal(); }
+  function cancelEdit(){ editMode=false; renderModal(); }
+
+  function getEditedValues(){
+    const inputs=document.querySelectorAll('#modal-body [data-key]');
+    const updated={...currentStore};
+    inputs.forEach(el=>{ updated[el.dataset.key]=el.value; });
+    return updated;
+  }
+
+  async function saveStore(){
+    const btn=document.getElementById('save-btn');
+    btn.disabled=true; btn.textContent='Saving…';
+    const updated=getEditedValues();
+    try {
+      const qs=new URLSearchParams({payload:JSON.stringify({action:'updateStore',data:updated,user:currentUser.name})}).toString();
+      const res=await fetch(STORES_URL+'?'+qs,{redirect:'follow'});
+      const text=await res.text();
+      let result;
+      try{result=JSON.parse(text);}catch{result=JSON.parse(text.replace(/^[\w$]+\(/,'').replace(/\);?\s*$/,''));}
+      if(result.success){
+        const idx=allStores.findIndex(s=>s['Store Code']===currentStore['Store Code']);
+        if(idx!==-1) allStores[idx]=updated;
+        currentStore=updated; editMode=false; renderModal(); applyFilters();
+        showToast('Changes saved');
+      } else throw new Error(result.error||'Unknown error');
+    } catch(e){
+      showToast('Save failed: '+e.message,true);
+      btn.disabled=false; btn.textContent='Save changes';
+    }
+  }
+
+  /* ── TOAST ── */
   let toastTimer;
-  function showToast(msg, isError = false) {
-    const toast = document.getElementById('toast');
-    document.getElementById('toast-dot').className = 'toast-dot' + (isError ? ' error' : '');
-    document.getElementById('toast-msg').textContent = msg;
+  function showToast(msg,isError=false){
+    const toast=document.getElementById('toast');
+    document.getElementById('toast-dot').className='toast-dot'+(isError?' error':'');
+    document.getElementById('toast-msg').textContent=msg;
     toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    toastTimer=setTimeout(()=>toast.classList.remove('show'),3000);
   }
+
+  /* ── BOOT ── */
+  window.addEventListener('DOMContentLoaded', ()=>{ loadUsersStoreInfo(); });
 </script>
 </body>
 </html>
