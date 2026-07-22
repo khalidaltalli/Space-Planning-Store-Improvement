@@ -553,10 +553,7 @@
       pill.innerHTML = `
         <div class="pill-top">
           <div class="branch-code">${b.code}${isEXP?' <span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;background:rgba(251,191,36,0.2);color:#fbbf24;vertical-align:middle;">EXP</span>':''}</div>
-          <div style="display:flex;align-items:center;gap:4px;">
-            ${updatedIcon}
-            <span class="status-badge ${sbClass}">${b.status}</span>
-          </div>
+          <span class="status-badge ${sbClass}">${b.status}</span>
         </div>
         <div class="pill-stats">
           <span class="mini-stat" style="color:${pctColor};">${pct}%</span>
@@ -566,6 +563,7 @@
         </div>
         <div class="pill-bottom">
           <span class="followup-badge ${fbClass}">${fuStatus==='None'?'No Follow-up':fuStatus}</span>
+          ${updatedIcon}
           <span class="schedule-tag ${isDue?'due-today':''}">${isDue?'📅 Due today':sched}</span>
         </div>`;
       grid.appendChild(pill);
