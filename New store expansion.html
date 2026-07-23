@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Store Expansion — Branch Layout Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1117;
+    --card:#1a1f2e;
+    --card-hi:#212739;
+    --border:#2a3145;
+    --accent:#22d3ee;
+    --accent-dim:rgba(34,211,238,.14);
+    --text:#e6e9f0;
+    --text-dim:#8b93a7;
+    --done:#34d399;
+    --done-dim:rgba(52,211,153,.15);
+    --ongoing:#fbbf24;
+    --ongoing-dim:rgba(251,191,36,.15);
+    --empty:#3a4258;
+    --danger:#f87171;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'DM Sans', sans-serif;
+    min-height:100vh;
+  }
+  ::-webkit-scrollbar{height:10px; width:10px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:6px;}
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; padding:20px;
+  }
+  .login-card{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:16px; padding:40px 36px; width:100%; max-width:380px;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+  }
+  .login-card h1{
+    font-size:22px; font-weight:800; margin-bottom:4px;
+    background:linear-gradient(90deg,var(--accent),#67e8f9);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .login-card p.sub{color:var(--text-dim); font-size:13px; margin-bottom:24px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:500;}
+  .field select, .field input{
+    width:100%; padding:11px 14px; border-radius:10px; border:1px solid var(--border);
+    background:#12151f; color:var(--text); font-family:inherit; font-size:14px; outline:none;
+    transition:border-color .15s;
+  }
+  .field select:focus, .field input:focus{border-color:var(--accent);}
+  .btn{
+    width:100%; padding:12px; border-radius:10px; border:none;
+    background:var(--accent); color:#06222a; font-weight:700; font-size:14px;
+    cursor:pointer; transition:filter .15s, transform .1s;
+    font-family:inherit;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn:active{transform:scale(.98);}
+  .btn-ghost{
+    background:transparent; border:1px solid var(--border); color:var(--text);
+  }
+  .btn-danger{background:var(--danger); color:#3a0808;}
+  .btn-sm{width:auto; padding:8px 14px; font-size:13px;}
+  #loginError{color:var(--danger); font-size:13px; margin-top:12px; min-height:16px;}
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none;}
+  header.topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 28px; border-bottom:1px solid var(--border);
+    position:sticky; top:0; background:var(--bg); z-index:50;
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-dot{width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent);}
+  .brand h1{font-size:17px; font-weight:800; letter-spacing:.2px;}
+  .brand p{font-size:11px; color:var(--text-dim);}
+  .who{display:flex; align-items:center; gap:14px; font-size:13px; color:var(--text-dim);}
+  .who b{color:var(--text);}
+  .badge{
+    font-size:10px; padding:3px 8px; border-radius:20px; font-weight:700;
+    background:var(--accent-dim); color:var(--accent); text-transform:uppercase; letter-spacing:.4px;
+  }
+
+  main{padding:24px 28px 60px;}
+  .toolbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; gap:12px; flex-wrap:wrap;}
+  .toolbar input#searchBox{
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:10px 14px; color:var(--text); font-family:inherit; font-size:13px; width:260px; outline:none;
+  }
+  .toolbar input#searchBox:focus{border-color:var(--accent);}
+
+  .table-wrap{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    overflow:auto; max-width:100%;
+  }
+  table.tracker{border-collapse:collapse; width:100%; min-width:1400px;}
+  table.tracker th{
+    font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-dim);
+    padding:12px 8px; text-align:center; border-bottom:1px solid var(--border);
+    background:var(--card); position:sticky; top:0; z-index:5; font-weight:600;
+  }
+  table.tracker th.branch-col, table.tracker td.branch-col{
+    position:sticky; left:0; z-index:6; background:var(--card);
+    text-align:left; padding-left:18px; min-width:110px;
+  }
+  table.tracker th.branch-col{z-index:10;}
+  table.tracker td{
+    padding:10px 6px; text-align:center; border-bottom:1px solid var(--border);
+    font-size:13px;
+  }
+  table.tracker tr:hover td{background:var(--card-hi);}
+  table.tracker tr:hover td.branch-col{background:var(--card-hi);}
+
+  .branch-link{
+    color:var(--accent); font-weight:700; cursor:pointer; background:none; border:none;
+    font-family:inherit; font-size:13.5px; padding:0;
+  }
+  .branch-link:hover{text-decoration:underline;}
+
+  .step-cell{cursor:pointer; position:relative;}
+  .icon{
+    width:26px; height:26px; border-radius:8px; display:inline-flex;
+    align-items:center; justify-content:center; font-size:13px; font-weight:800;
+    transition:transform .1s;
+  }
+  .step-cell:hover .icon{transform:scale(1.12);}
+  .icon.done{background:var(--done-dim); color:var(--done);}
+  .icon.ongoing{background:var(--ongoing-dim); color:var(--ongoing);}
+  .icon.empty{background:transparent; border:1.5px dashed var(--empty); color:transparent;}
+
+  .tooltip{
+    position:fixed; background:#0b0d13; border:1px solid var(--border); border-radius:8px;
+    padding:8px 12px; font-size:12px; color:var(--text); z-index:200; pointer-events:none;
+    box-shadow:0 8px 24px rgba(0,0,0,.5); max-width:220px; display:none;
+  }
+  .tooltip b{color:var(--accent);}
+  .tooltip .t-sub{color:var(--text-dim); font-size:11px; margin-top:2px;}
+
+  /* ---------- MODALS ---------- */
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(5,6,10,.7);
+    z-index:100; align-items:center; justify-content:center; padding:20px;
+    backdrop-filter:blur(2px);
+  }
+  .modal{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    width:100%; max-width:420px; padding:26px; box-shadow:0 24px 70px rgba(0,0,0,.5);
+  }
+  .modal h2{font-size:16px; font-weight:700; margin-bottom:4px;}
+  .modal p.sub{font-size:12px; color:var(--text-dim); margin-bottom:18px;}
+  .modal-actions{display:flex; gap:10px; margin-top:20px;}
+  .modal-actions .btn{flex:1;}
+  .close-x{
+    position:absolute; top:16px; right:18px; background:none; border:none;
+    color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1;
+  }
+
+  /* detail (large) modal */
+  .modal-lg{max-width:780px; max-height:88vh; overflow-y:auto; position:relative;}
+  .detail-header{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;}
+  .detail-header h2{font-size:20px;}
+  .detail-header .code{color:var(--accent); font-weight:800;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px 20px; margin-bottom:22px;}
+  .info-item label{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-dim); margin-bottom:4px;}
+  .info-item .val{font-size:14px; font-weight:500;}
+  .info-item .val.empty-val{color:var(--text-dim); font-style:italic; font-weight:400;}
+
+  .section-title{
+    font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-dim);
+    margin:22px 0 10px; padding-top:16px; border-top:1px solid var(--border); font-weight:700;
+  }
+  .links-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .link-row{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:#12151f; border:1px solid var(--border); border-radius:10px; padding:9px 12px;
+  }
+  .link-row .lname{font-size:12.5px; font-weight:600;}
+  .link-row .lactions{display:flex; gap:6px;}
+  .icon-btn{
+    background:none; border:1px solid var(--border); color:var(--text-dim);
+    border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-family:inherit;
+  }
+  .icon-btn:hover{color:var(--accent); border-color:var(--accent);}
+  .icon-btn.open{color:var(--accent); border-color:var(--accent-dim);}
+
+  .timeline{display:flex; flex-direction:column; gap:6px;}
+  .tl-item{
+    display:flex; align-items:center; gap:12px; padding:10px 12px;
+    background:#12151f; border:1px solid var(--border); border-radius:10px;
+    cursor:pointer;
+  }
+  .tl-item .tl-icon{flex-shrink:0;}
+  .tl-item .tl-num{width:22px; font-size:11px; color:var(--text-dim); flex-shrink:0;}
+  .tl-item .tl-name{flex:1; font-size:13px;}
+  .tl-item .tl-status{font-size:11px; color:var(--text-dim); flex-shrink:0;}
+  .tl-detail{
+    display:none; padding:10px 14px 4px 54px; font-size:12px; color:var(--text-dim);
+  }
+  .tl-detail.open{display:block;}
+  .tl-detail div{margin-bottom:3px;}
+  .tl-detail b{color:var(--text);}
+
+  .empty-note{color:var(--text-dim); font-size:13px; text-align:center; padding:40px;}
+  #toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--card); border:1px solid var(--accent); color:var(--text);
+    padding:10px 20px; border-radius:10px; font-size:13px; z-index:300;
+    display:none; box-shadow:0 10px 30px rgba(0,0,0,.4);
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>New Store Expansion</h1>
+    <p class="sub">Branch Layout Tracker — sign in to continue</p>
+    <div class="field">
+      <label>Name</label>
+      <select id="loginName"></select>
+    </div>
+    <div class="field" id="pinField">
+      <label>PIN</label>
+      <input type="password" id="loginPin" maxlength="6" placeholder="••••">
+    </div>
+    <button class="btn" onclick="doLogin()">Sign In</button>
+    <div id="loginError"></div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <h1>New Store Expansion</h1>
+        <p>Branch Layout Tracker</p>
+      </div>
+    </div>
+    <div class="who">
+      <span id="accessBadge" class="badge">View</span>
+      <span>Signed in as <b id="whoName">—</b></span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign Out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <input id="searchBox" placeholder="Search branch code, city, region..." oninput="renderTable()">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:12px; color:var(--text-dim);">
+          <span class="icon done" style="width:16px;height:16px;font-size:10px; display:inline-flex;">✓</span> Done &nbsp;
+          <span class="icon ongoing" style="width:16px;height:16px;font-size:10px; display:inline-flex;">●</span> Ongoing &nbsp;
+          <span class="icon empty" style="width:16px;height:16px;"></span> Not started
+        </span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="tracker" id="trackerTable">
+        <thead><tr id="tableHead"></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<div id="toast"></div>
+
+<!-- ---------- STEP ACTION MODAL ---------- -->
+<div class="overlay" id="stepOverlay">
+  <div class="modal" style="position:relative;">
+    <button class="close-x" onclick="closeModal('stepOverlay')">&times;</button>
+    <h2 id="stepModalTitle">Step</h2>
+    <p class="sub" id="stepModalSub">Branch — Step name</p>
+    <div id="stepModalBody"></div>
+  </div>
+</div>
+
+<!-- ---------- BRANCH DETAIL MODAL ---------- -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal modal-lg">
+    <button class="close-x" onclick="closeModal('detailOverlay')">&times;</button>
+    <div class="detail-header">
+      <div>
+        <h2><span class="code" id="detailBranchCode"></span></h2>
+        <p class="sub" style="margin-top:2px;">Store details & progress</p>
+      </div>
+    </div>
+
+    <div class="grid2" id="detailGrid"></div>
+
+    <div class="section-title">Links</div>
+    <div class="links-grid" id="detailLinks"></div>
+
+    <div class="section-title">Step Timeline</div>
+    <div class="timeline" id="detailTimeline"></div>
+  </div>
+</div>
+
+<!-- ---------- EDIT LINK MODAL ---------- -->
+<div class="overlay" id="linkEditOverlay">
+  <div class="modal" style="position:relative;">
+    <button class="close-x" onclick="closeModal('linkEditOverlay')">&times;</button>
+    <h2 id="linkEditTitle">Edit link</h2>
+    <p class="sub">Paste the new URL below</p>
+    <div class="field">
+      <input type="text" id="linkEditInput" placeholder="https://...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('linkEditOverlay')">Cancel</button>
+      <button class="btn" onclick="saveLinkEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ CONFIG ============ */
+const API_URL = "https://script.google.com/macros/s/AKfycbzu-bxMTBSH8-vcoY9nrgxnLyKR4WO1hdZyWnLGzm5S0Bl2v6RNNMnjzQWIP4gPXYkAPA/exec";
+
+const USERS = [
+  { name:"Khalid", pin:"6969" },
+  { name:"Azhar", pin:"0000" },
+  { name:"Eissa", pin:"1234" },
+  { name:"Dalal", pin:"8520" },
+  { name:"Kamal", pin:"1234" },
+  { name:"Ahmed Khalil", pin:"1234" },
+  { name:"Viewer", pin:"" }
+];
+
+let currentUser = null;
+let STEP_DEFS = [];
+let BRANCHES = [];
+let currentDetailBranch = null;
+let pendingLinkField = null;
+
+/* ============ INIT ============ */
+window.onload = () => {
+  const sel = document.getElementById('loginName');
+  USERS.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.name; opt.textContent = u.name;
+    sel.appendChild(opt);
+  });
+  sel.onchange = () => {
+    const u = USERS.find(x => x.name === sel.value);
+    document.getElementById('pinField').style.display = (u && u.pin === '') ? 'none' : 'block';
+  };
+};
+
+async function api(action, payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...payload })
+  });
+  return res.json();
+}
+
+/* ============ LOGIN ============ */
+async function doLogin() {
+  const name = document.getElementById('loginName').value;
+  const pin = document.getElementById('loginPin').value;
+  document.getElementById('loginError').textContent = '';
+  try {
+    const r = await api('login', { name, pin });
+    if (!r.ok) { document.getElementById('loginError').textContent = r.error; return; }
+    currentUser = r.user;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('whoName').textContent = currentUser.name;
+    document.getElementById('accessBadge').textContent = currentUser.access;
+    loadTracker();
+  } catch (e) {
+    document.getElementById('loginError').textContent = 'Connection error. Check API_URL.';
+  }
+}
+function logout(){ location.reload(); }
+function canEdit(){ return currentUser && currentUser.access === 'Edit'; }
+
+/* ============ LOAD TABLE ============ */
+async function loadTracker() {
+  const r = await api('getTrackerData', {});
+  if (!r.ok) { toast(r.error); return; }
+  STEP_DEFS = r.steps;
+  BRANCHES = r.branches;
+  buildHead();
+  renderTable();
+}
+
+function buildHead() {
+  const head = document.getElementById('tableHead');
+  head.innerHTML = '<th class="branch-col">Branch</th>' +
+    STEP_DEFS.map(s => `<th title="${s.name}">${s.id}</th>`).join('');
+}
+
+function renderTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  const body = document.getElementById('tableBody');
+  const filtered = BRANCHES.filter(b =>
+    !q || (b.branchCode+'').toLowerCase().includes(q) ||
+    (b.city||'').toLowerCase().includes(q) || (b.region||'').toLowerCase().includes(q)
+  );
+  if (filtered.length === 0) {
+    body.innerHTML = `<tr><td colspan="${STEP_DEFS.length+1}" class="empty-note">No branches match.</td></tr>`;
+    return;
+  }
+  body.innerHTML = filtered.map(b => {
+    const cells = STEP_DEFS.map(s => renderCell(b, s)).join('');
+    return `<tr>
+      <td class="branch-col"><button class="branch-link" onclick="openDetail('${escapeAttr(b.branchCode)}')">${b.branchCode}</button></td>
+      ${cells}
+    </tr>`;
+  }).join('');
+}
+
+function renderCell(branch, step) {
+  const s = branch.steps[step.id];
+  const status = s ? s.status : 'empty';
+  const iconChar = status === 'done' ? '✓' : (status === 'ongoing' ? '●' : '');
+  const dataAttrs = `data-branch="${escapeAttr(branch.branchCode)}" data-step="${step.id}"`;
+  return `<td class="step-cell" ${dataAttrs}
+      onmouseenter="showTip(event,'${escapeAttr(branch.branchCode)}',${step.id})"
+      onmouseleave="hideTip()"
+      onclick="openStepModal('${escapeAttr(branch.branchCode)}',${step.id})">
+      <span class="icon ${status}">${iconChar}</span>
+    </td>`;
+}
+
+function escapeAttr(s){ return String(s).replace(/'/g,"\\'"); }
+
+/* ============ TOOLTIP ============ */
+function showTip(evt, branchCode, stepId) {
+  const b = BRANCHES.find(x => x.branchCode == branchCode);
+  const s = b.steps[stepId];
+  const tip = document.getElementById('tooltip');
+  if (!s) { tip.style.display = 'none'; return; }
+  const stepName = STEP_DEFS.find(x => x.id == stepId).name;
+  tip.innerHTML = `<b>${s.status === 'done' ? 'Completed' : 'In progress'}</b>
+    <div class="t-sub">${stepName}</div>
+    <div class="t-sub">By: ${s.by || '—'}</div>
+    <div class="t-sub">Assigned: ${fmtDate(s.assignedDate)}</div>
+    ${s.completedDate ? `<div class="t-sub">Completed: ${fmtDate(s.completedDate)}</div>` : ''}`;
+  tip.style.display = 'block';
+  tip.style.left = (evt.clientX + 14) + 'px';
+  tip.style.top = (evt.clientY + 14) + 'px';
+}
+function hideTip(){ document.getElementById('tooltip').style.display = 'none'; }
+function fmtDate(iso){
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+/* ============ STEP MODAL ============ */
+function openStepModal(branchCode, stepId) {
+  const b = BRANCHES.find(x => x.branchCode == branchCode);
+  const step = STEP_DEFS.find(x => x.id == stepId);
+  const s = b.steps[stepId];
+  document.getElementById('stepModalTitle').textContent = step.name;
+  document.getElementById('stepModalSub').textContent = `Branch ${branchCode}`;
+
+  const body = document.getElementById('stepModalBody');
+
+  if (!canEdit()) {
+    body.innerHTML = s
+      ? `<div class="grid2" style="grid-template-columns:1fr;">
+          <div class="info-item"><label>Status</label><div class="val">${s.status}</div></div>
+          <div class="info-item"><label>By</label><div class="val">${s.by||'—'}</div></div>
+          <div class="info-item"><label>Assigned</label><div class="val">${fmtDate(s.assignedDate)}</div></div>
+          ${s.completedDate ? `<div class="info-item"><label>Completed</label><div class="val">${fmtDate(s.completedDate)}</div></div>` : ''}
+        </div>`
+      : `<p class="sub">Not started yet.</p>`;
+    document.getElementById('stepOverlay').style.display = 'flex';
+    return;
+  }
+
+  let html = '';
+  if (!s || s.status === undefined) {
+    html = `<p class="sub">This step hasn't started.</p>
+      <div class="modal-actions"><button class="btn" onclick="doStepAction('${branchCode}',${stepId},'assign')">Assign to me &amp; start</button></div>`;
+  } else if (s.status === 'ongoing') {
+    html = `<div class="info-item" style="margin-bottom:14px;"><label>Currently assigned to</label><div class="val">${s.by}</div></div>
+      <div class="info-item" style="margin-bottom:4px;"><label>Assigned since</label><div class="val">${fmtDate(s.assignedDate)}</div></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="doStepAction('${branchCode}',${stepId},'complete')">Mark Complete</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="doStepAction('${branchCode}',${stepId},'reassign')">Reassign to me</button>
+        <button class="btn btn-danger" onclick="doStepAction('${branchCode}',${stepId},'reset')">Reset</button>
+      </div>`;
+  } else if (s.status === 'done') {
+    html = `<div class="info-item" style="margin-bottom:10px;"><label>Completed by</label><div class="val">${s.by}</div></div>
+      <div class="info-item" style="margin-bottom:14px;"><label>Completed on</label><div class="val">${fmtDate(s.completedDate)}</div></div>
+      <p class="sub">Clicked by mistake?</p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="doStepAction('${branchCode}',${stepId},'reopen')">Reopen</button>
+        <button class="btn btn-danger" onclick="doStepAction('${branchCode}',${stepId},'reset')">Reset to empty</button>
+      </div>`;
+  }
+  body.innerHTML = html;
+  document.getElementById('stepOverlay').style.display = 'flex';
+}
+
+async function doStepAction(branchCode, stepId, stepAction) {
+  const r = await api('updateStep', { branchCode, stepId, stepAction, user: currentUser.name });
+  if (!r.ok) { toast(r.error); return; }
+  const b = BRANCHES.find(x => x.branchCode == branchCode);
+  b.steps = r.steps;
+  closeModal('stepOverlay');
+  renderTable();
+  toast('Updated.');
+}
+
+/* ============ DETAIL MODAL ============ */
+async function openDetail(branchCode) {
+  const r = await api('getBranchDetail', { branchCode });
+  if (!r.ok) { toast(r.error); return; }
+  currentDetailBranch = r.detail;
+  STEP_DEFS = r.stepDefs;
+
+  document.getElementById('detailBranchCode').textContent = branchCode;
+
+  const fields = [
+    ['Store Code','StoreCode'], ['Store Class','StoreClass'], ['Region','Region'],
+    ['City','City'], ['District','District'], ['Pharmacy','Pharmacy'],
+    ['Cold Room','ColdRoom'], ['Area – Ground Floor','AreaGround'],
+    ['Area – Mezzanine','AreaMezzanine'], ['Area – Pharmacy','AreaPharmacy'],
+    ['Area – Total','AreaTotal']
+  ];
+  document.getElementById('detailGrid').innerHTML = fields.map(([label,key]) => {
+    const v = currentDetailBranch[key];
+    return `<div class="info-item"><label>${label}</label><div class="val ${!v?'empty-val':''}">${v || 'Not set'}</div></div>`;
+  }).join('');
+
+  const links = [
+    ['AutoCAD','AutoCADLink'], ['Location','LocationLink'], ['Canva','CanvaLink'], ['Capacity','CapacityLink']
+  ];
+  document.getElementById('detailLinks').innerHTML = links.map(([label,key]) => {
+    const url = currentDetailBranch.links[key];
+    return `<div class="link-row">
+      <span class="lname">${label}</span>
+      <div class="lactions">
+        ${url ? `<button class="icon-btn open" onclick="window.open('${escapeAttr(url)}','_blank')">Open</button>` : `<span style="font-size:11px; color:var(--text-dim);">Not set</span>`}
+        ${canEdit() ? `<button class="icon-btn" onclick="openLinkEdit('${key}','${label}')">Edit</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('detailTimeline').innerHTML = STEP_DEFS.map(step => {
+    const s = currentDetailBranch.steps[step.id];
+    const status = s ? s.status : 'empty';
+    const icon = status === 'done' ? '✓' : (status === 'ongoing' ? '●' : '');
+    const statusLabel = status === 'done' ? 'Done' : (status === 'ongoing' ? 'Ongoing' : 'Not started');
+    return `<div>
+      <div class="tl-item" onclick="toggleTl(${step.id})">
+        <span class="tl-num">${step.id}</span>
+        <span class="icon ${status} tl-icon" style="width:22px;height:22px;font-size:11px;">${icon}</span>
+        <span class="tl-name">${step.name}</span>
+        <span class="tl-status">${statusLabel}</span>
+      </div>
+      <div class="tl-detail" id="tl-${step.id}">
+        ${s ? `<div><b>By:</b> ${s.by||'—'}</div>
+              <div><b>Assigned:</b> ${fmtDate(s.assignedDate)}</div>
+              ${s.completedDate ? `<div><b>Completed:</b> ${fmtDate(s.completedDate)}</div>` : ''}`
+            : `<div>No activity yet.</div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('detailOverlay').style.display = 'flex';
+}
+
+function toggleTl(stepId) {
+  document.getElementById('tl-' + stepId).classList.toggle('open');
+}
+
+/* ============ LINK EDIT ============ */
+function openLinkEdit(field, label) {
+  pendingLinkField = field;
+  document.getElementById('linkEditTitle').textContent = 'Edit ' + label + ' link';
+  document.getElementById('linkEditInput').value = currentDetailBranch.links[field] || '';
+  document.getElementById('linkEditOverlay').style.display = 'flex';
+}
+async function saveLinkEdit() {
+  const value = document.getElementById('linkEditInput').value.trim();
+  const r = await api('updateLink', {
+    branchCode: currentDetailBranch.branchCode, field: pendingLinkField, value, user: currentUser.name
+  });
+  if (!r.ok) { toast(r.error); return; }
+  currentDetailBranch.links[pendingLinkField] = value;
+  closeModal('linkEditOverlay');
+  openDetail(currentDetailBranch.branchCode);
+  toast('Link updated.');
+}
+
+/* ============ UTIL ============ */
+function closeModal(id){ document.getElementById(id).style.display = 'none'; }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2400);
+}
+</script>
+</body>
+</html>
