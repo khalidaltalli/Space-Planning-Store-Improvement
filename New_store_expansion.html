@@ -109,10 +109,10 @@
     background:var(--card); position:sticky; top:0; z-index:5; font-weight:600;
     vertical-align:bottom; line-height:1.3;
   }
-  table.tracker th.step-th{width:78px;}
+  table.tracker th.step-th{width:78px; white-space:normal; word-break:break-word; overflow-wrap:break-word;}
   table.tracker th.branch-col, table.tracker td.branch-col{
     position:sticky; left:0; z-index:6; background:var(--card);
-    text-align:left; padding-left:18px; min-width:110px;
+    text-align:left; padding-left:18px; width:130px;
   }
   table.tracker th.branch-col{z-index:10;}
   table.tracker td{
@@ -173,8 +173,15 @@
   .detail-header .code{color:var(--accent); font-weight:800;}
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px 20px; margin-bottom:22px;}
   .info-item label{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-dim); margin-bottom:4px;}
+  .info-item{position:relative;}
+  .info-item .val-row{display:flex; align-items:center; justify-content:space-between; gap:8px;}
   .info-item .val{font-size:14px; font-weight:500;}
   .info-item .val.empty-val{color:var(--text-dim); font-style:italic; font-weight:400;}
+  .field-edit-btn{
+    background:none; border:none; color:var(--text-dim); cursor:pointer;
+    font-size:12px; padding:2px 4px; flex-shrink:0; opacity:.7;
+  }
+  .field-edit-btn:hover{color:var(--accent); opacity:1;}
 
   .section-title{
     font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-dim);
@@ -310,6 +317,20 @@
 
     <div class="section-title">Step Timeline</div>
     <div class="timeline" id="detailTimeline"></div>
+  </div>
+</div>
+
+<!-- ---------- EDIT INFO FIELD MODAL ---------- -->
+<div class="overlay" id="fieldEditOverlay">
+  <div class="modal" style="position:relative;">
+    <button class="close-x" onclick="closeModal('fieldEditOverlay')">&times;</button>
+    <h2 id="fieldEditTitle">Edit field</h2>
+    <p class="sub" id="fieldEditSub">Branch —</p>
+    <div class="field" id="fieldEditInputWrap"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('fieldEditOverlay')">Cancel</button>
+      <button class="btn" onclick="saveFieldEdit()">Save</button>
+    </div>
   </div>
 </div>
 
@@ -571,7 +592,13 @@ async function openDetail(branchCode) {
   ];
   document.getElementById('detailGrid').innerHTML = fields.map(([label,key]) => {
     const v = currentDetailBranch[key];
-    return `<div class="info-item"><label>${label}</label><div class="val ${!v?'empty-val':''}">${v || 'Not set'}</div></div>`;
+    const editBtn = canEdit() ? `<button class="field-edit-btn" onclick="openFieldEdit('${key}','${escapeAttr(label)}')">Edit</button>` : '';
+    return `<div class="info-item"><label>${label}</label>
+      <div class="val-row">
+        <div class="val ${!v?'empty-val':''}">${v || 'Not set'}</div>
+        ${editBtn}
+      </div>
+    </div>`;
   }).join('');
 
   const links = [
@@ -614,6 +641,42 @@ async function openDetail(branchCode) {
 
 function toggleTl(stepId) {
   document.getElementById('tl-' + stepId).classList.toggle('open');
+}
+
+/* ============ INFO FIELD EDIT ============ */
+let pendingFieldKey = null;
+const FIELD_OPTIONS = {
+  Pharmacy: ['Yes', 'No'],
+  ColdRoom: ['Walkin', 'Aisle', 'None']
+};
+function openFieldEdit(field, label) {
+  pendingFieldKey = field;
+  document.getElementById('fieldEditTitle').textContent = 'Edit ' + label;
+  document.getElementById('fieldEditSub').textContent = 'Branch ' + currentDetailBranch.branchCode;
+  const wrap = document.getElementById('fieldEditInputWrap');
+  const currentVal = currentDetailBranch[field] || '';
+
+  if (FIELD_OPTIONS[field]) {
+    wrap.innerHTML = `<label>${label}</label>
+      <select id="fieldEditInput">
+        <option value="">Not set</option>
+        ${FIELD_OPTIONS[field].map(o => `<option value="${o}" ${o===currentVal?'selected':''}>${o}</option>`).join('')}
+      </select>`;
+  } else {
+    wrap.innerHTML = `<label>${label}</label><input type="text" id="fieldEditInput" value="${escapeAttr(currentVal)}">`;
+  }
+  document.getElementById('fieldEditOverlay').style.display = 'flex';
+}
+async function saveFieldEdit() {
+  const value = document.getElementById('fieldEditInput').value.trim();
+  const r = await api('updateDetailField', {
+    branchCode: currentDetailBranch.branchCode, field: pendingFieldKey, value, user: currentUser.name
+  });
+  if (!r.ok) { toast(r.error); return; }
+  currentDetailBranch[pendingFieldKey] = value;
+  closeModal('fieldEditOverlay');
+  openDetail(currentDetailBranch.branchCode);
+  toast('Field updated.');
 }
 
 /* ============ LINK EDIT ============ */
