@@ -258,12 +258,13 @@
   <main>
     <div class="toolbar">
       <input id="searchBox" placeholder="Search branch code, city, region..." oninput="renderTable()">
-      <div style="display:flex; gap:8px; align-items:center;">
+      <div style="display:flex; gap:14px; align-items:center;">
         <span style="font-size:12px; color:var(--text-dim);">
           <span class="icon done" style="width:16px;height:16px;font-size:10px; display:inline-flex;">✓</span> Done &nbsp;
           <span class="icon ongoing" style="width:16px;height:16px;font-size:10px; display:inline-flex;">●</span> Ongoing &nbsp;
           <span class="icon empty" style="width:16px;height:16px;"></span> Not started
         </span>
+        <button class="btn btn-sm" id="addBranchBtn" style="display:none;" onclick="openAddBranch()">+ Add Branch</button>
       </div>
     </div>
 
@@ -326,6 +327,36 @@
   </div>
 </div>
 
+<!-- ---------- ADD BRANCH MODAL ---------- -->
+<div class="overlay" id="addBranchOverlay">
+  <div class="modal" style="position:relative;">
+    <button class="close-x" onclick="closeModal('addBranchOverlay')">&times;</button>
+    <h2>Add Branch</h2>
+    <p class="sub">Creates a new row on the tracker. You can fill in the rest of the store details from the branch's detail view afterward.</p>
+    <div class="field">
+      <label>Branch Code *</label>
+      <input type="text" id="newBranchCode" placeholder="e.g. 0412">
+    </div>
+    <div class="field">
+      <label>Store Code</label>
+      <input type="text" id="newStoreCode" placeholder="Optional">
+    </div>
+    <div class="field">
+      <label>Region</label>
+      <input type="text" id="newRegion" placeholder="Optional">
+    </div>
+    <div class="field">
+      <label>City</label>
+      <input type="text" id="newCity" placeholder="Optional">
+    </div>
+    <div id="addBranchError" style="color:var(--danger); font-size:13px; min-height:16px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addBranchOverlay')">Cancel</button>
+      <button class="btn" onclick="saveNewBranch()">Add Branch</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============ CONFIG ============ */
 const API_URL = "https://script.google.com/macros/s/AKfycbzu-bxMTBSH8-vcoY9nrgxnLyKR4WO1hdZyWnLGzm5S0Bl2v6RNNMnjzQWIP4gPXYkAPA/exec";
@@ -381,6 +412,7 @@ async function doLogin() {
     document.getElementById('app').style.display = 'block';
     document.getElementById('whoName').textContent = currentUser.name;
     document.getElementById('accessBadge').textContent = currentUser.access;
+    if (canEdit()) document.getElementById('addBranchBtn').style.display = 'inline-block';
     loadTracker();
   } catch (e) {
     document.getElementById('loginError').textContent = 'Connection error. Check API_URL.';
@@ -603,6 +635,33 @@ async function saveLinkEdit() {
   closeModal('linkEditOverlay');
   openDetail(currentDetailBranch.branchCode);
   toast('Link updated.');
+}
+
+/* ============ ADD BRANCH ============ */
+function openAddBranch() {
+  document.getElementById('newBranchCode').value = '';
+  document.getElementById('newStoreCode').value = '';
+  document.getElementById('newRegion').value = '';
+  document.getElementById('newCity').value = '';
+  document.getElementById('addBranchError').textContent = '';
+  document.getElementById('addBranchOverlay').style.display = 'flex';
+}
+async function saveNewBranch() {
+  const branchCode = document.getElementById('newBranchCode').value.trim();
+  const errEl = document.getElementById('addBranchError');
+  if (!branchCode) { errEl.textContent = 'Branch code is required.'; return; }
+  if (BRANCHES.some(b => String(b.branchCode).toLowerCase() === branchCode.toLowerCase())) {
+    errEl.textContent = 'A branch with this code already exists.'; return;
+  }
+  const storeCode = document.getElementById('newStoreCode').value.trim();
+  const region = document.getElementById('newRegion').value.trim();
+  const city = document.getElementById('newCity').value.trim();
+
+  const r = await api('addBranch', { branchCode, storeCode, region, city, user: currentUser.name });
+  if (!r.ok) { errEl.textContent = r.error; return; }
+  closeModal('addBranchOverlay');
+  toast('Branch ' + branchCode + ' added.');
+  await loadTracker();
 }
 
 /* ============ UTIL ============ */
