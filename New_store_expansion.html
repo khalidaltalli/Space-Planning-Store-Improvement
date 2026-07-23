@@ -334,12 +334,8 @@
     <h2>Add Branch</h2>
     <p class="sub">Creates a new row on the tracker. You can fill in the rest of the store details from the branch's detail view afterward.</p>
     <div class="field">
-      <label>Branch Code *</label>
-      <input type="text" id="newBranchCode" placeholder="e.g. 0412">
-    </div>
-    <div class="field">
-      <label>Store Code</label>
-      <input type="text" id="newStoreCode" placeholder="Optional">
+      <label>Branch Code (= Store Code) *</label>
+      <input type="text" id="newBranchCode" placeholder="AAA-AAA000 (add EXP if applicable)" style="text-transform:uppercase;">
     </div>
     <div class="field">
       <label>Region</label>
@@ -565,7 +561,7 @@ async function openDetail(branchCode) {
   document.getElementById('detailBranchCode').textContent = branchCode;
 
   const fields = [
-    ['Store Code','StoreCode'], ['Store Class','StoreClass'], ['Region','Region'],
+    ['Store Class','StoreClass'], ['Region','Region'],
     ['City','City'], ['District','District'], ['Pharmacy','Pharmacy'],
     ['Cold Room','ColdRoom'], ['Area – Ground Floor','AreaGround'],
     ['Area – Mezzanine','AreaMezzanine'], ['Area – Pharmacy','AreaPharmacy'],
@@ -638,26 +634,29 @@ async function saveLinkEdit() {
 }
 
 /* ============ ADD BRANCH ============ */
+const BRANCH_CODE_PATTERN = /^[A-Za-z]{3}-[A-Za-z]{3}\d{3}( EXP)?$/;
+
 function openAddBranch() {
   document.getElementById('newBranchCode').value = '';
-  document.getElementById('newStoreCode').value = '';
   document.getElementById('newRegion').value = '';
   document.getElementById('newCity').value = '';
   document.getElementById('addBranchError').textContent = '';
   document.getElementById('addBranchOverlay').style.display = 'flex';
 }
 async function saveNewBranch() {
-  const branchCode = document.getElementById('newBranchCode').value.trim();
+  const branchCode = document.getElementById('newBranchCode').value.trim().toUpperCase();
   const errEl = document.getElementById('addBranchError');
   if (!branchCode) { errEl.textContent = 'Branch code is required.'; return; }
+  if (!BRANCH_CODE_PATTERN.test(branchCode)) {
+    errEl.textContent = 'Format must be AAA-AAA000, optionally ending in EXP.'; return;
+  }
   if (BRANCHES.some(b => String(b.branchCode).toLowerCase() === branchCode.toLowerCase())) {
     errEl.textContent = 'A branch with this code already exists.'; return;
   }
-  const storeCode = document.getElementById('newStoreCode').value.trim();
   const region = document.getElementById('newRegion').value.trim();
   const city = document.getElementById('newCity').value.trim();
 
-  const r = await api('addBranch', { branchCode, storeCode, region, city, user: currentUser.name });
+  const r = await api('addBranch', { branchCode, region, city, user: currentUser.name });
   if (!r.ok) { errEl.textContent = r.error; return; }
   closeModal('addBranchOverlay');
   toast('Branch ' + branchCode + ' added.');
