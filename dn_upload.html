@@ -329,10 +329,10 @@
         } else if (g.status === 'unsigned') {
           html += `<span class="dn-status dn-unsigned">📎 Uploaded</span>`;
           if (g.link) html += `<a href="${g.link}" target="_blank" class="view-link">View</a>`;
-          if (!isViewer) html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}')">＋ Link</button>`;
+          if (!isViewer) html += `<button class="upload-btn" data-branch="${branch.code}" data-group="${DN_GROUPS[i].key}" onclick="triggerUploadBtn(this)">＋ Link</button>`;
         } else {
           html += `<span class="dn-status dn-missing">Missing</span>`;
-          if (!isViewer) html += `<button class="upload-btn" onclick="triggerUpload('${branch.code}','${DN_GROUPS[i].key}')">＋ Add Link</button>`;
+          if (!isViewer) html += `<button class="upload-btn" data-branch="${branch.code}" data-group="${DN_GROUPS[i].key}" onclick="triggerUploadBtn(this)">＋ Add Link</button>`;
         }
         html += `</div></td>`;
       });
@@ -383,6 +383,12 @@
   let _dnModalBranch = null;
   let _dnModalGroup  = null;
   let _dnModalType   = 'unsigned'; /* 'signed' or 'unsigned' */
+
+  function triggerUploadBtn(btn) {
+    const branch   = btn.getAttribute('data-branch');
+    const groupKey = btn.getAttribute('data-group');
+    triggerUpload(branch, groupKey);
+  }
 
   function triggerUpload(branch, groupKey) {
     _dnModalBranch = branch;
