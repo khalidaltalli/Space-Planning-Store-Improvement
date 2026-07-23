@@ -102,11 +102,17 @@
     background:var(--card); border:1px solid var(--border); border-radius:14px;
     overflow:auto; max-width:100%;
   }
-  table.tracker{border-collapse:collapse; width:100%; min-width:1400px;}
+  table.tracker{border-collapse:collapse; width:100%; min-width:1500px;}
   table.tracker th{
-    font-size:11px; text-transform:uppercase; letter-spacing:.4px; color:var(--text-dim);
-    padding:12px 8px; text-align:center; border-bottom:1px solid var(--border);
+    font-size:11px; letter-spacing:.2px; color:var(--text-dim);
+    padding:6px 2px; text-align:center; border-bottom:1px solid var(--border);
     background:var(--card); position:sticky; top:0; z-index:5; font-weight:600;
+    vertical-align:bottom; height:150px;
+  }
+  table.tracker th.step-th{width:44px; min-width:44px; max-width:44px;}
+  table.tracker th.step-th .th-label{
+    display:inline-block; transform:rotate(-40deg); transform-origin:left bottom;
+    white-space:nowrap; text-align:left; width:20px; overflow:visible;
   }
   table.tracker th.branch-col, table.tracker td.branch-col{
     position:sticky; left:0; z-index:6; background:var(--card);
@@ -430,7 +436,7 @@ async function loadTracker() {
 function buildHead() {
   const head = document.getElementById('tableHead');
   head.innerHTML = '<th class="branch-col">Branch</th>' +
-    STEP_DEFS.map(s => `<th title="${s.name}">${s.id}</th>`).join('');
+    STEP_DEFS.map(s => `<th class="step-th" title="${s.name}"><span class="th-label">${s.name}</span></th>`).join('');
 }
 
 function renderTable() {
