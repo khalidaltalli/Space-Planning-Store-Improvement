@@ -520,19 +520,19 @@ function fmtDate(iso){
 /* ============ STEP CONFIG ============ */
 // upload.mode: 'fixed' (tag locked) or 'custom' (user types tag)
 const STEP_CONFIG = {
-  1:  { binary: true, upload: { mode: 'custom', tag: 'Email' } },
-  2:  { upload: { mode: 'fixed', tag: 'Asbuilt' } },
+  1:  { binary: true, upload: true },
+  2:  { upload: true },
   3:  { pharmacyLinked: true },
-  4:  { upload: { mode: 'fixed', tag: 'Capacity Image' } },
-  5:  { upload: { mode: 'custom', tag: 'Draft' } },
+  4:  { upload: true },
+  5:  { upload: true },
   6:  {},
-  7:  { upload: { mode: 'custom', tag: 'Final Drawing' }, showAllUploads: true },
+  7:  { upload: true, showAllUploads: true },
   8:  {},
-  9:  { upload: { mode: 'fixed', tag: 'Canva' } },
-  10: { upload: { mode: 'fixed', tag: 'Final' } },
+  9:  { upload: true },
+  10: { upload: true },
   11: {},
   12: {},
-  13: { upload: { mode: 'fixed', tag: 'Zenput Report' } },
+  13: { upload: true },
   14: {},
   15: {}
 };
@@ -553,11 +553,13 @@ async function openStepModal(branchCode, stepId) {
   const r = await api('getStepModalData', { branchCode, stepId });
   if (!r.ok) { toast(r.error); closeModal('stepOverlay'); return; }
 
-  renderStepModal(r.step || {}, r.allUploads || [], r.pharmacy);
+  renderStepModal(r);
 }
 
-function renderStepModal(s, allUploads, pharmacyVal) {
-  const { branchCode, stepId, cfg } = currentStepCtx;
+function renderStepModal(data) {
+  const s = data.step || {};
+  const { cfg } = currentStepCtx;
+  currentStepCtx.uploadField = data.uploadField;
   const status = s.status || 'empty';
   const editable = canEdit();
   let html = '';
@@ -621,49 +623,40 @@ function renderStepModal(s, allUploads, pharmacyVal) {
         <label>Does this branch have a pharmacy?</label>
         <select id="pharmacyYesNoInput" ${editable?'':'disabled'}>
           <option value="">Not set</option>
-          <option value="Yes" ${pharmacyVal==='Yes'?'selected':''}>Yes</option>
-          <option value="No" ${pharmacyVal==='No'?'selected':''}>No</option>
+          <option value="Yes" ${data.pharmacy==='Yes'?'selected':''}>Yes</option>
+          <option value="No" ${data.pharmacy==='No'?'selected':''}>No</option>
         </select>
       </div>`;
     if (editable) html += `<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="savePharmacyAnswer()">Save</button></div>`;
   }
 
-  // ---- Upload (per-step) ----
+  // ---- Upload (single dedicated link for this step) ----
   if (cfg.upload) {
-    const stepUploads = allUploads.filter(u => String(u.stepId) === String(stepId));
-    html += `<div class="section-title">Uploads</div>`;
-    if (stepUploads.length) {
-      html += `<div class="links-grid" style="grid-template-columns:1fr;">` +
-        stepUploads.map(u => `<div class="link-row">
-            <span class="lname">${u.tag ? u.tag + ' — ' : ''}<span style="color:var(--text-dim); font-weight:400;">by ${u.by}, ${fmtDate(u.date)}</span></span>
-            <div class="lactions"><button class="icon-btn open" onclick="window.open('${escapeAttr(u.link)}','_blank')">Open</button></div>
-          </div>`).join('') + `</div>`;
+    html += `<div class="section-title">${data.uploadLabel} Link</div>`;
+    if (data.uploadValue) {
+      html += `<div class="link-row" style="margin-bottom:10px;">
+          <span class="lname">${data.uploadLabel}</span>
+          <div class="lactions"><button class="icon-btn open" onclick="window.open('${escapeAttr(data.uploadValue)}','_blank')">Open</button></div>
+        </div>`;
     } else {
-      html += `<p class="sub" style="margin-bottom:8px;">No uploads yet for this step.</p>`;
+      html += `<p class="sub" style="margin-bottom:10px;">No ${data.uploadLabel.toLowerCase()} link uploaded yet.</p>`;
     }
     if (editable) {
-      const tagField = cfg.upload.mode === 'fixed'
-        ? `<input type="hidden" id="uploadTagInput" value="${cfg.upload.tag}">`
-        : `<div class="field"><label>Tag</label><input type="text" id="uploadTagInput" value="${cfg.upload.tag}" placeholder="Tag name"></div>`;
-      html += `${tagField}
-        <div class="field"><label>${cfg.upload.mode==='fixed' ? cfg.upload.tag + ' link' : 'Link'}</label>
-          <input type="text" id="uploadLinkInput" placeholder="https://..."></div>
-        <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="saveUpload()">Add Upload</button></div>`;
+      html += `<div class="field"><input type="text" id="uploadLinkInput" value="${escapeAttr(data.uploadValue||'')}" placeholder="https://..."></div>
+        <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="saveUpload()">Save Link</button></div>`;
     }
   }
 
-  // ---- All uploads (Finalized Drawing only) ----
-  if (cfg.showAllUploads) {
-    html += `<div class="section-title">All Uploads — This Branch</div>`;
-    if (allUploads.length) {
-      html += `<div class="links-grid" style="grid-template-columns:1fr;">` +
-        allUploads.map(u => `<div class="link-row">
-            <span class="lname">${u.tag ? u.tag : 'Untitled'} <span style="color:var(--text-dim); font-weight:400;">— ${u.stepName}, by ${u.by}, ${fmtDate(u.date)}</span></span>
-            <div class="lactions"><button class="icon-btn open" onclick="window.open('${escapeAttr(u.link)}','_blank')">Open</button></div>
-          </div>`).join('') + `</div>`;
-    } else {
-      html += `<p class="sub">No uploads recorded yet for this branch.</p>`;
-    }
+  // ---- All uploads summary (Finalized Drawing only) ----
+  if (cfg.showAllUploads && data.allUploads) {
+    html += `<div class="section-title">All Uploads — This Branch</div>
+      <div class="links-grid" style="grid-template-columns:1fr;">` +
+      data.allUploads.map(u => `<div class="link-row">
+          <span class="lname">${u.label}</span>
+          <div class="lactions">
+            ${u.value ? `<button class="icon-btn open" onclick="window.open('${escapeAttr(u.value)}','_blank')">Open</button>` : `<span style="font-size:11px; color:var(--text-dim);">Not set</span>`}
+          </div>
+        </div>`).join('') + `</div>`;
   }
 
   document.getElementById('stepModalBody').innerHTML = html;
@@ -677,7 +670,7 @@ async function doStepAction(stepAction) {
   b.steps = r.steps;
   renderTable();
   const fresh = await api('getStepModalData', { branchCode, stepId });
-  if (fresh.ok) renderStepModal(fresh.step || {}, fresh.allUploads || [], fresh.pharmacy);
+  if (fresh.ok) renderStepModal(fresh);
   toast('Updated.');
 }
 
@@ -688,7 +681,7 @@ async function savePharmacyAnswer() {
   if (!r.ok) { toast(r.error); return; }
   toast('Pharmacy info saved.');
   const fresh = await api('getStepModalData', { branchCode, stepId });
-  if (fresh.ok) renderStepModal(fresh.step || {}, fresh.allUploads || [], fresh.pharmacy);
+  if (fresh.ok) renderStepModal(fresh);
 }
 
 async function saveStepNote() {
@@ -700,18 +693,16 @@ async function saveStepNote() {
 }
 
 async function saveUpload() {
-  const { branchCode, stepId } = currentStepCtx;
-  const tagEl = document.getElementById('uploadTagInput');
+  const { branchCode, stepId, uploadField } = currentStepCtx;
   const linkEl = document.getElementById('uploadLinkInput');
-  const tag = tagEl ? tagEl.value.trim() : '';
-  const link = linkEl ? linkEl.value.trim() : '';
-  if (!link) { toast('Enter a link first.'); return; }
+  const value = linkEl ? linkEl.value.trim() : '';
+  if (!uploadField) { toast('Could not determine upload field.'); return; }
 
-  const r = await api('addUpload', { branchCode, stepId, tag, link, user: currentUser.name });
+  const r = await api('updateLink', { branchCode, field: uploadField, value, user: currentUser.name });
   if (!r.ok) { toast(r.error); return; }
-  toast('Upload added.');
+  toast('Link saved.');
   const fresh = await api('getStepModalData', { branchCode, stepId });
-  if (fresh.ok) renderStepModal(fresh.step || {}, fresh.allUploads || [], fresh.pharmacy);
+  if (fresh.ok) renderStepModal(fresh);
 }
 
 /* ============ DETAIL MODAL ============ */
