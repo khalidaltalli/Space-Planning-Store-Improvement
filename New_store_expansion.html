@@ -380,15 +380,7 @@
 /* ============ CONFIG ============ */
 const API_URL = "https://script.google.com/macros/s/AKfycbzu-bxMTBSH8-vcoY9nrgxnLyKR4WO1hdZyWnLGzm5S0Bl2v6RNNMnjzQWIP4gPXYkAPA/exec";
 
-const USERS = [
-  { name:"Khalid", pin:"6969" },
-  { name:"Azhar", pin:"0000" },
-  { name:"Eissa", pin:"1234" },
-  { name:"Dalal", pin:"8520" },
-  { name:"Kamal", pin:"1234" },
-  { name:"Ahmed Khalil", pin:"1234" },
-  { name:"Viewer", pin:"" }
-];
+let USERS = [];
 
 let currentUser = null;
 let STEP_DEFS = [];
@@ -397,17 +389,28 @@ let currentDetailBranch = null;
 let pendingLinkField = null;
 
 /* ============ INIT ============ */
-window.onload = () => {
+window.onload = async () => {
   const sel = document.getElementById('loginName');
-  USERS.forEach(u => {
-    const opt = document.createElement('option');
-    opt.value = u.name; opt.textContent = u.name;
-    sel.appendChild(opt);
-  });
-  sel.onchange = () => {
-    const u = USERS.find(x => x.name === sel.value);
-    document.getElementById('pinField').style.display = (u && u.pin === '') ? 'none' : 'block';
-  };
+  sel.innerHTML = '<option value="">Loading users...</option>';
+  try {
+    const r = await api('getUsers', {});
+    if (!r.ok) throw new Error(r.error);
+    USERS = r.users;
+    sel.innerHTML = '';
+    USERS.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.name; opt.textContent = u.name;
+      sel.appendChild(opt);
+    });
+    sel.onchange = () => {
+      const u = USERS.find(x => x.name === sel.value);
+      document.getElementById('pinField').style.display = (u && !u.hasPin) ? 'none' : 'block';
+    };
+    if (sel.onchange) sel.onchange();
+  } catch (e) {
+    sel.innerHTML = '<option value="">Could not load users</option>';
+    document.getElementById('loginError').textContent = 'Could not load user list. Check API_URL / connection.';
+  }
 };
 
 async function api(action, payload) {
@@ -517,7 +520,7 @@ function fmtDate(iso){
 /* ============ STEP CONFIG ============ */
 // upload.mode: 'fixed' (tag locked) or 'custom' (user types tag)
 const STEP_CONFIG = {
-  1:  { binary: true },
+  1:  { binary: true, upload: { mode: 'custom', tag: 'Email' } },
   2:  { upload: { mode: 'fixed', tag: 'Asbuilt' } },
   3:  { pharmacyLinked: true },
   4:  { upload: { mode: 'fixed', tag: 'Capacity Image' } },
