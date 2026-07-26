@@ -421,11 +421,15 @@
   }
 
   function saveDNFromModal() {
-    const link = document.getElementById('dn-link-input').value.trim();
+    const link   = document.getElementById('dn-link-input').value.trim();
     if (!link) { showToast('✗ Please paste a link', true); return; }
     if (!link.startsWith('http')) { showToast('✗ Invalid link — must start with http', true); return; }
+    /* Capture before closing (closing nulls these) */
+    const branch = _dnModalBranch;
+    const group  = _dnModalGroup;
+    const type   = _dnModalType;
     closeDNModal();
-    saveDNLink(_dnModalBranch, _dnModalGroup, link, _dnModalType);
+    saveDNLink(branch, group, link, type);
   }
 
 
