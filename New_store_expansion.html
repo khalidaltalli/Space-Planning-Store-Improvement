@@ -514,64 +514,201 @@ function fmtDate(iso){
   return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 }
 
+/* ============ STEP CONFIG ============ */
+// upload.mode: 'fixed' (tag locked) or 'custom' (user types tag)
+const STEP_CONFIG = {
+  1:  { binary: true },
+  2:  { upload: { mode: 'fixed', tag: 'Asbuilt' } },
+  3:  { pharmacyLinked: true },
+  4:  { upload: { mode: 'fixed', tag: 'Capacity Image' } },
+  5:  { upload: { mode: 'custom', tag: 'Draft' } },
+  6:  {},
+  7:  { upload: { mode: 'custom', tag: 'Final Drawing' }, showAllUploads: true },
+  8:  {},
+  9:  { upload: { mode: 'fixed', tag: 'Canva' } },
+  10: { upload: { mode: 'fixed', tag: 'Final' } },
+  11: {},
+  12: {},
+  13: { upload: { mode: 'fixed', tag: 'Zenput Report' } },
+  14: {},
+  15: {}
+};
+
 /* ============ STEP MODAL ============ */
-function openStepModal(branchCode, stepId) {
-  const b = BRANCHES.find(x => x.branchCode == branchCode);
+let currentStepCtx = null; // { branchCode, stepId }
+
+async function openStepModal(branchCode, stepId) {
   const step = STEP_DEFS.find(x => x.id == stepId);
-  const s = b.steps[stepId];
+  const cfg = STEP_CONFIG[stepId] || {};
+  currentStepCtx = { branchCode, stepId, cfg };
+
   document.getElementById('stepModalTitle').textContent = step.name;
   document.getElementById('stepModalSub').textContent = `Branch ${branchCode}`;
-
-  const body = document.getElementById('stepModalBody');
-
-  if (!canEdit()) {
-    body.innerHTML = s
-      ? `<div class="grid2" style="grid-template-columns:1fr;">
-          <div class="info-item"><label>Status</label><div class="val">${s.status}</div></div>
-          <div class="info-item"><label>By</label><div class="val">${s.by||'—'}</div></div>
-          <div class="info-item"><label>Assigned</label><div class="val">${fmtDate(s.assignedDate)}</div></div>
-          ${s.completedDate ? `<div class="info-item"><label>Completed</label><div class="val">${fmtDate(s.completedDate)}</div></div>` : ''}
-        </div>`
-      : `<p class="sub">Not started yet.</p>`;
-    document.getElementById('stepOverlay').style.display = 'flex';
-    return;
-  }
-
-  let html = '';
-  if (!s || s.status === undefined) {
-    html = `<p class="sub">This step hasn't started.</p>
-      <div class="modal-actions"><button class="btn" onclick="doStepAction('${branchCode}',${stepId},'assign')">Assign to me &amp; start</button></div>`;
-  } else if (s.status === 'ongoing') {
-    html = `<div class="info-item" style="margin-bottom:14px;"><label>Currently assigned to</label><div class="val">${s.by}</div></div>
-      <div class="info-item" style="margin-bottom:4px;"><label>Assigned since</label><div class="val">${fmtDate(s.assignedDate)}</div></div>
-      <div class="modal-actions">
-        <button class="btn" onclick="doStepAction('${branchCode}',${stepId},'complete')">Mark Complete</button>
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="doStepAction('${branchCode}',${stepId},'reassign')">Reassign to me</button>
-        <button class="btn btn-danger" onclick="doStepAction('${branchCode}',${stepId},'reset')">Reset</button>
-      </div>`;
-  } else if (s.status === 'done') {
-    html = `<div class="info-item" style="margin-bottom:10px;"><label>Completed by</label><div class="val">${s.by}</div></div>
-      <div class="info-item" style="margin-bottom:14px;"><label>Completed on</label><div class="val">${fmtDate(s.completedDate)}</div></div>
-      <p class="sub">Clicked by mistake?</p>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="doStepAction('${branchCode}',${stepId},'reopen')">Reopen</button>
-        <button class="btn btn-danger" onclick="doStepAction('${branchCode}',${stepId},'reset')">Reset to empty</button>
-      </div>`;
-  }
-  body.innerHTML = html;
+  document.getElementById('stepModalBody').innerHTML = `<p class="sub">Loading…</p>`;
   document.getElementById('stepOverlay').style.display = 'flex';
+
+  const r = await api('getStepModalData', { branchCode, stepId });
+  if (!r.ok) { toast(r.error); closeModal('stepOverlay'); return; }
+
+  renderStepModal(r.step || {}, r.allUploads || [], r.pharmacy);
 }
 
-async function doStepAction(branchCode, stepId, stepAction) {
+function renderStepModal(s, allUploads, pharmacyVal) {
+  const { branchCode, stepId, cfg } = currentStepCtx;
+  const status = s.status || 'empty';
+  const editable = canEdit();
+  let html = '';
+
+  // ---- Status controls ----
+  if (cfg.binary) {
+    // Only done / empty, no ongoing
+    if (status === 'done') {
+      html += `<div class="info-item" style="margin-bottom:6px;"><label>Marked received by</label><div class="val">${s.by||'—'}</div></div>
+        <div class="info-item" style="margin-bottom:14px;"><label>Date</label><div class="val">${fmtDate(s.completedDate)}</div></div>`;
+      if (editable) html += `<div class="modal-actions"><button class="btn btn-ghost" onclick="doStepAction('reset')">Undo</button></div>`;
+    } else {
+      html += `<p class="sub" style="margin-bottom:10px;">Not marked as received yet.</p>`;
+      if (editable) html += `<div class="modal-actions"><button class="btn" onclick="doStepAction('complete')">Mark as Received</button></div>`;
+    }
+  } else {
+    // Standard flow, but Mark Complete always available
+    if (status === 'done') {
+      html += `<div class="info-item" style="margin-bottom:6px;"><label>Completed by</label><div class="val">${s.by||'—'}</div></div>
+        <div class="info-item" style="margin-bottom:14px;"><label>Completed on</label><div class="val">${fmtDate(s.completedDate)}</div></div>`;
+      if (editable) html += `<div class="modal-actions">
+          <button class="btn btn-ghost" onclick="doStepAction('reopen')">Reopen</button>
+          <button class="btn btn-danger" onclick="doStepAction('reset')">Reset</button>
+        </div>`;
+    } else {
+      if (status === 'ongoing') {
+        html += `<div class="info-item" style="margin-bottom:4px;"><label>Currently assigned to</label><div class="val">${s.by}</div></div>
+          <div class="info-item" style="margin-bottom:14px;"><label>Assigned since</label><div class="val">${fmtDate(s.assignedDate)}</div></div>`;
+      } else {
+        html += `<p class="sub" style="margin-bottom:14px;">Not started yet.</p>`;
+      }
+      if (editable) {
+        html += `<div class="modal-actions">
+            <button class="btn" onclick="doStepAction('complete')">Mark Complete</button>
+          </div>`;
+        if (status === 'ongoing') {
+          html += `<div class="modal-actions">
+              <button class="btn btn-ghost" onclick="doStepAction('reassign')">Reassign to me</button>
+              <button class="btn btn-danger" onclick="doStepAction('reset')">Reset</button>
+            </div>`;
+        } else {
+          html += `<div class="modal-actions">
+              <button class="btn btn-ghost" onclick="doStepAction('assign')">Assign to me (start)</button>
+            </div>`;
+        }
+      }
+    }
+  }
+
+  // ---- Notes (always) ----
+  html += `<div class="section-title" style="margin-top:20px;">Notes</div>
+    <textarea id="stepNoteInput" ${editable?'':'disabled'} rows="3"
+      style="width:100%; background:#12151f; border:1px solid var(--border); border-radius:10px; padding:10px 12px; color:var(--text); font-family:inherit; font-size:13px; resize:vertical;"
+      placeholder="${editable ? 'Add a note for this step...' : 'No notes.'}">${s.note || ''}</textarea>`;
+  if (editable) html += `<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="saveStepNote()">Save Note</button></div>`;
+
+  // ---- Pharmacy Yes/No (step 3 only, tied to branch Pharmacy field) ----
+  if (cfg.pharmacyLinked) {
+    html += `<div class="section-title">Pharmacy</div>
+      <div class="field">
+        <label>Does this branch have a pharmacy?</label>
+        <select id="pharmacyYesNoInput" ${editable?'':'disabled'}>
+          <option value="">Not set</option>
+          <option value="Yes" ${pharmacyVal==='Yes'?'selected':''}>Yes</option>
+          <option value="No" ${pharmacyVal==='No'?'selected':''}>No</option>
+        </select>
+      </div>`;
+    if (editable) html += `<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="savePharmacyAnswer()">Save</button></div>`;
+  }
+
+  // ---- Upload (per-step) ----
+  if (cfg.upload) {
+    const stepUploads = allUploads.filter(u => String(u.stepId) === String(stepId));
+    html += `<div class="section-title">Uploads</div>`;
+    if (stepUploads.length) {
+      html += `<div class="links-grid" style="grid-template-columns:1fr;">` +
+        stepUploads.map(u => `<div class="link-row">
+            <span class="lname">${u.tag ? u.tag + ' — ' : ''}<span style="color:var(--text-dim); font-weight:400;">by ${u.by}, ${fmtDate(u.date)}</span></span>
+            <div class="lactions"><button class="icon-btn open" onclick="window.open('${escapeAttr(u.link)}','_blank')">Open</button></div>
+          </div>`).join('') + `</div>`;
+    } else {
+      html += `<p class="sub" style="margin-bottom:8px;">No uploads yet for this step.</p>`;
+    }
+    if (editable) {
+      const tagField = cfg.upload.mode === 'fixed'
+        ? `<input type="hidden" id="uploadTagInput" value="${cfg.upload.tag}">`
+        : `<div class="field"><label>Tag</label><input type="text" id="uploadTagInput" value="${cfg.upload.tag}" placeholder="Tag name"></div>`;
+      html += `${tagField}
+        <div class="field"><label>${cfg.upload.mode==='fixed' ? cfg.upload.tag + ' link' : 'Link'}</label>
+          <input type="text" id="uploadLinkInput" placeholder="https://..."></div>
+        <div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="saveUpload()">Add Upload</button></div>`;
+    }
+  }
+
+  // ---- All uploads (Finalized Drawing only) ----
+  if (cfg.showAllUploads) {
+    html += `<div class="section-title">All Uploads — This Branch</div>`;
+    if (allUploads.length) {
+      html += `<div class="links-grid" style="grid-template-columns:1fr;">` +
+        allUploads.map(u => `<div class="link-row">
+            <span class="lname">${u.tag ? u.tag : 'Untitled'} <span style="color:var(--text-dim); font-weight:400;">— ${u.stepName}, by ${u.by}, ${fmtDate(u.date)}</span></span>
+            <div class="lactions"><button class="icon-btn open" onclick="window.open('${escapeAttr(u.link)}','_blank')">Open</button></div>
+          </div>`).join('') + `</div>`;
+    } else {
+      html += `<p class="sub">No uploads recorded yet for this branch.</p>`;
+    }
+  }
+
+  document.getElementById('stepModalBody').innerHTML = html;
+}
+
+async function doStepAction(stepAction) {
+  const { branchCode, stepId } = currentStepCtx;
   const r = await api('updateStep', { branchCode, stepId, stepAction, user: currentUser.name });
   if (!r.ok) { toast(r.error); return; }
   const b = BRANCHES.find(x => x.branchCode == branchCode);
   b.steps = r.steps;
-  closeModal('stepOverlay');
   renderTable();
+  const fresh = await api('getStepModalData', { branchCode, stepId });
+  if (fresh.ok) renderStepModal(fresh.step || {}, fresh.allUploads || [], fresh.pharmacy);
   toast('Updated.');
+}
+
+async function savePharmacyAnswer() {
+  const { branchCode, stepId } = currentStepCtx;
+  const value = document.getElementById('pharmacyYesNoInput').value;
+  const r = await api('updateDetailField', { branchCode, field: 'Pharmacy', value, user: currentUser.name });
+  if (!r.ok) { toast(r.error); return; }
+  toast('Pharmacy info saved.');
+  const fresh = await api('getStepModalData', { branchCode, stepId });
+  if (fresh.ok) renderStepModal(fresh.step || {}, fresh.allUploads || [], fresh.pharmacy);
+}
+
+async function saveStepNote() {
+  const { branchCode, stepId } = currentStepCtx;
+  const note = document.getElementById('stepNoteInput').value;
+  const r = await api('updateStepNote', { branchCode, stepId, note, user: currentUser.name });
+  if (!r.ok) { toast(r.error); return; }
+  toast('Note saved.');
+}
+
+async function saveUpload() {
+  const { branchCode, stepId } = currentStepCtx;
+  const tagEl = document.getElementById('uploadTagInput');
+  const linkEl = document.getElementById('uploadLinkInput');
+  const tag = tagEl ? tagEl.value.trim() : '';
+  const link = linkEl ? linkEl.value.trim() : '';
+  if (!link) { toast('Enter a link first.'); return; }
+
+  const r = await api('addUpload', { branchCode, stepId, tag, link, user: currentUser.name });
+  if (!r.ok) { toast(r.error); return; }
+  toast('Upload added.');
+  const fresh = await api('getStepModalData', { branchCode, stepId });
+  if (fresh.ok) renderStepModal(fresh.step || {}, fresh.allUploads || [], fresh.pharmacy);
 }
 
 /* ============ DETAIL MODAL ============ */
