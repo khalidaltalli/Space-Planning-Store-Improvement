@@ -65,6 +65,12 @@
   .field-edit-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:12px;padding:2px 4px;flex-shrink:0;opacity:.7;}
   .field-edit-btn:hover{color:var(--accent);opacity:1;}
   .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin:22px 0 10px;padding-top:16px;border-top:1px solid var(--border);font-weight:700;}
+  .collapsible-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;margin:22px 0 10px;padding-top:16px;border-top:1px solid var(--border);}
+  .collapsible-header .section-title{margin:0;padding-top:0;border-top:none;}
+  .collapsible-chevron{color:var(--text-dim);font-size:12px;transition:transform .2s;}
+  .collapsible-chevron.open{transform:rotate(90deg);}
+  .collapsible-body{display:none;}
+  .collapsible-body.open{display:block;}
   .links-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .link-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#12151f;border:1px solid var(--border);border-radius:10px;padding:9px 12px;}
   .link-row .lname{font-size:12.5px;font-weight:600;}.link-row .lactions{display:flex;gap:6px;}
@@ -148,13 +154,24 @@
     <div class="grid2" id="detailGrid"></div>
     <div class="section-title">Links</div>
     <div class="links-grid" id="detailLinks"></div>
-    <div class="section-title">Step Timeline</div>
-    <div class="timeline" id="detailTimeline"></div>
 
-    <div class="section-title" id="bulkStepsTitle" style="display:none;">Bulk Update Steps</div>
-    <div id="bulkStepsGrid" style="display:none;"></div>
-    <div id="bulkStepsActions" style="display:none;margin-top:12px;">
-      <button class="btn" onclick="saveAllSteps()" style="max-width:200px;">💾 Save All Steps</button>
+    <div class="collapsible-header" onclick="toggleCollapsible('timeline')">
+      <div class="section-title" style="margin:0;padding-top:0;border-top:none;">Step Timeline</div>
+      <span class="collapsible-chevron" id="chevron-timeline">▶</span>
+    </div>
+    <div class="collapsible-body" id="body-timeline">
+      <div class="timeline" id="detailTimeline"></div>
+    </div>
+
+    <div class="collapsible-header" id="bulkStepsHeader" style="display:none;" onclick="toggleCollapsible('bulk')">
+      <div class="section-title" style="margin:0;padding-top:0;border-top:none;">Bulk Update Steps</div>
+      <span class="collapsible-chevron" id="chevron-bulk">▶</span>
+    </div>
+    <div class="collapsible-body" id="body-bulk">
+      <div id="bulkStepsGrid"></div>
+      <div id="bulkStepsActions" style="margin-top:12px;">
+        <button class="btn" onclick="saveAllSteps()" style="max-width:200px;">💾 Save All Steps</button>
+      </div>
     </div>
   </div>
 </div>
@@ -272,6 +289,7 @@ async function openStepModal(branchCode,stepId){
 function renderStepModal(data){
   const s=data.step||{},{cfg}=currentStepCtx;
   currentStepCtx.uploadField=data.uploadField;
+  currentStepCtx.uploadIsFile=data.uploadIsFile;
   const status=s.status||'empty',editable=canEdit();
   let html='';
   if(cfg.binary){
@@ -306,7 +324,12 @@ function renderStepModal(data){
     html+='<div class="section-title">'+(data.uploadLabel||'')+ ' Link</div>';
     if(data.uploadValue) html+='<div class="link-row" style="margin-bottom:10px;"><span class="lname">'+(data.uploadLabel||'')+'</span><div class="lactions"><button class="icon-btn open" onclick="window.open(\''+escapeAttr(data.uploadValue)+'\',\'_blank\')">Open</button></div></div>';
     else html+='<p class="sub" style="margin-bottom:10px;">No link yet.</p>';
-    if(editable) html+='<div class="field"><input type="text" id="uploadLinkInput" value="'+escapeAttr(data.uploadValue||'')+'" placeholder="https://..."></div><div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="saveUpload()">Save Link</button></div>';
+    if(editable){
+      html+='<div class="field"><input type="text" id="uploadLinkInput" value="'+escapeAttr(data.uploadValue||'')+'" placeholder="https://..."></div><div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="saveUpload()">Save Link</button></div>';
+      if(data.uploadIsFile){
+        html+='<p class="sub" style="margin:10px 0 6px;">— or —</p><div class="field"><input type="file" id="uploadFileInput"></div><div class="modal-actions"><button class="btn btn-sm" id="uploadFileBtn" onclick="saveFileUpload()">Upload File to Drive</button></div><p class="sub" id="uploadProgress" style="min-height:14px;"></p>';
+      }
+    }
   }
   if(cfg.showAllUploads&&data.allUploads){
     html+='<div class="section-title">All Uploads — This Branch</div><div class="links-grid" style="grid-template-columns:1fr;">'+
@@ -325,6 +348,35 @@ async function doStepAction(stepAction){
 async function savePharmacyAnswer(){const{branchCode,stepId}=currentStepCtx;const value=document.getElementById('pharmacyYesNoInput').value;const r=await api('updateDetailField',{branchCode,field:'Pharmacy',value,user:currentUser.name});if(!r.ok){toast(r.error);return;}toast('Pharmacy info saved.');const fresh=await api('getStepModalData',{branchCode,stepId});if(fresh.ok)renderStepModal(fresh);}
 async function saveStepNote(){const{branchCode,stepId}=currentStepCtx;const note=document.getElementById('stepNoteInput').value;const r=await api('updateStepNote',{branchCode,stepId,note,user:currentUser.name});if(!r.ok){toast(r.error);return;}toast('Note saved.');}
 async function saveUpload(){const{branchCode,stepId,uploadField}=currentStepCtx;const linkEl=document.getElementById('uploadLinkInput');const value=linkEl?linkEl.value.trim():'';if(!uploadField){toast('Could not determine upload field.');return;}const r=await api('updateLink',{branchCode,field:uploadField,value,user:currentUser.name});if(!r.ok){toast(r.error);return;}toast('Link saved.');const fresh=await api('getStepModalData',{branchCode,stepId});if(fresh.ok)renderStepModal(fresh);}
+
+async function saveFileUpload(){
+  const{branchCode,stepId,uploadField}=currentStepCtx;
+  const fileInput=document.getElementById('uploadFileInput');
+  const progressEl=document.getElementById('uploadProgress');
+  const btn=document.getElementById('uploadFileBtn');
+  if(!fileInput.files.length){toast('Choose a file first.');return;}
+  const file=fileInput.files[0];
+  if(file.size>40*1024*1024){toast('File too large (max ~40MB).');return;}
+  btn.disabled=true;
+  progressEl.textContent='Uploading '+file.name+'...';
+  try{
+    const base64Data=await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=()=>resolve(reader.result.split(',')[1]);
+      reader.onerror=()=>reject(new Error('Could not read file.'));
+      reader.readAsDataURL(file);
+    });
+    const r=await api('uploadFile',{branchCode,field:uploadField,filename:file.name,mimeType:file.type,base64Data,user:currentUser.name});
+    if(!r.ok){toast(r.error);progressEl.textContent='';btn.disabled=false;return;}
+    toast('File uploaded.');
+    const fresh=await api('getStepModalData',{branchCode,stepId});
+    if(fresh.ok)renderStepModal(fresh);
+  }catch(e){
+    toast('Upload failed: '+e.message);
+    progressEl.textContent='';
+    btn.disabled=false;
+  }
+}
 
 async function openDetail(branchCode){
   const r=await api('getBranchDetail',{branchCode});if(!r.ok){toast(r.error);return;}
@@ -347,16 +399,20 @@ async function openDetail(branchCode){
     const statusLabel=status==='done'?'Done':(status==='ongoing'?'Ongoing':'Not started');
     return '<div><div class="tl-item" data-step="'+step.id+'" onclick="toggleTl(this.getAttribute(\'data-step\'))"><span class="tl-num">'+step.id+'</span><span class="icon '+status+' tl-icon" style="width:22px;height:22px;font-size:11px;">'+icon+'</span><span class="tl-name">'+step.name+'</span><span class="tl-status">'+statusLabel+'</span></div><div class="tl-detail" id="tl-'+step.id+'">'+(s?'<div><b>By:</b> '+(s.by||'—')+'</div><div><b>Assigned:</b> '+fmtDate(s.assignedDate)+'</div>'+(s.completedDate?'<div><b>Completed:</b> '+fmtDate(s.completedDate)+'</div>':''):'<div>No activity yet.</div>')+'</div></div>';
   }).join('');
+
+  /* Collapsed by default every time a branch is opened */
+  document.getElementById('body-timeline').classList.remove('open');
+  document.getElementById('chevron-timeline').classList.remove('open');
+  document.getElementById('body-bulk').classList.remove('open');
+  document.getElementById('chevron-bulk').classList.remove('open');
+
   document.getElementById('detailOverlay').style.display='flex';
 
   /* Bulk steps grid — only for editors */
-  const bulkTitle   = document.getElementById('bulkStepsTitle');
+  const bulkHeader  = document.getElementById('bulkStepsHeader');
   const bulkGrid    = document.getElementById('bulkStepsGrid');
-  const bulkActions = document.getElementById('bulkStepsActions');
   if(canEdit()){
-    bulkTitle.style.display='';
-    bulkActions.style.display='';
-    bulkGrid.style.display='';
+    bulkHeader.style.display='flex';
     bulkGrid.innerHTML = STEP_DEFS.map(step => {
       const s      = currentDetailBranch.steps[step.id];
       const status = s ? s.status : 'empty';
@@ -371,10 +427,13 @@ async function openDetail(branchCode){
       </div>`;
     }).join('');
   } else {
-    bulkTitle.style.display='none';
-    bulkGrid.style.display='none';
-    bulkActions.style.display='none';
+    bulkHeader.style.display='none';
   }
+}
+
+function toggleCollapsible(key){
+  document.getElementById('body-'+key).classList.toggle('open');
+  document.getElementById('chevron-'+key).classList.toggle('open');
 }
 
 function setBulkStatus(stepId, status){
