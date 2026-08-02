@@ -289,7 +289,6 @@ async function openStepModal(branchCode,stepId){
 function renderStepModal(data){
   const s=data.step||{},{cfg}=currentStepCtx;
   currentStepCtx.uploadField=data.uploadField;
-  currentStepCtx.uploadIsFile=data.uploadIsFile;
   const status=s.status||'empty',editable=canEdit();
   let html='';
   if(cfg.binary){
@@ -326,9 +325,6 @@ function renderStepModal(data){
     else html+='<p class="sub" style="margin-bottom:10px;">No link yet.</p>';
     if(editable){
       html+='<div class="field"><input type="text" id="uploadLinkInput" value="'+escapeAttr(data.uploadValue||'')+'" placeholder="https://..."></div><div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="saveUpload()">Save Link</button></div>';
-      if(data.uploadIsFile){
-        html+='<p class="sub" style="margin:10px 0 6px;">— or —</p><div class="field"><input type="file" id="uploadFileInput"></div><div class="modal-actions"><button class="btn btn-sm" id="uploadFileBtn" onclick="saveFileUpload()">Upload File to Drive</button></div><p class="sub" id="uploadProgress" style="min-height:14px;"></p>';
-      }
     }
   }
   if(cfg.showAllUploads&&data.allUploads){
@@ -348,35 +344,6 @@ async function doStepAction(stepAction){
 async function savePharmacyAnswer(){const{branchCode,stepId}=currentStepCtx;const value=document.getElementById('pharmacyYesNoInput').value;const r=await api('updateDetailField',{branchCode,field:'Pharmacy',value,user:currentUser.name});if(!r.ok){toast(r.error);return;}toast('Pharmacy info saved.');const fresh=await api('getStepModalData',{branchCode,stepId});if(fresh.ok)renderStepModal(fresh);}
 async function saveStepNote(){const{branchCode,stepId}=currentStepCtx;const note=document.getElementById('stepNoteInput').value;const r=await api('updateStepNote',{branchCode,stepId,note,user:currentUser.name});if(!r.ok){toast(r.error);return;}toast('Note saved.');}
 async function saveUpload(){const{branchCode,stepId,uploadField}=currentStepCtx;const linkEl=document.getElementById('uploadLinkInput');const value=linkEl?linkEl.value.trim():'';if(!uploadField){toast('Could not determine upload field.');return;}const r=await api('updateLink',{branchCode,field:uploadField,value,user:currentUser.name});if(!r.ok){toast(r.error);return;}toast('Link saved.');const fresh=await api('getStepModalData',{branchCode,stepId});if(fresh.ok)renderStepModal(fresh);}
-
-async function saveFileUpload(){
-  const{branchCode,stepId,uploadField}=currentStepCtx;
-  const fileInput=document.getElementById('uploadFileInput');
-  const progressEl=document.getElementById('uploadProgress');
-  const btn=document.getElementById('uploadFileBtn');
-  if(!fileInput.files.length){toast('Choose a file first.');return;}
-  const file=fileInput.files[0];
-  if(file.size>40*1024*1024){toast('File too large (max ~40MB).');return;}
-  btn.disabled=true;
-  progressEl.textContent='Uploading '+file.name+'...';
-  try{
-    const base64Data=await new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=()=>resolve(reader.result.split(',')[1]);
-      reader.onerror=()=>reject(new Error('Could not read file.'));
-      reader.readAsDataURL(file);
-    });
-    const r=await api('uploadFile',{branchCode,field:uploadField,filename:file.name,mimeType:file.type,base64Data,user:currentUser.name});
-    if(!r.ok){toast(r.error);progressEl.textContent='';btn.disabled=false;return;}
-    toast('File uploaded.');
-    const fresh=await api('getStepModalData',{branchCode,stepId});
-    if(fresh.ok)renderStepModal(fresh);
-  }catch(e){
-    toast('Upload failed: '+e.message);
-    progressEl.textContent='';
-    btn.disabled=false;
-  }
-}
 
 async function openDetail(branchCode){
   const r=await api('getBranchDetail',{branchCode});if(!r.ok){toast(r.error);return;}
