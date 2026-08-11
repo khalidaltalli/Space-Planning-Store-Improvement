@@ -323,13 +323,16 @@
 
       groups.forEach((g,i) => {
         html += `<td><div class="dn-cell">`;
+        const canRemove = !isViewer && (currentUser==='Khalid'||currentUser==='Azhar');
         if (g.status === 'signed') {
           html += `<span class="dn-status dn-signed">✓ Signed</span>`;
           if (g.link) html += `<a href="${g.link}" target="_blank" class="view-link">View</a>`;
+          if (canRemove) html += `<button class="upload-btn" style="background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.3);color:#f87171;" data-branch="${branch.code}" data-group="${DN_GROUPS[i].key}" data-type="signed" onclick="removeDNLinkBtn(this)">✕</button>`;
         } else if (g.status === 'unsigned') {
           html += `<span class="dn-status dn-unsigned">📎 Uploaded</span>`;
           if (g.link) html += `<a href="${g.link}" target="_blank" class="view-link">View</a>`;
           if (!isViewer) html += `<button class="upload-btn" data-branch="${branch.code}" data-group="${DN_GROUPS[i].key}" onclick="triggerUploadBtn(this)">＋ Link</button>`;
+          if (canRemove) html += `<button class="upload-btn" style="background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.3);color:#f87171;" data-branch="${branch.code}" data-group="${DN_GROUPS[i].key}" data-type="unsigned" onclick="removeDNLinkBtn(this)">✕</button>`;
         } else {
           html += `<span class="dn-status dn-missing">Missing</span>`;
           if (!isViewer) html += `<button class="upload-btn" data-branch="${branch.code}" data-group="${DN_GROUPS[i].key}" onclick="triggerUploadBtn(this)">＋ Add Link</button>`;
@@ -384,10 +387,43 @@
   let _dnModalGroup  = null;
   let _dnModalType   = 'unsigned'; /* 'signed' or 'unsigned' */
 
-  function triggerUploadBtn(btn) {
+  function removeDNLinkBtn(btn) {
     const branch   = btn.getAttribute('data-branch');
     const groupKey = btn.getAttribute('data-group');
-    triggerUpload(branch, groupKey);
+    const dnType   = btn.getAttribute('data-type');
+    const group    = DN_GROUPS.find(g=>g.key===groupKey);
+    if(!group) return;
+    if(!confirm(`Remove ${dnType==='signed'?'Signed':'Unsigned'} D.N. link for ${branch} — ${group.name}?`)) return;
+    removeDNLink(branch, group, dnType);
+  }
+
+  async function removeDNLink(branch, group, dnType) {
+    const timestamp = new Date().toLocaleString('en-GB');
+    const action    = dnType==='signed' ? 'writeSignedDNLink' : 'writeDNLink';
+    /* Write empty string to clear the link */
+    await fetch(APPS_URL, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action, branch, assets:group.assets, groupName:group.name, fileName:'Link removed', fileUrl:'', user:currentUser, timestamp })
+    });
+    /* Update local data */
+    checklistData.forEach(r=>{
+      if((r['Branch Code']||'').trim()===branch && group.assets.includes((r['Asset']||'').trim())){
+        if(dnType==='signed')   r['D.N. Signed']     = '';
+        else                    r['D.N. Not Signed']  = '';
+      }
+    });
+    /* Add to activity log */
+    activityLog.unshift({
+      Timestamp: timestamp, User: currentUser,
+      'Branch Code': branch, 'D.N. Group': group.name,
+      'File Name': dnType==='signed' ? '🗑 Signed D.N. Removed' : '🗑 Unsigned D.N. Removed',
+      'File URL': '', 'Type': dnType
+    });
+    showToast('✓ D.N. link removed');
+    applyFilter();
+    updateMissingPill();
+    renderLog();
   }
 
   function triggerUpload(branch, groupKey) {
