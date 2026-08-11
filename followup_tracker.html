@@ -1720,6 +1720,7 @@
       const statusEl = document.getElementById(`bulk-status-${code}`);
       statusEl.innerHTML='<span style="color:#fbbf24;font-size:11px;">🔄 Sending...</span>';
 
+      const saved   = emailThreads[code]||{};
       const to      = saved.to||'';
       const cc      = saved.cc||'';
       const subject = saved.subject||`Asset Receiving Follow-up — ${code}`;
@@ -1922,6 +1923,9 @@
 <div id="bulk-send-modal" class="modal-overlay" style="z-index:300;">
   <div class="modal-box" style="width:900px;max-height:92vh;">
     <h3>📨 Send All Follow-up Emails</h3>
+    <div style="font-size:11px;color:#22d3ee;background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);border-radius:6px;padding:8px 12px;margin-bottom:10px;">
+      ℹ️ Emails are sent as <strong>Reply All</strong> — everyone who has replied to each thread will automatically be included, even if not shown below.
+    </div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
       <span style="font-size:12px;color:#64748b;margin-right:auto;" id="bulk-branch-count"></span>
       <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;font-size:12px;padding:6px 14px;" onclick="bulkSelectAll(true)">Select All</button>
@@ -1934,7 +1938,7 @@
             <th style="padding:8px 10px;text-align:center;width:36px;color:#64748b;">✓</th>
             <th style="padding:8px 10px;text-align:left;color:#64748b;">Branch</th>
             <th style="padding:8px 10px;text-align:left;color:#64748b;">Last Sent</th>
-            <th style="padding:8px 10px;text-align:left;color:#64748b;">Thread Recipients</th>
+            <th style="padding:8px 10px;text-align:left;color:#64748b;">Saved Recipients <span style="font-size:10px;color:#475569;">(replyAll includes everyone in thread)</span></th>
             <th style="padding:8px 10px;text-align:left;color:#64748b;width:100px;">Status</th>
           </tr>
         </thead>
