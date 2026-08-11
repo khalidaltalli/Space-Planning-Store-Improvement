@@ -1718,6 +1718,7 @@
       try{
         const res  = await fetch(`${APPS_URL}?action=getThreadParticipants&threadId=${encodeURIComponent(threadId)}`);
         const data = await res.json();
+        console.log(`[${code}] participants:`, data.participants, 'rawFields:', data.rawFields);
         if(data.participants&&data.participants.length){
           const toEl  = document.getElementById(`bulk-to-${code}`);
           const ccEl  = document.getElementById(`bulk-cc-${code}`);
@@ -1731,6 +1732,15 @@
           const newOnes = data.participants.filter(p=>
             p && !existing.includes(p.toLowerCase()) && !ownEmails.includes(p.toLowerCase())
           );
+          /* Show pulled emails in status cell */
+          const statusEl = document.getElementById(`bulk-status-${code}`);
+          if(statusEl){
+            if(newOnes.length){
+              statusEl.innerHTML=`<span style="color:#22d3ee;font-size:10px;" title="${newOnes.join(', ')}">👥 +${newOnes.length} added</span>`;
+            } else {
+              statusEl.innerHTML=`<span style="color:#64748b;font-size:10px;">No new found</span>`;
+            }
+          }
           if(newOnes.length){
             /* If To is empty, put first new one there */
             if(!toEl.value.trim()){
