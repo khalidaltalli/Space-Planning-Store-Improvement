@@ -1726,8 +1726,11 @@
             ...(toEl.value||'').split(',').map(e=>e.trim().toLowerCase()),
             ...(ccEl.value||'').split(',').map(e=>e.trim().toLowerCase())
           ].filter(Boolean);
-          /* New ones not already listed */
-          const newOnes = data.participants.filter(p=>p&&!existing.includes(p.toLowerCase()));
+          /* Filter out own email (khalid) and already listed */
+          const ownEmails = ['khalid.altalli@ananinja.com','khalid@ananinja.com'];
+          const newOnes = data.participants.filter(p=>
+            p && !existing.includes(p.toLowerCase()) && !ownEmails.includes(p.toLowerCase())
+          );
           if(newOnes.length){
             /* If To is empty, put first new one there */
             if(!toEl.value.trim()){
