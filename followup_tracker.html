@@ -161,6 +161,7 @@
       <span id="user-badge" class="user-badge"></span>
       <button class="btn" onclick="loadData()">↻ Refresh</button>
       <button class="btn" style="background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;" onclick="openWeeklySummary()">📊 Weekly Summary</button>
+      <button class="btn" style="background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;" onclick="openBulkSend()">📨 Send All Follow-ups</button>
       <button class="btn" style="background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.2);color:#f87171;" onclick="signOut()">Sign Out</button>
     </div>
   </div>
@@ -1639,6 +1640,203 @@
     }
   }
 
+  /* ══ BULK SEND ══ */
+  function openBulkSend(){
+    /* Only branches with an existing thread */
+    const eligible = branches.filter(b=>{
+      const t = emailThreads[b.code];
+      return t && t.threadId && (b.status==='Receiving'||b.status==='Live');
+    });
+    document.getElementById('bulk-branch-count').textContent = `${eligible.length} branch${eligible.length!==1?'es':''} with existing threads`;
+    const tbody = document.getElementById('bulk-send-tbody');
+    tbody.innerHTML = eligible.map((b,i)=>{
+      const t   = emailThreads[b.code]||{};
+      const pct = branchPct(b.code);
+      return `<tr id="bulk-row-${b.code}" style="border-bottom:0.5px solid rgba(255,255,255,0.05);">
+        <td style="padding:8px 10px;text-align:center;">
+          <input type="checkbox" id="bulk-chk-${b.code}" checked style="cursor:pointer;" onchange="updateBulkCount()"/>
+        </td>
+        <td style="padding:8px 10px;">
+          <div style="font-weight:600;color:#e2e8f0;">${b.code}</div>
+          <div style="font-size:10px;color:#64748b;">${b.status} · ${pct}%</div>
+        </td>
+        <td style="padding:8px 10px;color:#64748b;font-size:11px;">${t.lastSent||'—'}</td>
+        <td style="padding:8px 4px;">
+          <input id="bulk-to-${b.code}" value="${t.to||''}" placeholder="To..."
+            style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:5px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;"/>
+        </td>
+        <td style="padding:8px 4px;">
+          <input id="bulk-cc-${b.code}" value="${t.cc||''}" placeholder="CC..."
+            style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:5px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;"/>
+        </td>
+        <td style="padding:8px 10px;" id="bulk-status-${b.code}">
+          <span style="color:#64748b;font-size:11px;">⬜ Waiting</span>
+        </td>
+      </tr>`;
+    }).join('');
+    updateBulkCount();
+    document.getElementById('bulk-send-summary').textContent='';
+    document.getElementById('bulk-send-btn').disabled=false;
+    document.getElementById('bulk-send-btn').textContent='✉️ Send Selected';
+    document.getElementById('bulk-send-modal').style.display='flex';
+  }
+
+  function branchPct(code){
+    const rows = checklist.filter(r=>(r['Branch Code']||'').trim()===code);
+    const total= rows.filter(r=>r['Asset Status']&&r['Asset Status']!=='None').length||1;
+    const rec  = rows.filter(r=>r['Asset Status']==='Received').length;
+    return Math.round(rec/total*100);
+  }
+
+  function updateBulkCount(){
+    const checked = document.querySelectorAll('#bulk-send-tbody input[type="checkbox"]:checked').length;
+    document.getElementById('bulk-send-btn').textContent=`✉️ Send Selected (${checked})`;
+  }
+
+  function bulkSelectAll(val){
+    document.querySelectorAll('#bulk-send-tbody input[type="checkbox"]').forEach(c=>c.checked=val);
+    updateBulkCount();
+  }
+
+  /* Pull recipients from Gmail threads */
+  async function pullAllRecipients(){
+    const btn = document.getElementById('bulk-pull-btn');
+    btn.disabled=true; btn.textContent='👥 Pulling...';
+    const rows = document.querySelectorAll('#bulk-send-tbody tr');
+    const branchCodes = [];
+    rows.forEach(row=>{
+      const code = row.id.replace('bulk-row-','');
+      const t    = emailThreads[code];
+      if(t&&t.threadId) branchCodes.push({code, threadId:t.threadId});
+    });
+    /* Call Apps Script for each thread */
+    let done=0;
+    for(const {code, threadId} of branchCodes){
+      btn.textContent=`👥 Pulling... (${++done}/${branchCodes.length})`;
+      try{
+        const res  = await fetch(`${APPS_URL}?action=getThreadParticipants&threadId=${encodeURIComponent(threadId)}`);
+        const data = await res.json();
+        if(data.participants&&data.participants.length){
+          const ccEl  = document.getElementById(`bulk-cc-${code}`);
+          const toEl  = document.getElementById(`bulk-to-${code}`);
+          const existing = [
+            ...(toEl.value||'').split(',').map(e=>e.trim().toLowerCase()),
+            ...(ccEl.value||'').split(',').map(e=>e.trim().toLowerCase())
+          ].filter(Boolean);
+          const newOnes = data.participants.filter(p=>!existing.includes(p.toLowerCase()));
+          if(newOnes.length){
+            ccEl.value = ccEl.value
+              ? ccEl.value + ', ' + newOnes.join(', ')
+              : newOnes.join(', ');
+          }
+        }
+      } catch(e){ /* skip on error */ }
+    }
+    btn.disabled=false; btn.textContent='👥 Pull All Recipients';
+    showToast('Recipients updated!');
+  }
+
+  /* Send all selected branches */
+  async function startBulkSend(){
+    const btn = document.getElementById('bulk-send-btn');
+    btn.disabled=true;
+    const summary = document.getElementById('bulk-send-summary');
+    const today   = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+    const sig     = {'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
+
+    /* Collect checked rows */
+    const toSend=[];
+    document.querySelectorAll('#bulk-send-tbody input[type="checkbox"]:checked').forEach(chk=>{
+      const code = chk.id.replace('bulk-chk-','');
+      toSend.push(code);
+    });
+
+    if(!toSend.length){ summary.textContent='No branches selected.'; summary.style.color='#f87171'; btn.disabled=false; return; }
+
+    let sent=0, failed=0;
+
+    for(const code of toSend){
+      const statusEl = document.getElementById(`bulk-status-${code}`);
+      statusEl.innerHTML='<span style="color:#fbbf24;font-size:11px;">🔄 Sending...</span>';
+
+      const to      = document.getElementById(`bulk-to-${code}`).value.trim();
+      const cc      = document.getElementById(`bulk-cc-${code}`).value.trim();
+      const saved   = emailThreads[code]||{};
+      const subject = saved.subject||`Asset Receiving Follow-up — ${code}`;
+
+      if(!to){
+        statusEl.innerHTML='<span style="color:#f87171;font-size:11px;">✗ No To address</span>';
+        failed++; continue;
+      }
+
+      /* Build email HTML */
+      const branchObj = branches.find(b=>b.code===code)||{};
+      const assets    = checklist.filter(r=>(r['Branch Code']||'').trim()===code);
+      const fq        = qtyData[code]||{};
+      const htmlBody  = buildFollowupHTML(code) + `<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
+
+      /* Generate Excel */
+      let xlsxBase64='', xlsxName='';
+      try{
+        const rows=[...assets]
+          .filter(r=>r['Asset']&&r['Asset']!=='')
+          .sort((a,b)=>{const sc=(a['Section']||'').localeCompare(b['Section']||'');return sc!==0?sc:(a['Asset']||'').localeCompare(b['Asset']||'');})
+          .map(r=>({'Category':r['Section']||'','Asset':r['Asset']||'','Status':r['Asset Status']||'None','Updated Status':'','Photo':assetImages[(r['Asset']||'').trim()]||''}));
+        const ws=XLSX.utils.json_to_sheet(rows);
+        ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18},{wch:40}];
+        rows.forEach((r,i)=>{if(r['Photo']){const cell='E'+(i+2);ws[cell]={v:'View Photo',t:'s',l:{Target:r['Photo']}};}});
+        const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,code);
+        xlsxBase64=XLSX.write(wb,{bookType:'xlsx',type:'base64'});
+        xlsxName=`Receiving_Status_${code}_${today}.xlsx`;
+      }catch(e){}
+
+      /* Send via no-cors POST */
+      const sendId=`BULK_${code}_${Date.now()}`;
+      fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'sendFollowupEmail',sendId,branch:code,to,cc,subject,
+          htmlBody,threadId:saved.threadId||'',xlsxBase64,xlsxName,
+          user:currentUser||'Khalid',timestamp:new Date().toLocaleString('en-GB')})
+      });
+
+      /* Poll for result */
+      let result=null;
+      for(let i=0;i<20;i++){
+        await new Promise(r=>setTimeout(r,3000));
+        statusEl.innerHTML=`<span style="color:#fbbf24;font-size:11px;">🔄 ${(i+1)*3}s...</span>`;
+        try{
+          const p=await fetch(`${APPS_URL}?action=getSendResult&sendId=${sendId}`);
+          const d=await p.json();
+          if((d.success||d.error)&&!d.pending){result=d;break;}
+        }catch(e){}
+      }
+
+      if(!result){
+        statusEl.innerHTML='<span style="color:#fbbf24;font-size:11px;">⚠ Dispatched</span>';
+        sent++;
+        /* Update local thread */
+        emailThreads[code]={...saved,to,cc,lastSent:new Date().toLocaleString('en-GB')};
+        markUpdated(code,'Pending Review');
+      } else if(result.error){
+        statusEl.innerHTML=`<span style="color:#f87171;font-size:11px;">✗ ${result.error.substring(0,30)}</span>`;
+        failed++;
+      } else {
+        statusEl.innerHTML='<span style="color:#4ade80;font-size:11px;">✅ Sent</span>';
+        sent++;
+        emailThreads[code]={...saved,to,cc,threadId:result.threadId||saved.threadId||'',lastSent:new Date().toLocaleString('en-GB')};
+        markUpdated(code,'Pending Review');
+      }
+
+      /* Small delay between sends */
+      if(toSend.indexOf(code)<toSend.length-1) await new Promise(r=>setTimeout(r,2000));
+    }
+
+    summary.textContent=`✅ ${sent} sent, ✗ ${failed} failed`;
+    summary.style.color=failed>0?'#f87171':'#4ade80';
+    btn.disabled=false;
+    btn.textContent='✉️ Send Selected';
+    showToast(`Bulk send complete: ${sent} sent, ${failed} failed`);
+  }
+
   window.addEventListener('DOMContentLoaded', ()=>{ loadUsersFU(); });
 </script>
 
@@ -1711,6 +1909,39 @@
       <button class="btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="generateWeeklyBranchPDF()">⬇ Branch Report PDF</button>
       <button class="btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;" onclick="generateWeeklyAssetPDF()">⬇ Asset Report PDF</button>
       <button class="btn" id="ws-send-btn" style="background:rgba(251,191,36,0.1);border-color:rgba(251,191,36,0.3);color:#fbbf24;" onclick="sendWeeklySummary()">✉️ Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BULK SEND MODAL ══ -->
+<div id="bulk-send-modal" class="modal-overlay" style="z-index:300;">
+  <div class="modal-box" style="width:900px;max-height:92vh;">
+    <h3>📨 Send All Follow-up Emails</h3>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+      <span style="font-size:12px;color:#64748b;margin-right:auto;" id="bulk-branch-count"></span>
+      <button class="btn" id="bulk-pull-btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;font-size:12px;padding:6px 14px;" onclick="pullAllRecipients()">👥 Pull All Recipients</button>
+      <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;font-size:12px;padding:6px 14px;" onclick="bulkSelectAll(true)">Select All</button>
+      <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;font-size:12px;padding:6px 14px;" onclick="bulkSelectAll(false)">Deselect All</button>
+    </div>
+    <div style="overflow-y:auto;max-height:480px;border:0.5px solid rgba(255,255,255,0.08);border-radius:8px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;" id="bulk-send-table">
+        <thead>
+          <tr style="background:#1a1f2e;position:sticky;top:0;z-index:2;">
+            <th style="padding:8px 10px;text-align:center;width:36px;color:#64748b;">✓</th>
+            <th style="padding:8px 10px;text-align:left;color:#64748b;">Branch</th>
+            <th style="padding:8px 10px;text-align:left;color:#64748b;">Last Sent</th>
+            <th style="padding:8px 10px;text-align:left;color:#64748b;width:200px;">To</th>
+            <th style="padding:8px 10px;text-align:left;color:#64748b;width:200px;">CC</th>
+            <th style="padding:8px 10px;text-align:left;color:#64748b;width:100px;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="bulk-send-tbody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid rgba(255,255,255,0.07);align-items:center;flex-wrap:wrap;">
+      <span id="bulk-send-summary" style="font-size:11px;color:#64748b;margin-right:auto;"></span>
+      <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;" onclick="document.getElementById('bulk-send-modal').style.display='none'">Close</button>
+      <button class="btn" id="bulk-send-btn" style="background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="startBulkSend()">✉️ Send Selected</button>
     </div>
   </div>
 </div>
