@@ -1655,6 +1655,7 @@
     tbody.innerHTML = eligible.map((b,i)=>{
       const t   = emailThreads[b.code]||{};
       const pct = branchPct(b.code);
+      const recipients = [t.to, t.cc].filter(Boolean).join(', ') || '—';
       return `<tr id="bulk-row-${b.code}" style="border-bottom:0.5px solid rgba(255,255,255,0.05);">
         <td style="padding:8px 10px;text-align:center;">
           <input type="checkbox" id="bulk-chk-${b.code}" checked style="cursor:pointer;" onchange="updateBulkCount()"/>
@@ -1664,14 +1665,7 @@
           <div style="font-size:10px;color:#64748b;">${b.status} · ${pct}%</div>
         </td>
         <td style="padding:8px 10px;color:#64748b;font-size:11px;">${t.lastSent||'—'}</td>
-        <td style="padding:8px 4px;">
-          <input id="bulk-to-${b.code}" value="${t.to||''}" placeholder="To..."
-            style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:5px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;"/>
-        </td>
-        <td style="padding:8px 4px;">
-          <input id="bulk-cc-${b.code}" value="${t.cc||''}" placeholder="CC..."
-            style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:11px;padding:5px 8px;border-radius:5px;font-family:'DM Sans',sans-serif;"/>
-        </td>
+        <td style="padding:8px 10px;color:#94a3b8;font-size:11px;">${recipients}</td>
         <td style="padding:8px 10px;" id="bulk-status-${b.code}">
           <span style="color:#64748b;font-size:11px;">⬜ Waiting</span>
         </td>
@@ -1702,62 +1696,6 @@
   }
 
   /* Pull recipients from Gmail threads */
-  async function pullAllRecipients(){
-    const btn = document.getElementById('bulk-pull-btn');
-    btn.disabled=true; btn.textContent='👥 Pulling...';
-    const rows = document.querySelectorAll('#bulk-send-tbody tr');
-    const branchCodes = [];
-    rows.forEach(row=>{
-      const code = row.id.replace('bulk-row-','');
-      const t    = emailThreads[code];
-      if(t&&t.threadId) branchCodes.push({code, threadId:t.threadId});
-    });
-    let done=0;
-    for(const {code, threadId} of branchCodes){
-      btn.textContent=`👥 Pulling... (${++done}/${branchCodes.length})`;
-      try{
-        const res  = await fetch(`${APPS_URL}?action=getThreadParticipants&threadId=${encodeURIComponent(threadId)}`);
-        const data = await res.json();
-        console.log(`[${code}] participants:`, data.participants, 'rawFields:', data.rawFields);
-        if(data.participants&&data.participants.length){
-          const toEl  = document.getElementById(`bulk-to-${code}`);
-          const ccEl  = document.getElementById(`bulk-cc-${code}`);
-          /* Collect all currently known addresses */
-          const existing = [
-            ...(toEl.value||'').split(',').map(e=>e.trim().toLowerCase()),
-            ...(ccEl.value||'').split(',').map(e=>e.trim().toLowerCase())
-          ].filter(Boolean);
-          /* Filter out own email (khalid) and already listed */
-          const ownEmails = ['khalid.altalli@ananinja.com','khalid@ananinja.com'];
-          const newOnes = data.participants.filter(p=>
-            p && !existing.includes(p.toLowerCase()) && !ownEmails.includes(p.toLowerCase())
-          );
-          /* Show pulled emails in status cell */
-          const statusEl = document.getElementById(`bulk-status-${code}`);
-          if(statusEl){
-            if(newOnes.length){
-              statusEl.innerHTML=`<span style="color:#22d3ee;font-size:10px;" title="${newOnes.join(', ')}">👥 +${newOnes.length} added</span>`;
-            } else {
-              statusEl.innerHTML=`<span style="color:#64748b;font-size:10px;">No new found</span>`;
-            }
-          }
-          if(newOnes.length){
-            /* If To is empty, put first new one there */
-            if(!toEl.value.trim()){
-              toEl.value = newOnes[0];
-              const rest = newOnes.slice(1);
-              if(rest.length) ccEl.value = ccEl.value ? ccEl.value+', '+rest.join(', ') : rest.join(', ');
-            } else {
-              /* Otherwise add all to CC */
-              ccEl.value = ccEl.value ? ccEl.value+', '+newOnes.join(', ') : newOnes.join(', ');
-            }
-          }
-        }
-      } catch(e){ /* skip on error */ }
-    }
-    btn.disabled=false; btn.textContent='👥 Pull All Recipients';
-    showToast('Recipients pulled — please review before sending!');
-  }
 
   /* Send all selected branches */
   async function startBulkSend(){
@@ -1782,9 +1720,8 @@
       const statusEl = document.getElementById(`bulk-status-${code}`);
       statusEl.innerHTML='<span style="color:#fbbf24;font-size:11px;">🔄 Sending...</span>';
 
-      const to      = document.getElementById(`bulk-to-${code}`).value.trim();
-      const cc      = document.getElementById(`bulk-cc-${code}`).value.trim();
-      const saved   = emailThreads[code]||{};
+      const to      = saved.to||'';
+      const cc      = saved.cc||'';
       const subject = saved.subject||`Asset Receiving Follow-up — ${code}`;
 
       if(!to){
@@ -1987,7 +1924,6 @@
     <h3>📨 Send All Follow-up Emails</h3>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
       <span style="font-size:12px;color:#64748b;margin-right:auto;" id="bulk-branch-count"></span>
-      <button class="btn" id="bulk-pull-btn" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#a78bfa;font-size:12px;padding:6px 14px;" onclick="pullAllRecipients()">👥 Pull All Recipients</button>
       <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;font-size:12px;padding:6px 14px;" onclick="bulkSelectAll(true)">Select All</button>
       <button class="btn" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#94a3b8;font-size:12px;padding:6px 14px;" onclick="bulkSelectAll(false)">Deselect All</button>
     </div>
@@ -1998,8 +1934,7 @@
             <th style="padding:8px 10px;text-align:center;width:36px;color:#64748b;">✓</th>
             <th style="padding:8px 10px;text-align:left;color:#64748b;">Branch</th>
             <th style="padding:8px 10px;text-align:left;color:#64748b;">Last Sent</th>
-            <th style="padding:8px 10px;text-align:left;color:#64748b;width:200px;">To</th>
-            <th style="padding:8px 10px;text-align:left;color:#64748b;width:200px;">CC</th>
+            <th style="padding:8px 10px;text-align:left;color:#64748b;">Thread Recipients</th>
             <th style="padding:8px 10px;text-align:left;color:#64748b;width:100px;">Status</th>
           </tr>
         </thead>
