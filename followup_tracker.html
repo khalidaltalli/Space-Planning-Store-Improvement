@@ -161,7 +161,7 @@
       <span id="user-badge" class="user-badge"></span>
       <button class="btn" onclick="loadData()">↻ Refresh</button>
       <button class="btn" style="background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;" onclick="openWeeklySummary()">📊 Weekly Summary</button>
-      <button class="btn" style="background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;" onclick="openBulkSend()">📨 Send All Follow-ups</button>
+      <button class="btn" id="bulk-send-header-btn" style="background:rgba(34,211,238,0.08);border:0.5px solid rgba(34,211,238,0.2);color:#22d3ee;display:none;" onclick="openBulkSend()">📨 Send All Follow-ups</button>
       <button class="btn" style="background:rgba(248,113,113,0.08);border-color:rgba(248,113,113,0.2);color:#f87171;" onclick="signOut()">Sign Out</button>
     </div>
   </div>
@@ -350,6 +350,9 @@
     const badge=document.getElementById('user-badge');
     badge.textContent=isViewer?'👁 Viewer':currentUser;
     badge.className='user-badge badge-'+currentUser.toLowerCase();
+    /* Show bulk send only for Khalid */
+    const bulkBtn=document.getElementById('bulk-send-header-btn');
+    if(bulkBtn) bulkBtn.style.display=currentUser==='Khalid'?'':'none';
     loadData();
   }
 
@@ -1709,7 +1712,6 @@
       const t    = emailThreads[code];
       if(t&&t.threadId) branchCodes.push({code, threadId:t.threadId});
     });
-    /* Call Apps Script for each thread */
     let done=0;
     for(const {code, threadId} of branchCodes){
       btn.textContent=`👥 Pulling... (${++done}/${branchCodes.length})`;
@@ -1717,23 +1719,31 @@
         const res  = await fetch(`${APPS_URL}?action=getThreadParticipants&threadId=${encodeURIComponent(threadId)}`);
         const data = await res.json();
         if(data.participants&&data.participants.length){
-          const ccEl  = document.getElementById(`bulk-cc-${code}`);
           const toEl  = document.getElementById(`bulk-to-${code}`);
+          const ccEl  = document.getElementById(`bulk-cc-${code}`);
+          /* Collect all currently known addresses */
           const existing = [
             ...(toEl.value||'').split(',').map(e=>e.trim().toLowerCase()),
             ...(ccEl.value||'').split(',').map(e=>e.trim().toLowerCase())
           ].filter(Boolean);
-          const newOnes = data.participants.filter(p=>!existing.includes(p.toLowerCase()));
+          /* New ones not already listed */
+          const newOnes = data.participants.filter(p=>p&&!existing.includes(p.toLowerCase()));
           if(newOnes.length){
-            ccEl.value = ccEl.value
-              ? ccEl.value + ', ' + newOnes.join(', ')
-              : newOnes.join(', ');
+            /* If To is empty, put first new one there */
+            if(!toEl.value.trim()){
+              toEl.value = newOnes[0];
+              const rest = newOnes.slice(1);
+              if(rest.length) ccEl.value = ccEl.value ? ccEl.value+', '+rest.join(', ') : rest.join(', ');
+            } else {
+              /* Otherwise add all to CC */
+              ccEl.value = ccEl.value ? ccEl.value+', '+newOnes.join(', ') : newOnes.join(', ');
+            }
           }
         }
       } catch(e){ /* skip on error */ }
     }
     btn.disabled=false; btn.textContent='👥 Pull All Recipients';
-    showToast('Recipients updated!');
+    showToast('Recipients pulled — please review before sending!');
   }
 
   /* Send all selected branches */
