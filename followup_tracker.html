@@ -1769,11 +1769,56 @@
         failed++; continue;
       }
 
-      /* Build email HTML */
-      const branchObj = branches.find(b=>b.code===code)||{};
-      const assets    = checklist.filter(r=>(r['Branch Code']||'').trim()===code);
-      const fq        = qtyData[code]||{};
-      const htmlBody  = buildFollowupHTML(code) + `<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
+      /* Build email HTML — same logic as openFollowupEmail */
+      const assets2   = checklist.filter(r=>(r['Branch Code']||'').trim()===code);
+      const fq2       = qtyData[code]||{};
+      const bObj      = branches.find(b=>b.code===code)||{};
+      const p         =(t,style='')=>`<p style="margin:8px 0;color:#1a1a1a;${style}">${t}</p>`;
+      const h         =(t)=>`<p style="margin:14px 0 4px;font-weight:bold;font-size:13px;color:#1a3a5c;">${t}</p>`;
+      const th        ='padding:7px 10px;background:#1a3a5c;color:#fff;text-align:left;border:1px solid #ccc;font-weight:bold;font-size:12px;';
+      const td        ='padding:6px 10px;border:1px solid #ccc;font-size:12px;color:#1a1a1a;';
+      const tbl       ='width:100%;border-collapse:collapse;margin:8px 0;';
+      const priColor  ={Essential:'#c0392b',Critical:'#c0392b',High:'#e67e22',Medium:'#d4a017',Low:'#27ae60'};
+      const stColor   ={Received:'#16a34a',Delivered:'#b45309','Not Received':'#b91c1c'};
+
+      function makeTable(headers,rows,colStyles=[]){
+        const head='<thead><tr>'+headers.map(hd=>`<th style="${th}">${hd}</th>`).join('')+'</tr></thead>';
+        const body='<tbody>'+rows.map((r,ri)=>`<tr style="background:${ri%2===0?'#fff':'#f7f9fc'};">`+r.map((c,ci)=>`<td style="${td}${colStyles[ci]||''}">${c}</td>`).join('')+'</tr>').join('')+'</tbody>';
+        return `<table style="${tbl}">${head}${body}</table>`;
+      }
+
+      /* Pending assets */
+      const PRIORITY_ORDER=['Essential','Critical','High','Medium','Low',''];
+      const pendingRows2=assets2
+        .filter(r=>r['Asset Status']==='Not Received'||r['Asset Status']==='Delivered')
+        .sort((a,b)=>(PRIORITY_ORDER.indexOf(a['Priority']||'')-PRIORITY_ORDER.indexOf(b['Priority']||''))||(a['Asset']||'').localeCompare(b['Asset']||''))
+        .map(r=>[r['Asset']||'',`<span style="color:${priColor[r['Priority']]||'#555'};font-weight:bold;">${r['Priority']||''}</span>`,`<span style="color:${stColor[r['Asset Status']]||'#555'};font-weight:bold;">${r['Asset Status']||''}</span>`]);
+
+      /* Qty shortages */
+      const QTY_ITEMS2=[{label:'Freebolt',req:'Freebolt Req',rec:'Freebolt Rec'},{label:'Heavy Rack',req:'Heavy Rack Req',rec:'Heavy Rack Rec'},{label:'1D Fridge',req:'1D Fridge Req',rec:'1D Fridge Rec'},{label:'2D Fridge',req:'2D Fridge Req',rec:'2D Fridge Rec'},{label:'3D Fridge',req:'3D Fridge Req',rec:'3D Fridge Rec'},{label:'1D Freezer',req:'1D Freezer Req',rec:'1D Freezer Rec'},{label:'2D Freezer',req:'2D Freezer Req',rec:'2D Freezer Rec'},{label:'3D Freezer',req:'3D Freezer Req',rec:'3D Freezer Rec'}];
+      const shortageRows2=QTY_ITEMS2.map(item=>{const req=parseInt(fq2[item.req]||0)||0,rec=parseInt(fq2[item.rec]||0)||0;if(!req||rec>=req)return null;return[item.label,req,rec,`<span style="color:#b91c1c;font-weight:bold;">${rec-req}</span>`];}).filter(Boolean);
+
+      /* DN groups */
+      const DN_GROUPS2=[{name:'Freebolt & Heavy Rack',assets:['Freebolt','Heavy Rack','Heavyrack']},{name:'Sign Board',assets:['SignBoard','Sign Board']},{name:'Curtains',assets:['Curtain']},{name:'Cold Room',assets:['Coldroom','Cold Room']},{name:'Fridges & Freezers',assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer']},{name:'Access Points & CCTV',assets:['Access Points','CCTV']},{name:'Air Condition',assets:['Air Condition']}];
+      const dnRows2=DN_GROUPS2.map(g=>{const ga=assets2.filter(r=>g.assets.includes((r['Asset']||'').trim())&&r['Asset Status']&&r['Asset Status']!=='None');if(!ga.length)return null;const signed=ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));if(signed)return null;const anyUnsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));const status=anyUnsigned?`<span style="color:#e67e22;font-weight:bold;">📎 Uploaded — Awaiting Signature</span>`:`<span style="color:#c0392b;font-weight:bold;">✗ Missing</span>`;return[g.name,status];}).filter(Boolean);
+
+      const statusLine2=bObj.status==='Live'
+        ?p('The initial asset receiving process is still not complete due to the pending items listed below.')
+        :p('The branch is currently in Receiving status. The following items are still pending.');
+
+      const htmlBody=
+        p('Dear Team,')+
+        p(`I would like to follow up on the asset receiving status for <strong>${code}</strong>.`)+
+        statusLine2+
+        (pendingRows2.length?h('Current Pending Assets:')+makeTable(['Asset','Priority','Status'],pendingRows2):'')+
+        (shortageRows2.length?h('Qty Shortages:')+makeTable(['Item','Required','Received','Shortage'],shortageRows2):'')+
+        (dnRows2.length?h('Pending Delivery Notes:')+makeTable(['D.N. Group','Status'],dnRows2):'')+
+        p('<strong>Area Manager:</strong> Please ensure the Store Manager is included in this email thread so they are aware of the pending items and can coordinate accordingly.')+
+        p('If any of the above assets have been received at the branch, please inform us as soon as possible so we can update our receiving records and complete the receiving process. Also attach an image of the asset as well for verification.')+
+        p('If any support or clarification is required from our side, please let me know.')+
+        p('Thank you for your support.');
+
+      const fullHtmlBody = htmlBody + `<br/><br/>--<br/><strong style="font-size:12px;">${sig}</strong><br/><span style="font-size:11px;color:#555;">Space Planning & Store Improvement Team</span>`;
 
       /* Generate Excel */
       let xlsxBase64='', xlsxName='';
@@ -1794,7 +1839,7 @@
       const sendId=`BULK_${code}_${Date.now()}`;
       fetch(APPS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({action:'sendFollowupEmail',sendId,branch:code,to,cc,subject,
-          htmlBody,threadId:saved.threadId||'',xlsxBase64,xlsxName,
+          htmlBody:fullHtmlBody,threadId:saved.threadId||'',xlsxBase64,xlsxName,
           user:currentUser||'Khalid',timestamp:new Date().toLocaleString('en-GB')})
       });
 
