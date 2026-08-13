@@ -399,21 +399,18 @@
 
   async function removeDNLink(branch, group, dnType) {
     const timestamp = new Date().toLocaleString('en-GB');
-    const action    = dnType==='signed' ? 'writeSignedDNLink' : 'writeDNLink';
-    /* Write empty string to clear the link */
     await fetch(APPS_URL, {
       method:'POST', mode:'no-cors',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action, branch, assets:group.assets, groupName:group.name, fileName:'Link removed', fileUrl:'', user:currentUser, timestamp })
+      body: JSON.stringify({ action:'removeDNLink', branch, assets:group.assets, groupName:group.name, dnType, user:currentUser, timestamp })
     });
     /* Update local data */
     checklistData.forEach(r=>{
       if((r['Branch Code']||'').trim()===branch && group.assets.includes((r['Asset']||'').trim())){
-        if(dnType==='signed')   r['D.N. Signed']     = '';
-        else                    r['D.N. Not Signed']  = '';
+        if(dnType==='signed')   r['D.N. Signed']    = '';
+        else                    r['D.N. Not Signed'] = '';
       }
     });
-    /* Add to activity log */
     activityLog.unshift({
       Timestamp: timestamp, User: currentUser,
       'Branch Code': branch, 'D.N. Group': group.name,
