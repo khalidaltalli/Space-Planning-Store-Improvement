@@ -423,6 +423,12 @@
     renderLog();
   }
 
+  function triggerUploadBtn(btn) {
+    const branch   = btn.getAttribute('data-branch');
+    const groupKey = btn.getAttribute('data-group');
+    triggerUpload(branch, groupKey);
+  }
+
   function triggerUpload(branch, groupKey) {
     _dnModalBranch = branch;
     _dnModalGroup  = DN_GROUPS.find(g=>g.key===groupKey);
