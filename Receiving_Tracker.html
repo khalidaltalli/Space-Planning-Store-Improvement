@@ -420,7 +420,7 @@
           branchExtras={};
           (bc.rows||[]).forEach(r=>{
             const b=(r['Branch Code']||'').trim();
-            if(b) branchExtras[b]={ receivingDate: r['Receiving Date']||'', liveDate: r['Live Date']||'', assetListLink:'', layoutLink:'' };
+            if(b) branchExtras[b]={ receivingDate: r['Receiving Date']||'', liveDate: r['Live Date']||'', assetListLink:'', layoutLink:'', version: r['Version']||'v1' };
           });
         } catch(e){branchExtras={};}
         /* Links: D.N. Folder, Layout Link, Asset Link from Links tab */
@@ -780,7 +780,7 @@
       procWrap.style.cssText='border-top:0.5px solid rgba(255,255,255,0.07);';
       procWrap.innerHTML=`
         <div onclick="toggleSection(this)" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 1.25rem;cursor:pointer;background:rgba(255,255,255,0.02);">
-          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">📦 Procurement Requests</span>
+          <span style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.4px;">📦 Procurement Quantities</span>
           <div style="display:flex;align-items:center;gap:8px;">
             <button onclick="event.stopPropagation();openAddProcurement('${branch.code}')" style="font-size:10px;padding:2px 10px;border-radius:6px;background:rgba(167,139,250,0.1);border:0.5px solid rgba(167,139,250,0.3);color:#a78bfa;cursor:pointer;font-family:'DM Sans',sans-serif;">+ Add</button>
             <span class="si" style="color:#64748b;font-size:11px;transition:transform 0.2s;transform:rotate(-90deg);">▼</span>
@@ -2054,7 +2054,7 @@
     }
 
     function openAddProcurement(branch){
-      document.getElementById('proc-modal-title').textContent='📦 Add Procurement Request — '+branch;
+      document.getElementById('proc-modal-title').textContent='📦 Add Procurement — '+branch;
       document.getElementById('proc-edit-id').value='';
       document.getElementById('proc-edit-branch').value=branch;
       document.getElementById('proc-asset-group').value='Fridges & Freezers';
@@ -2071,7 +2071,7 @@
       const items=procCache[branch]||[];
       const item=items.find(x=>x.ID===id);
       if(!item) return;
-      document.getElementById('proc-modal-title').textContent='📦 Edit Procurement Request — '+branch;
+      document.getElementById('proc-modal-title').textContent='📦 Edit Procurement — '+branch;
       document.getElementById('proc-edit-id').value=id;
       document.getElementById('proc-edit-branch').value=branch;
       document.getElementById('proc-asset-group').value=item['Asset Group']||'Other';
@@ -2119,42 +2119,110 @@
     async function renderProcurement(branch, cardId){
       const container=document.getElementById('proc_'+cardId);
       if(!container) return;
-      if(!procCache[branch]){
-        try{
-          const r=await fetchSheet('Procurement Tracking');
-          /* Group all rows; cache per branch */
-          const all={};
-          (r.rows||[]).forEach(row=>{
-            const b=(row['Branch Code']||'').trim();
-            if(!all[b]) all[b]=[];
-            all[b].push(row);
-          });
-          /* Merge into cache */
-          Object.keys(all).forEach(b=>{ procCache[b]=all[b]; });
-          if(!procCache[branch]) procCache[branch]=[];
-        } catch(e){ procCache[branch]=[]; }
+
+      const version = (branchExtras[branch]||{}).version||'v1';
+
+      if(version==='v2'){
+        /* ── v2: Qty-based procurement view ── */
+        container.innerHTML='<p style="font-size:11px;color:#475569;padding:6px 0;">Loading...</p>';
+        try {
+          /* Get checklist assets for this branch */
+          const assets = trackerData.filter(r=>(r['Branch Code']||'').trim()===branch);
+          const qtyRow = qtyData ? qtyData[branch]||{} : {};
+
+          /* Get Asset List v2 for req qtys */
+          if(!window._assetListV2){
+            const r = await fetchSheet('Asset List v2');
+            window._assetListV2 = {};
+            (r.rows||[]).forEach(a=>{ window._assetListV2[a['Short Name']||a['shortName']] = a; });
+          }
+
+          /* Build procurement rows — exclude fridge/shelf items */
+          const FRIDGE_SHELF = ['Free Bolt Units','Free Bolt Shelves','Heavy Racks','Heavy Rack Shelves','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer','Cold Room Chiller','Cold Room Freezer','Shelving Units','Free Bolt Dividers 20cm','Free Bolt Dividers 25cm','Cold Room Freezer Dividers','Cold Room Chiller Dividers'];
+
+          const rows = assets.filter(a=>!FRIDGE_SHELF.includes((a['Asset']||'').trim()));
+          if(!rows.length){
+            container.innerHTML='<p style="font-size:11px;color:#475569;padding:6px 0;">No procurement assets found.</p>';
+            return;
+          }
+
+          const statusBg = {Shortage:'rgba(248,113,113,0.1)',Complete:'rgba(74,222,128,0.1)',Extra:'rgba(251,191,36,0.1)','Not Received':'rgba(100,116,139,0.1)'};
+          const statusColor = {Shortage:'#f87171',Complete:'#4ade80',Extra:'#fbbf24','Not Received':'#64748b'};
+          const statusIcon = {Shortage:'🔴',Complete:'✅',Extra:'🟡','Not Received':'⬜'};
+
+          container.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead><tr style="border-bottom:0.5px solid rgba(255,255,255,0.08);">
+              <th style="padding:4px 8px;text-align:left;color:#64748b;font-weight:600;">Asset</th>
+              <th style="padding:4px 8px;text-align:center;color:#64748b;font-weight:600;">Unit</th>
+              <th style="padding:4px 8px;text-align:center;color:#64748b;font-weight:600;">Required</th>
+              <th style="padding:4px 8px;text-align:center;color:#64748b;font-weight:600;">Received</th>
+              <th style="padding:4px 8px;text-align:left;color:#64748b;font-weight:600;">Status</th>
+            </tr></thead>
+            <tbody>${rows.map((a,i)=>{
+              const name   = (a['Asset']||'').trim();
+              const v2data = window._assetListV2[name]||{};
+              const req    = parseInt(v2data['Qty As Per Layout']||v2data['qty']||0)||0;
+              const rec    = parseInt(a['Qty Received']||0)||0;
+              const unit   = v2data['Unit']||v2data['unit']||'Unit';
+              let st, diff='';
+              if(!req && rec===0){ st='Not Received'; }
+              else if(rec===0&&req>0){ st='Not Received'; }
+              else if(rec<req){ st='Shortage'; diff=`(−${req-rec})`; }
+              else if(rec===req){ st='Complete'; }
+              else { st='Extra'; diff=`(+${rec-req})`; }
+              return `<tr style="border-bottom:0.5px solid rgba(255,255,255,0.04);background:${i%2===0?'transparent':'rgba(255,255,255,0.01)'};">
+                <td style="padding:5px 8px;color:#e2e8f0;font-weight:500;">${name}</td>
+                <td style="padding:5px 8px;text-align:center;color:#64748b;">${unit}</td>
+                <td style="padding:5px 8px;text-align:center;color:#94a3b8;">${req||'—'}</td>
+                <td style="padding:5px 8px;text-align:center;color:#94a3b8;">${rec||'—'}</td>
+                <td style="padding:5px 8px;">
+                  <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${statusBg[st]};color:${statusColor[st]};font-weight:600;white-space:nowrap;">
+                    ${statusIcon[st]} ${st} ${diff}
+                  </span>
+                </td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>`;
+        } catch(e){
+          container.innerHTML='<p style="font-size:11px;color:#f87171;padding:6px 0;">Error loading quantities.</p>';
+        }
+      } else {
+        /* ── v1: Original procurement tracking view ── */
+        if(!procCache[branch]){
+          try{
+            const r=await fetchSheet('Procurement Tracking');
+            const all={};
+            (r.rows||[]).forEach(row=>{
+              const b=(row['Branch Code']||'').trim();
+              if(!all[b]) all[b]=[];
+              all[b].push(row);
+            });
+            Object.keys(all).forEach(b=>{ procCache[b]=all[b]; });
+            if(!procCache[branch]) procCache[branch]=[];
+          } catch(e){ procCache[branch]=[]; }
+        }
+        const items=procCache[branch]||[];
+        if(!items.length){
+          container.innerHTML='<p style="font-size:11px;color:#475569;padding:6px 0;">No procurement requests yet.</p>';
+          return;
+        }
+        const sbClass={'Requested':'sb-requested','PO Created':'sb-po','In Transit':'sb-transit','Delivered':'sb-delivered'};
+        container.innerHTML=`<table class="proc-table">
+          <thead><tr><th>Asset Group</th><th>Owner</th><th>Request No.</th><th>Status</th><th>ETA</th><th>Remarks</th><th></th></tr></thead>
+          <tbody>${items.map(it=>`<tr>
+            <td style="font-weight:600;color:#e2e8f0;">${it['Asset Group']||'—'}</td>
+            <td><span class="user-badge badge-${(it['Request Owner']||'').toLowerCase()}">${it['Request Owner']||'—'}</span></td>
+            <td style="font-family:'DM Mono',monospace;color:#22d3ee;">${it['Request Number']||'—'}</td>
+            <td><span class="sb ${sbClass[it['Status']]||'sb-requested'}">${it['Status']||'—'}</span></td>
+            <td style="color:#94a3b8;font-size:10px;">${it['ETA']||'—'}</td>
+            <td style="color:#64748b;font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it['Remarks']||'—'}</td>
+            <td style="white-space:nowrap;">
+              <button onclick="openEditProcurement('${it['ID']}','${branch}','${cardId}')" style="font-size:10px;padding:1px 7px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">✎</button>
+              <button onclick="deleteProcurement('${it['ID']}','${branch}','${cardId}')" style="font-size:10px;padding:1px 7px;border-radius:4px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:3px;">✕</button>
+            </td>
+          </tr>`).join('')}</tbody>
+        </table>`;
       }
-      const items=procCache[branch]||[];
-      if(!items.length){
-        container.innerHTML='<p style="font-size:11px;color:#475569;padding:6px 0;">No procurement requests yet.</p>';
-        return;
-      }
-      const sbClass={'Requested':'sb-requested','PO Created':'sb-po','In Transit':'sb-transit','Delivered':'sb-delivered'};
-      container.innerHTML=`<table class="proc-table">
-        <thead><tr><th>Asset Group</th><th>Owner</th><th>Request No.</th><th>Status</th><th>ETA</th><th>Remarks</th><th></th></tr></thead>
-        <tbody>${items.map(it=>`<tr>
-          <td style="font-weight:600;color:#e2e8f0;">${it['Asset Group']||'—'}</td>
-          <td><span class="user-badge badge-${(it['Request Owner']||'').toLowerCase()}">${it['Request Owner']||'—'}</span></td>
-          <td style="font-family:'DM Mono',monospace;color:#22d3ee;">${it['Request Number']||'—'}</td>
-          <td><span class="sb ${sbClass[it['Status']]||'sb-requested'}">${it['Status']||'—'}</span></td>
-          <td style="color:#94a3b8;font-size:10px;">${it['ETA']||'—'}</td>
-          <td style="color:#64748b;font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it['Remarks']||'—'}</td>
-          <td style="white-space:nowrap;">
-            <button onclick="openEditProcurement('${it['ID']}','${branch}','${cardId}')" style="font-size:10px;padding:1px 7px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">✎</button>
-            <button onclick="deleteProcurement('${it['ID']}','${branch}','${cardId}')" style="font-size:10px;padding:1px 7px;border-radius:4px;background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;cursor:pointer;font-family:'DM Sans',sans-serif;margin-left:3px;">✕</button>
-          </td>
-        </tr>`).join('')}</tbody>
-      </table>`;
     }
 
     /* ══════════════════════════════════════════════════════
