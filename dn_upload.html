@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>D.N. Upload — Space Planning</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #0f1117; color: #e2e8f0; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
@@ -759,15 +760,16 @@ function runExport(){
   const selectedBranches = allBranches.filter(b=>_exportBranchState[b.code]!==false).map(b=>b.code);
   const selectedGroups   = [...document.querySelectorAll('.export-group-chk:checked')].map(c=>c.value);
 
-  if(!selectedBranches.length){ alert('Please select at least one branch.'); return; }
-  if(!selectedGroups.length)  { alert('Please select at least one DN group.'); return; }
+  if(!selectedBranches.length){ showExportNotif('⚠ Please select at least one branch.','#fbbf24'); return; }
+  if(!selectedGroups.length)  { showExportNotif('⚠ Please select at least one DN group.','#fbbf24'); return; }
+
+  showExportNotif('⏳ Building export...','#64748b');
 
   const selectedGroupDefs = DN_GROUPS.filter(g=>selectedGroups.includes(g.key));
   const rows = [];
 
   selectedBranches.forEach(code=>{
     selectedGroupDefs.forEach(g=>{
-      /* Find links for this branch + group */
       let notSigned='', signed='';
       checklistData.forEach(r=>{
         if((r['Branch Code']||'').trim()!==code) return;
@@ -776,36 +778,50 @@ function runExport(){
         if(r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http')&&!notSigned) notSigned=r['D.N. Not Signed'];
         if(r['D.N. Signed']   &&r['D.N. Signed'].startsWith('http')   &&!signed)    signed=r['D.N. Signed'];
       });
-      /* Only include rows that have at least one link */
       if(notSigned||signed){
         rows.push({'Branch':code,'Delivery Note':g.name,'Not Signed PDF':notSigned,'Signed PDF':signed,'Notes':''});
       }
     });
   });
 
-  if(!rows.length){ alert('No links found for the selected branches and groups.'); return; }
+  if(!rows.length){ showExportNotif('⚠ No links found for the selected branches and groups.','#f87171'); return; }
 
-  /* Generate Excel */
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:16},{wch:26},{wch:45},{wch:45},{wch:30}];
-
-  /* Make link cells display as hyperlinks */
-  rows.forEach((r,i)=>{
-    ['Not Signed PDF','Signed PDF'].forEach((col,ci)=>{
-      const url = r[col];
-      const cellRef = (ci===0?'C':'D')+(i+2);
-      if(url&&ws[cellRef]){
-        ws[cellRef]={ v:url, t:'s', l:{ Target:url }, s:{ font:{ color:{ rgb:'0E7490' }, underline:true } } };
-      }
+  try {
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:16},{wch:26},{wch:45},{wch:45},{wch:30}];
+    rows.forEach((r,i)=>{
+      ['Not Signed PDF','Signed PDF'].forEach((col,ci)=>{
+        const url = r[col];
+        const cellRef = (ci===0?'C':'D')+(i+2);
+        if(url&&ws[cellRef]){
+          ws[cellRef]={ v:url, t:'s', l:{ Target:url }, s:{ font:{ color:{ rgb:'0E7490' }, underline:true } } };
+        }
+      });
     });
-  });
+    const wb = XLSX.utils.book_new();
+    const today = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+    XLSX.utils.book_append_sheet(wb, ws, 'DN Links');
+    XLSX.writeFile(wb, `DN_Links_Export_${today}.xlsx`);
+    closeExportModal();
+    showToast('✓ Excel exported — '+rows.length+' rows');
+  } catch(e){
+    showExportNotif('✗ Export failed: '+e.message,'#f87171');
+  }
+}
 
-  const wb = XLSX.utils.book_new();
-  const today = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
-  XLSX.utils.book_append_sheet(wb, ws, 'DN Links');
-  XLSX.writeFile(wb, `DN_Links_Export_${today}.xlsx`);
-  closeExportModal();
-  showToast('✓ Excel exported!');
+function showExportNotif(msg, color){
+  let el = document.getElementById('export-notif');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'export-notif';
+    el.style.cssText = 'margin:0 24px 12px;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:500;font-family:DM Sans,sans-serif;transition:opacity 0.2s;';
+    document.querySelector('#export-modal > div > div:last-child').before(el);
+  }
+  el.textContent = msg;
+  el.style.color = color;
+  el.style.background = color==='#f87171'?'rgba(248,113,113,0.08)':color==='#fbbf24'?'rgba(251,191,36,0.08)':'rgba(100,116,139,0.08)';
+  el.style.border = '0.5px solid '+color.replace(')',',0.3)').replace('rgb','rgba');
+  el.style.opacity='1';
 }
 </script>
 
