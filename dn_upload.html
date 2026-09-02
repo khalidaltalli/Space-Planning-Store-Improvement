@@ -698,6 +698,8 @@
 <script>
 /* ══ EXPORT MODAL ══ */
 function openExportModal(){
+  /* Reset state — all checked by default */
+  _exportBranchState = {};
   /* Populate branches */
   renderExportBranches('');
   /* Populate DN groups */
@@ -716,15 +718,20 @@ function closeExportModal(){
   document.getElementById('export-modal').style.display='none';
 }
 
+/* Track checked state across searches */
+let _exportBranchState = {}; /* code -> bool */
+
 function renderExportBranches(q){
   const list = document.getElementById('export-branch-list');
   const filtered = allBranches.filter(b=>!q||b.code.toLowerCase().includes(q.toLowerCase()));
-  list.innerHTML = filtered.map(b=>`
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.02);">
-      <input type="checkbox" class="export-branch-chk" value="${b.code}" checked style="cursor:pointer;accent-color:#22d3ee;" onchange="updateExportCount()" />
+  list.innerHTML = filtered.map(b=>{
+    const isChecked = _exportBranchState[b.code] !== false; /* default true */
+    return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.02);">
+      <input type="checkbox" class="export-branch-chk" value="${b.code}" ${isChecked?'checked':''} style="cursor:pointer;accent-color:#22d3ee;" onchange="_exportBranchState[this.value]=this.checked;updateExportCount()" />
       <span style="font-size:12px;color:#e2e8f0;font-family:'DM Mono',monospace;">${b.code}</span>
       <span style="font-size:10px;color:#64748b;">${b.status}</span>
-    </label>`).join('');
+    </label>`;
+  }).join('');
   updateExportCount();
 }
 
@@ -733,9 +740,13 @@ function filterExportBranches(){
 }
 
 function exportSelectAll(type, val){
-  const cls = type==='branch' ? '.export-branch-chk' : '.export-group-chk';
-  document.querySelectorAll(cls).forEach(c=>c.checked=val);
-  updateExportCount();
+  if(type==='branch'){
+    allBranches.forEach(b=>_exportBranchState[b.code]=val);
+    renderExportBranches(document.getElementById('export-search').value);
+  } else {
+    document.querySelectorAll('.export-group-chk').forEach(c=>c.checked=val);
+    updateExportCount();
+  }
 }
 
 function updateExportCount(){
@@ -745,7 +756,7 @@ function updateExportCount(){
 }
 
 function runExport(){
-  const selectedBranches = [...document.querySelectorAll('.export-branch-chk:checked')].map(c=>c.value);
+  const selectedBranches = allBranches.filter(b=>_exportBranchState[b.code]!==false).map(b=>b.code);
   const selectedGroups   = [...document.querySelectorAll('.export-group-chk:checked')].map(c=>c.value);
 
   if(!selectedBranches.length){ alert('Please select at least one branch.'); return; }
