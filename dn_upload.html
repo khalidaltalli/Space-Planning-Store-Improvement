@@ -122,6 +122,7 @@
     <div style="display:flex;align-items:center;gap:10px;">
       <span id="missing-pill" class="missing-pill">Loading...</span>
       <span id="current-user-pill" class="user-pill"></span>
+      <button class="btn" id="export-dn-btn" style="font-size:11px;padding:4px 10px;display:none;background:rgba(34,211,238,0.1);border-color:rgba(34,211,238,0.3);color:#22d3ee;" onclick="openExportModal()">⬇ Export</button>
       <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="loadData()">↻ Refresh</button>
       <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="signOut()">Sign Out</button>
     </div>
@@ -223,6 +224,7 @@
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app').style.display='block';
     document.getElementById('current-user-pill').textContent=isViewer?'👁 View Only':name;
+    if(!isViewer) document.getElementById('export-dn-btn').style.display='';
     loadData();
   }
   const DN_GROUPS = [
@@ -643,6 +645,158 @@
     </div>
   </div>
 </div>
+
+<!-- ══ EXPORT MODAL ══ -->
+<div id="export-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center;padding:1.5rem;">
+  <div style="background:#1a1f2e;border:1px solid rgba(255,255,255,0.08);border-radius:14px;width:100%;max-width:760px;max-height:90vh;overflow-y:auto;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:0.5px solid rgba(255,255,255,0.07);">
+      <div style="font-size:16px;font-weight:700;color:#f1f5f9;">⬇ Export D.N. Links</div>
+      <button onclick="closeExportModal()" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:18px;line-height:1;">×</button>
+    </div>
+
+    <div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+      <!-- Branches -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Branches</div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="exportSelectAll('branch',true)" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
+            <button onclick="exportSelectAll('branch',false)" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+          </div>
+        </div>
+        <input id="export-search" type="text" placeholder="Search branches…" oninput="filterExportBranches()" style="width:100%;background:#0f1117;border:0.5px solid rgba(255,255,255,0.1);color:#e2e8f0;font-size:12px;padding:7px 10px;border-radius:6px;outline:none;font-family:'DM Sans',sans-serif;margin-bottom:8px;" />
+        <div id="export-branch-list" style="max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;"></div>
+      </div>
+
+      <!-- DN Groups -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Delivery Note Groups</div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="exportSelectAll('group',true)" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">All</button>
+            <button onclick="exportSelectAll('group',false)" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;">None</button>
+          </div>
+        </div>
+        <div id="export-group-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:14px 24px;border-top:0.5px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;">
+      <span id="export-count" style="font-size:11px;color:#64748b;"></span>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeExportModal()" style="padding:8px 16px;border-radius:6px;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);color:#94a3b8;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;">Cancel</button>
+        <button onclick="runExport()" style="padding:8px 16px;border-radius:6px;background:#22d3ee;border:none;color:#0f1117;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;">⬇ Export Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ EXPORT MODAL ══ */
+function openExportModal(){
+  /* Populate branches */
+  renderExportBranches('');
+  /* Populate DN groups */
+  const groupList = document.getElementById('export-group-list');
+  groupList.innerHTML = DN_GROUPS.map(g=>`
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);">
+      <input type="checkbox" class="export-group-chk" value="${g.key}" checked style="cursor:pointer;accent-color:#22d3ee;" />
+      <span style="font-size:12px;color:#e2e8f0;">${g.name}</span>
+    </label>`).join('');
+  updateExportCount();
+  document.getElementById('export-search').value='';
+  document.getElementById('export-modal').style.display='flex';
+}
+
+function closeExportModal(){
+  document.getElementById('export-modal').style.display='none';
+}
+
+function renderExportBranches(q){
+  const list = document.getElementById('export-branch-list');
+  const filtered = allBranches.filter(b=>!q||b.code.toLowerCase().includes(q.toLowerCase()));
+  list.innerHTML = filtered.map(b=>`
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:5px 8px;border-radius:6px;background:rgba(255,255,255,0.02);">
+      <input type="checkbox" class="export-branch-chk" value="${b.code}" checked style="cursor:pointer;accent-color:#22d3ee;" onchange="updateExportCount()" />
+      <span style="font-size:12px;color:#e2e8f0;font-family:'DM Mono',monospace;">${b.code}</span>
+      <span style="font-size:10px;color:#64748b;">${b.status}</span>
+    </label>`).join('');
+  updateExportCount();
+}
+
+function filterExportBranches(){
+  renderExportBranches(document.getElementById('export-search').value);
+}
+
+function exportSelectAll(type, val){
+  const cls = type==='branch' ? '.export-branch-chk' : '.export-group-chk';
+  document.querySelectorAll(cls).forEach(c=>c.checked=val);
+  updateExportCount();
+}
+
+function updateExportCount(){
+  const branches = document.querySelectorAll('.export-branch-chk:checked').length;
+  const groups   = document.querySelectorAll('.export-group-chk:checked').length;
+  document.getElementById('export-count').textContent=`${branches} branches × ${groups} groups = up to ${branches*groups} rows`;
+}
+
+function runExport(){
+  const selectedBranches = [...document.querySelectorAll('.export-branch-chk:checked')].map(c=>c.value);
+  const selectedGroups   = [...document.querySelectorAll('.export-group-chk:checked')].map(c=>c.value);
+
+  if(!selectedBranches.length){ alert('Please select at least one branch.'); return; }
+  if(!selectedGroups.length)  { alert('Please select at least one DN group.'); return; }
+
+  const selectedGroupDefs = DN_GROUPS.filter(g=>selectedGroups.includes(g.key));
+  const rows = [];
+
+  selectedBranches.forEach(code=>{
+    selectedGroupDefs.forEach(g=>{
+      /* Find links for this branch + group */
+      let notSigned='', signed='';
+      checklistData.forEach(r=>{
+        if((r['Branch Code']||'').trim()!==code) return;
+        const asset=(r['Asset']||'').trim();
+        if(!g.assets.includes(asset)) return;
+        if(r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http')&&!notSigned) notSigned=r['D.N. Not Signed'];
+        if(r['D.N. Signed']   &&r['D.N. Signed'].startsWith('http')   &&!signed)    signed=r['D.N. Signed'];
+      });
+      /* Only include rows that have at least one link */
+      if(notSigned||signed){
+        rows.push({'Branch':code,'Delivery Note':g.name,'Not Signed PDF':notSigned,'Signed PDF':signed,'Notes':''});
+      }
+    });
+  });
+
+  if(!rows.length){ alert('No links found for the selected branches and groups.'); return; }
+
+  /* Generate Excel */
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:16},{wch:26},{wch:45},{wch:45},{wch:30}];
+
+  /* Make link cells display as hyperlinks */
+  rows.forEach((r,i)=>{
+    ['Not Signed PDF','Signed PDF'].forEach((col,ci)=>{
+      const url = r[col];
+      const cellRef = (ci===0?'C':'D')+(i+2);
+      if(url&&ws[cellRef]){
+        ws[cellRef]={ v:url, t:'s', l:{ Target:url }, s:{ font:{ color:{ rgb:'0E7490' }, underline:true } } };
+      }
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  const today = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+  XLSX.utils.book_append_sheet(wb, ws, 'DN Links');
+  XLSX.writeFile(wb, `DN_Links_Export_${today}.xlsx`);
+  closeExportModal();
+  showToast('✓ Excel exported!');
+}
+</script>
 
 </body>
 </html>
