@@ -20,7 +20,7 @@
             padding: 20px;
         }
 
-        /* Login Screen Styles */
+        /* Login Screen */
         .login-screen {
             display: flex;
             align-items: center;
@@ -35,12 +35,12 @@
         }
 
         .login-screen.hidden {
-            display: none;
+            display: none !important;
         }
 
-        .login-container {
+        .login-box {
             background: #1a1f2e;
-            border: 1px solid #22d3ee;
+            border: 2px solid #22d3ee;
             border-radius: 16px;
             padding: 40px;
             width: 100%;
@@ -48,62 +48,45 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
-        .login-header {
+        .login-title {
             text-align: center;
             margin-bottom: 30px;
         }
 
-        .login-header h1 {
-            font-size: 28px;
-            font-weight: 700;
+        .login-title h1 {
             background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            font-size: 28px;
             margin-bottom: 8px;
         }
 
-        .login-header p {
+        .login-title p {
             color: #8b949e;
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .login-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .login-form-group label {
-            color: #e6edf3;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .login-form-group input {
+        .login-input {
+            width: 100%;
             padding: 12px;
+            margin-bottom: 12px;
             background: #0f1117;
             border: 1px solid #30363d;
             border-radius: 8px;
             color: #e6edf3;
             font-family: 'DM Sans', sans-serif;
             font-size: 14px;
-            transition: all 0.3s ease;
         }
 
-        .login-form-group input:focus {
+        .login-input:focus {
             outline: none;
             border-color: #22d3ee;
             box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
         }
 
-        .login-button {
+        .login-btn {
+            width: 100%;
             padding: 12px;
             background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
             color: #0f1117;
@@ -112,46 +95,35 @@
             font-weight: 600;
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.3s ease;
             margin-top: 8px;
         }
 
-        .login-button:hover {
+        .login-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 16px rgba(34, 211, 238, 0.3);
         }
 
-        .login-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
         .login-error {
+            color: #ffb1a3;
             background: rgba(248, 81, 73, 0.1);
             border: 1px solid #f85149;
-            color: #ffb1a3;
             padding: 12px;
             border-radius: 6px;
+            margin-bottom: 16px;
             font-size: 13px;
             display: none;
         }
 
-        .login-error.active {
+        .login-error.show {
             display: block;
         }
 
-        .login-loading {
-            text-align: center;
-            color: #8b949e;
-            font-size: 13px;
-        }
-
-        /* Main app styles */
-        .app-container {
+        /* Main App */
+        .app {
             display: none;
         }
 
-        .app-container.visible {
+        .app.show {
             display: block;
         }
 
@@ -165,8 +137,6 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
         }
 
         .header h1 {
@@ -178,21 +148,14 @@
             background-clip: text;
         }
 
-        .header-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
         .btn {
             padding: 10px 20px;
             border: none;
             border-radius: 8px;
-            font-family: 'DM Sans', sans-serif;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
             font-size: 14px;
+            transition: all 0.3s ease;
         }
 
         .btn-primary {
@@ -228,19 +191,11 @@
             border: 1px solid #30363d;
             border-radius: 12px;
             padding: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            border-color: #22d3ee;
-            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.15);
         }
 
         .stat-label {
             font-size: 12px;
             color: #8b949e;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
             margin-bottom: 8px;
         }
 
@@ -251,14 +206,14 @@
         }
 
         .filters {
+            background: #1a1f2e;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 16px;
             display: flex;
             gap: 12px;
             margin-bottom: 24px;
             flex-wrap: wrap;
-            background: #1a1f2e;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #30363d;
         }
 
         .filter-group {
@@ -266,17 +221,16 @@
             flex-direction: column;
             gap: 4px;
             flex: 1;
-            min-width: 180px;
+            min-width: 150px;
         }
 
         .filter-group label {
             font-size: 12px;
             color: #8b949e;
-            font-weight: 500;
         }
 
-        .filter-group select,
-        .filter-group input {
+        .filter-group input,
+        .filter-group select {
             padding: 8px 12px;
             background: #0f1117;
             border: 1px solid #30363d;
@@ -284,27 +238,21 @@
             color: #e6edf3;
             font-family: 'DM Sans', sans-serif;
             font-size: 14px;
-            transition: all 0.3s ease;
         }
 
-        .filter-group select:focus,
-        .filter-group input:focus {
+        .filter-group input:focus,
+        .filter-group select:focus {
             outline: none;
             border-color: #22d3ee;
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
-        }
-
-        .table-wrapper {
-            background: #1a1f2e;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            overflow: hidden;
         }
 
         table {
             width: 100%;
+            background: #1a1f2e;
+            border: 1px solid #30363d;
+            border-radius: 12px;
             border-collapse: collapse;
-            font-size: 13px;
+            overflow: hidden;
         }
 
         thead {
@@ -318,275 +266,63 @@
             font-weight: 600;
             color: #22d3ee;
             text-transform: uppercase;
+            font-size: 12px;
             letter-spacing: 0.5px;
         }
 
         td {
             padding: 14px 16px;
             border-bottom: 1px solid #30363d;
-        }
-
-        tbody tr {
-            transition: background-color 0.2s ease;
+            font-size: 13px;
         }
 
         tbody tr:hover {
             background-color: rgba(34, 211, 238, 0.05);
         }
 
-        .status-badge {
+        .badge {
             display: inline-block;
             padding: 6px 12px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .status-open {
+        .badge-open {
             background: rgba(168, 85, 247, 0.2);
             color: #d8b4fe;
         }
 
-        .status-closed {
+        .badge-closed {
             background: rgba(34, 197, 94, 0.2);
             color: #86efac;
         }
 
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-icon {
-            padding: 6px 10px;
-            background: transparent;
-            border: 1px solid #30363d;
-            color: #22d3ee;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s ease;
-        }
-
-        .btn-icon:hover {
-            background: #22d3ee;
-            color: #0f1117;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: #1a1f2e;
-            border: 1px solid #22d3ee;
-            border-radius: 12px;
-            padding: 30px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            border-bottom: 1px solid #30363d;
-            padding-bottom: 16px;
-        }
-
-        .modal-header h2 {
-            color: #22d3ee;
-            font-size: 20px;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            color: #8b949e;
-            font-size: 24px;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .modal-close:hover {
-            color: #22d3ee;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            color: #e6edf3;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 10px 12px;
-            background: #0f1117;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: #e6edf3;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #22d3ee;
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid #30363d;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #8b949e;
-        }
-
-        .empty-state p {
-            margin-bottom: 16px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #8b949e;
-        }
-
-        .error-message {
-            background: rgba(248, 81, 73, 0.1);
-            border: 1px solid #f85149;
-            color: #ffb1a3;
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .error-message.active {
-            display: block;
-        }
-
-        .success-message {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid #34d399;
-            color: #86efac;
-            padding: 12px 16px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-        }
-
-        .success-message.active {
-            display: block;
-        }
-
         .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
             background: #1a1f2e;
-            border-radius: 8px;
             border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
             font-size: 13px;
         }
 
-        .user-badge {
+        .role-badge {
+            display: inline-block;
             background: #22d3ee;
             color: #0f1117;
             padding: 4px 8px;
             border-radius: 4px;
             font-weight: 600;
             font-size: 11px;
+            margin-left: 8px;
         }
 
         @media (max-width: 768px) {
-            .login-container {
-                padding: 30px 20px;
-                max-width: 90%;
-            }
-
-            .login-header h1 {
-                font-size: 24px;
-            }
-
             .header {
                 flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .header h1 {
-                font-size: 24px;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-
-            .filters {
-                flex-direction: column;
-            }
-
-            .filter-group {
-                min-width: auto;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .modal-content {
-                width: 95%;
-                padding: 20px;
+                gap: 16px;
             }
 
             table {
@@ -594,11 +330,7 @@
             }
 
             th, td {
-                padding: 10px 8px;
-            }
-
-            .action-buttons {
-                flex-direction: column;
+                padding: 8px;
             }
         }
     </style>
@@ -606,603 +338,273 @@
 <body>
     <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
-        <div class="login-container">
-            <div class="login-header">
+        <div class="login-box">
+            <div class="login-title">
                 <h1>Site Survey Tracker</h1>
                 <p>Login to continue</p>
             </div>
-            <form id="loginForm" class="login-form">
-                <div class="login-error" id="loginError"></div>
-                <div class="login-form-group">
-                    <label>Name</label>
-                    <input type="text" id="loginName" placeholder="Enter your name" required>
-                </div>
-                <div class="login-form-group">
-                    <label>PIN</label>
-                    <input type="password" id="loginPin" placeholder="Enter your PIN" required>
-                </div>
-                <button type="submit" class="login-button" id="loginBtn">Login</button>
+            <div class="login-error" id="errorMsg"></div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <input type="text" id="nameInput" class="login-input" placeholder="Name" required>
+                <input type="password" id="pinInput" class="login-input" placeholder="PIN" required>
+                <button type="submit" class="login-btn">Login</button>
             </form>
         </div>
     </div>
 
     <!-- Main App -->
-    <div class="app-container" id="appContainer">
-    <div class="container">
-        <div class="error-message" id="errorMessage"></div>
-        <div class="success-message" id="successMessage"></div>
-
-        <div class="header">
-            <h1>Site Survey Tracker</h1>
-            <div class="header-actions">
-                <button class="btn btn-primary" id="addTicketBtn">+ Add New Ticket</button>
-                <button class="btn btn-secondary" id="logoutBtn">Logout</button>
-            </div>
-        </div>
-
-        <div class="user-info" id="userInfo">
-            <span id="userName">User</span>
-            <span class="user-badge" id="userRole">Viewer</span>
-        </div>
-
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-label">Total Surveys</div>
-                <div class="stat-value" id="totalCount">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Open</div>
-                <div class="stat-value" id="openCount">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Closed</div>
-                <div class="stat-value" id="closedCount">0</div>
-            </div>
-        </div>
-
-        <div class="filters">
-            <div class="filter-group">
-                <label>Status</label>
-                <select id="filterStatus">
-                    <option value="">All Statuses</option>
-                    <option value="Open">Open</option>
-                    <option value="Closed">Closed</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label>Surveyor</label>
-                <select id="filterSurveyor">
-                    <option value="">All Surveyors</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label>Site/Location</label>
-                <input type="text" id="filterLocation" placeholder="Search location...">
-            </div>
-            <div class="filter-group">
-                <label>&nbsp;</label>
-                <button class="btn btn-secondary" id="resetFilters">Reset Filters</button>
-            </div>
-        </div>
-
-        <div class="table-wrapper">
-            <div id="loadingSpinner" class="loading">Loading surveys...</div>
-            <div id="emptyState" class="empty-state" style="display: none;">
-                <p>No surveys found. Click "Add New Ticket" to create one.</p>
-            </div>
-            <table id="surveysTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>No.</th>
-                        <th>Site / Location</th>
-                        <th>Visit Date</th>
-                        <th>Visit Time</th>
-                        <th>Surveyor / Team</th>
-                        <th>Reason for Visit</th>
-                        <th>Required Action</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="surveysTableBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Add/Edit Modal -->
-    <div class="modal" id="ticketModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Add New Ticket</h2>
-                <button class="modal-close" id="modalClose">&times;</button>
-            </div>
-            <form id="ticketForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Ticket No. *</label>
-                        <input type="text" id="ticketNo" placeholder="e.g., TIK:20" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Site / Location *</label>
-                        <input type="text" id="siteLocation" placeholder="e.g., RUH-ABD001" required>
-                    </div>
+    <div class="app" id="mainApp">
+        <div class="container">
+            <div class="header">
+                <h1>Site Survey Tracker</h1>
+                <div>
+                    <button class="btn btn-primary" id="addBtn">+ Add New Ticket</button>
+                    <button class="btn btn-secondary" id="logoutBtn">Logout</button>
                 </div>
+            </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Visit Date *</label>
-                        <input type="date" id="visitDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Visit Time *</label>
-                        <input type="time" id="visitTime" required>
-                    </div>
+            <div class="user-info">
+                <span id="userName">User</span>
+                <span class="role-badge" id="userRole">Viewer</span>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total</div>
+                    <div class="stat-value" id="totalStat">0</div>
                 </div>
-
-                <div class="form-group">
-                    <label>Surveyor / Team *</label>
-                    <select id="surveyor" required>
-                        <option value="">Select Surveyor</option>
-                    </select>
+                <div class="stat-card">
+                    <div class="stat-label">Open</div>
+                    <div class="stat-value" id="openStat">0</div>
                 </div>
-
-                <div class="form-group">
-                    <label>Reason for Visit *</label>
-                    <select id="reasonForVisit" required>
-                        <option value="">Select Reason</option>
-                        <option value="Initial Site Survey">Initial Site Survey</option>
-                        <option value="New Site Survey">New Site Survey</option>
-                        <option value="Follow-up Survey">Follow-up Survey</option>
-                        <option value="Layout Update">Layout Update</option>
-                        <option value="Other">Other</option>
-                    </select>
+                <div class="stat-card">
+                    <div class="stat-label">Closed</div>
+                    <div class="stat-value" id="closedStat">0</div>
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label>Required Action *</label>
-                    <textarea id="requiredAction" placeholder="Describe the required action..." required></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>Status *</label>
-                    <select id="status" required>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select id="statusFilter">
+                        <option value="">All</option>
                         <option value="Open">Open</option>
                         <option value="Closed">Closed</option>
                     </select>
                 </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Ticket</button>
+                <div class="filter-group">
+                    <label>Surveyor</label>
+                    <select id="surveyorFilter">
+                        <option value="">All</option>
+                    </select>
                 </div>
-            </form>
+                <div class="filter-group">
+                    <label>Location</label>
+                    <input type="text" id="locationFilter" placeholder="Search...">
+                </div>
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                </div>
+            </div>
+
+            <table id="ticketTable">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Site</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Surveyor</th>
+                        <th>Reason</th>
+                        <th>Action</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
         </div>
-    </div>
     </div>
 
     <script>
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
-        const SHEET_ID = '1U_UULtDDI9gbBSbORba-0I9z5068vXGC2_ntpoHcGRA';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
+        const MAIN_SHEET_ID = '1U_UULtDDI9gbBSbORba-0I9z5068vXGC2_ntpoHcGRA'; // Main platform sheet (Users)
+        const SURVEY_SHEET_ID = '1xd12yLTsOvPvurmhiTg060UDlu9a4Xr4_y8eqZtWPQQ'; // Site Survey sheet
 
-        let allSurveys = [];
         let currentUser = null;
-        let currentUserRole = 'Viewer';
+        let currentRole = 'Viewer';
         let allUsers = [];
+        let allTickets = [];
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-            setupLoginListeners();
-        });
+        document.addEventListener('DOMContentLoaded', init);
 
-        // Setup login form listeners
-        function setupLoginListeners() {
-            document.getElementById('loginForm').addEventListener('submit', handleLogin);
-        }
-
-        // Check if already authenticated
-        function checkAuth() {
-            const auth = sessionStorage.getItem('platformAuth');
+        function init() {
+            const auth = sessionStorage.getItem('auth');
             if (auth) {
-                const authData = JSON.parse(auth);
-                currentUser = authData.username;
-                currentUserRole = authData.role;
+                const data = JSON.parse(auth);
+                currentUser = data.name;
+                currentRole = data.role;
                 showApp();
+                loadData();
             } else {
-                showLoginScreen();
+                showLogin();
             }
+
+            document.getElementById('logoutBtn').onclick = logout;
+            document.getElementById('addBtn').onclick = () => alert('Add ticket feature coming soon!');
+            document.getElementById('resetBtn').onclick = resetFilters;
+            document.getElementById('statusFilter').onchange = filter;
+            document.getElementById('surveyorFilter').onchange = filter;
+            document.getElementById('locationFilter').oninput = filter;
         }
 
-        // Handle login
         async function handleLogin(e) {
             e.preventDefault();
-            
-            const name = document.getElementById('loginName').value.trim();
-            const pin = document.getElementById('loginPin').value.trim();
-            const errorDiv = document.getElementById('loginError');
-            const loginBtn = document.getElementById('loginBtn');
-
-            if (!name || !pin) {
-                showLoginError('Please enter both name and PIN');
-                return;
-            }
-
-            loginBtn.disabled = true;
-            loginBtn.textContent = 'Logging in...';
+            const name = document.getElementById('nameInput').value.trim();
+            const pin = document.getElementById('pinInput').value.trim();
 
             try {
-                // Fetch users from sheet
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=getUsers&sheetId=${SHEET_ID}`);
-                const data = await response.json();
+                // Fetch users from MAIN platform sheet
+                const res = await fetch(`${API_URL}?action=getUsers&sheetId=${MAIN_SHEET_ID}`);
+                const data = await res.json();
 
-                if (!data.success || !data.users) {
-                    showLoginError('Unable to verify credentials');
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Login';
+                if (!data.success) {
+                    showError('Unable to connect to server');
                     return;
                 }
 
-                allUsers = data.users;
-
-                // Find matching user
-                const user = data.users.find(u => 
-                    u.Name.toLowerCase() === name.toLowerCase() && u.PIN === pin
-                );
+                allUsers = data.users || [];
+                const user = allUsers.find(u => u.Name === name && u.PIN === pin);
 
                 if (!user) {
-                    showLoginError('Invalid name or PIN');
-                    loginBtn.disabled = false;
-                    loginBtn.textContent = 'Login';
+                    showError('Invalid name or PIN');
                     return;
                 }
 
-                // Determine role from sheet (check access column)
-                // Assuming there's a column that indicates access level
-                let role = 'Viewer'; // Default
-                if (user['Receiving Tracker'] === 'Editor' || user.Role === 'Editor') {
-                    role = 'Editor';
-                }
+                const role = (user['Receiving Tracker'] === 'Editor' || user.Role === 'Editor') ? 'Editor' : 'Viewer';
+                
+                sessionStorage.setItem('auth', JSON.stringify({ name, role }));
+                currentUser = name;
+                currentRole = role;
 
-                // Store auth
-                const auth = {
-                    username: user.Name,
-                    pin: pin,
-                    role: role
-                };
-                sessionStorage.setItem('platformAuth', JSON.stringify(auth));
-
-                currentUser = user.Name;
-                currentUserRole = role;
-
-                // Hide login, show app
                 showApp();
-
-            } catch (error) {
-                console.error('Login error:', error);
-                showLoginError('Connection error: ' + error.message);
-                loginBtn.disabled = false;
-                loginBtn.textContent = 'Login';
+                loadData();
+            } catch (err) {
+                showError('Connection error: ' + err.message);
             }
         }
 
-        function showLoginError(message) {
-            const errorDiv = document.getElementById('loginError');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('active');
-            setTimeout(() => errorDiv.classList.remove('active'), 5000);
-        }
+        async function loadData() {
+            try {
+                // Fetch surveys from SURVEY sheet
+                const res = await fetch(`${API_URL}?action=getSurveys&sheetId=${SURVEY_SHEET_ID}`);
+                const data = await res.json();
 
-        function showLoginScreen() {
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('appContainer').classList.remove('visible');
-        }
-
-        function showApp() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('appContainer').classList.add('visible');
-            setupEventListeners();
-            loadSurveys();
-            loadSurveyors();
-        }
-
-
-
-        function setupEventListeners() {
-            // Set user info
-            document.getElementById('userName').textContent = `${currentUser} (${currentUserRole})`;
-            document.getElementById('userRole').textContent = currentUserRole;
-
-            if (currentUserRole === 'Viewer') {
-                document.getElementById('addTicketBtn').style.display = 'none';
+                if (data.success) {
+                    allTickets = data.surveys || [];
+                    renderTable(allTickets);
+                    updateStats();
+                    loadSurveyors();
+                }
+            } catch (err) {
+                console.error('Error loading data:', err);
             }
+        }
 
-            document.getElementById('addTicketBtn').addEventListener('click', openAddModal);
-            document.getElementById('modalClose').addEventListener('click', closeModal);
-            document.getElementById('cancelBtn').addEventListener('click', closeModal);
-            document.getElementById('ticketForm').addEventListener('submit', handleFormSubmit);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-
-            // Filters
-            document.getElementById('filterStatus').addEventListener('change', applyFilters);
-            document.getElementById('filterSurveyor').addEventListener('change', applyFilters);
-            document.getElementById('filterLocation').addEventListener('input', applyFilters);
-            document.getElementById('resetFilters').addEventListener('click', resetFilters);
-
-            // Close modal on background click
-            document.getElementById('ticketModal').addEventListener('click', (e) => {
-                if (e.target.id === 'ticketModal') closeModal();
+        function loadSurveyors() {
+            const surveyers = [...new Set(allTickets.map(t => t['Surveyor / Team']))].filter(Boolean);
+            const select = document.getElementById('surveyorFilter');
+            surveyers.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                select.appendChild(opt);
             });
         }
 
-        async function loadSurveys() {
-            try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=getSurveys&sheetId=${SHEET_ID}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    allSurveys = data.surveys || [];
-                    renderSurveys(allSurveys);
-                    updateStats();
-                } else {
-                    showError('Failed to load surveys');
-                }
-            } catch (error) {
-                console.error('Error loading surveys:', error);
-                showError('Error loading surveys: ' + error.message);
-            }
-        }
-
-        async function loadSurveyors() {
-            try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=getUsers&sheetId=${SHEET_ID}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    const surveyorSelect = document.getElementById('surveyor');
-                    const surveyors = data.users || [];
-                    surveyors.forEach(user => {
-                        const option = document.createElement('option');
-                        option.value = user.Name;
-                        option.textContent = user.Name;
-                        surveyorSelect.appendChild(option);
-                    });
-
-                    // Also populate filter dropdown
-                    const filterSelect = document.getElementById('filterSurveyor');
-                    surveyors.forEach(user => {
-                        const option = document.createElement('option');
-                        option.value = user.Name;
-                        option.textContent = user.Name;
-                        filterSelect.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading surveyors:', error);
-            }
-        }
-
-        function renderSurveys(surveys) {
-            const tbody = document.getElementById('surveysTableBody');
-            const table = document.getElementById('surveysTable');
-            const emptyState = document.getElementById('emptyState');
-            const loading = document.getElementById('loadingSpinner');
-
-            loading.style.display = 'none';
-
-            if (surveys.length === 0) {
-                table.style.display = 'none';
-                emptyState.style.display = 'block';
-                return;
-            }
-
-            table.style.display = 'table';
-            emptyState.style.display = 'none';
+        function renderTable(tickets) {
+            const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
-            surveys.forEach(survey => {
-                const row = document.createElement('tr');
-                const isOpen = survey.Status.toLowerCase().includes('open');
-                const statusClass = isOpen ? 'status-open' : 'status-closed';
+            tickets.forEach(t => {
+                const row = tbody.insertRow();
+                const isOpen = t.Status.toLowerCase().includes('open');
+                const badge = isOpen ? 'badge-open' : 'badge-closed';
 
                 row.innerHTML = `
-                    <td>${survey['No.']}</td>
-                    <td>${survey['Site / Location']}</td>
-                    <td>${survey['Visit Date']}</td>
-                    <td>${survey['Visit Time']}</td>
-                    <td>${survey['Surveyor / Team']}</td>
-                    <td>${survey['Reason for Visit']}</td>
-                    <td>${survey['Required Action']}</td>
-                    <td><span class="status-badge ${statusClass}">${survey.Status}</span></td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn-icon" onclick="editSurvey('${survey['No.']}')">Edit</button>
-                            <button class="btn-icon" onclick="viewDetails('${survey['No.']}')">View</button>
-                        </div>
-                    </td>
+                    <td>${t['No.']}</td>
+                    <td>${t['Site / Location']}</td>
+                    <td>${t['Visit Date']}</td>
+                    <td>${t['Visit Time']}</td>
+                    <td>${t['Surveyor / Team']}</td>
+                    <td>${t['Reason for Visit']}</td>
+                    <td>${t['Required Action']}</td>
+                    <td><span class="badge ${badge}">${t.Status}</span></td>
                 `;
-
-                tbody.appendChild(row);
             });
         }
 
         function updateStats() {
-            const total = allSurveys.length;
-            const open = allSurveys.filter(s => s.Status.toLowerCase().includes('open')).length;
+            const total = allTickets.length;
+            const open = allTickets.filter(t => t.Status.toLowerCase().includes('open')).length;
             const closed = total - open;
 
-            document.getElementById('totalCount').textContent = total;
-            document.getElementById('openCount').textContent = open;
-            document.getElementById('closedCount').textContent = closed;
+            document.getElementById('totalStat').textContent = total;
+            document.getElementById('openStat').textContent = open;
+            document.getElementById('closedStat').textContent = closed;
         }
 
-        function applyFilters() {
-            const statusFilter = document.getElementById('filterStatus').value;
-            const surveyorFilter = document.getElementById('filterSurveyor').value;
-            const locationFilter = document.getElementById('filterLocation').value.toLowerCase();
+        function filter() {
+            const status = document.getElementById('statusFilter').value;
+            const surveyor = document.getElementById('surveyorFilter').value;
+            const location = document.getElementById('locationFilter').value.toLowerCase();
 
-            const filtered = allSurveys.filter(survey => {
-                const statusMatch = !statusFilter || survey.Status.includes(statusFilter);
-                const surveyorMatch = !surveyorFilter || survey['Surveyor / Team'].includes(surveyorFilter);
-                const locationMatch = !locationFilter || survey['Site / Location'].toLowerCase().includes(locationFilter);
-
-                return statusMatch && surveyorMatch && locationMatch;
+            const filtered = allTickets.filter(t => {
+                const matchStatus = !status || t.Status.includes(status);
+                const matchSurveyor = !surveyor || t['Surveyor / Team'] === surveyor;
+                const matchLocation = !location || t['Site / Location'].toLowerCase().includes(location);
+                return matchStatus && matchSurveyor && matchLocation;
             });
 
-            renderSurveys(filtered);
+            renderTable(filtered);
         }
 
         function resetFilters() {
-            document.getElementById('filterStatus').value = '';
-            document.getElementById('filterSurveyor').value = '';
-            document.getElementById('filterLocation').value = '';
-            renderSurveys(allSurveys);
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('surveyorFilter').value = '';
+            document.getElementById('locationFilter').value = '';
+            renderTable(allTickets);
         }
 
-        function openAddModal() {
-            if (currentUserRole === 'Viewer') {
-                showError('You do not have permission to add tickets');
-                return;
-            }
-            document.getElementById('modalTitle').textContent = 'Add New Ticket';
-            document.getElementById('ticketForm').reset();
-            
-            // Generate next ticket number
-            const lastNo = allSurveys[allSurveys.length - 1]?.['No.'] || 'TIK:0';
-            const nextNo = 'TIK:' + (parseInt(lastNo.split(':')[1]) + 1);
-            document.getElementById('ticketNo').value = nextNo;
-
-            document.getElementById('ticketModal').classList.add('active');
+        function showLogin() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.remove('show');
         }
 
-        function closeModal() {
-            document.getElementById('ticketModal').classList.remove('active');
-            // Re-enable all fields (in case they were disabled for viewing)
-            document.querySelectorAll('#ticketForm input, #ticketForm select, #ticketForm textarea').forEach(field => {
-                field.disabled = false;
-            });
-            document.querySelector('#ticketForm button[type="submit"]').style.display = 'inline-block';
-        }
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.add('show');
+            document.getElementById('userName').textContent = currentUser;
+            document.getElementById('userRole').textContent = currentRole;
 
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-
-            if (currentUserRole === 'Viewer') {
-                showError('You do not have permission to add tickets');
-                return;
-            }
-
-            const surveyData = {
-                'No.': document.getElementById('ticketNo').value,
-                'Site / Location': document.getElementById('siteLocation').value,
-                'Visit Date': document.getElementById('visitDate').value,
-                'Visit Time': document.getElementById('visitTime').value,
-                'Surveyor / Team': document.getElementById('surveyor').value,
-                'Reason for Visit': document.getElementById('reasonForVisit').value,
-                'Required Action': document.getElementById('requiredAction').value,
-                'Status': document.getElementById('status').value
-            };
-
-            try {
-                const isEditing = document.getElementById('ticketNo').disabled;
-                const action = isEditing ? 'updateSurvey' : 'addSurvey';
-
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    body: new URLSearchParams({
-                        action: action,
-                        sheetId: SHEET_ID,
-                        data: JSON.stringify(surveyData),
-                        user: currentUser
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showSuccess(isEditing ? 'Ticket updated successfully!' : 'Ticket added successfully!');
-                    closeModal();
-                    loadSurveys();
-                } else {
-                    showError(result.message || 'Failed to save ticket');
-                }
-            } catch (error) {
-                console.error('Error saving ticket:', error);
-                showError('Error saving ticket: ' + error.message);
+            if (currentRole === 'Viewer') {
+                document.getElementById('addBtn').style.display = 'none';
             }
         }
 
-        function editSurvey(ticketNo) {
-            if (currentUserRole === 'Viewer') {
-                showError('You do not have permission to edit tickets');
-                return;
-            }
-
-            const survey = allSurveys.find(s => s['No.'] === ticketNo);
-            if (!survey) return;
-
-            document.getElementById('modalTitle').textContent = 'Edit Ticket';
-            document.getElementById('ticketNo').value = survey['No.'];
-            document.getElementById('siteLocation').value = survey['Site / Location'];
-            document.getElementById('visitDate').value = survey['Visit Date'];
-            document.getElementById('visitTime').value = survey['Visit Time'];
-            document.getElementById('surveyor').value = survey['Surveyor / Team'];
-            document.getElementById('reasonForVisit').value = survey['Reason for Visit'];
-            document.getElementById('requiredAction').value = survey['Required Action'];
-            document.getElementById('status').value = survey.Status;
-
-            document.getElementById('ticketNo').disabled = true;
-            document.getElementById('ticketModal').classList.add('active');
-        }
-
-        function viewDetails(ticketNo) {
-            const survey = allSurveys.find(s => s['No.'] === ticketNo);
-            if (!survey) return;
-
-            // For now, just populate the form for viewing
-            document.getElementById('modalTitle').textContent = 'View Ticket Details';
-            document.getElementById('ticketNo').value = survey['No.'];
-            document.getElementById('siteLocation').value = survey['Site / Location'];
-            document.getElementById('visitDate').value = survey['Visit Date'];
-            document.getElementById('visitTime').value = survey['Visit Time'];
-            document.getElementById('surveyor').value = survey['Surveyor / Team'];
-            document.getElementById('reasonForVisit').value = survey['Reason for Visit'];
-            document.getElementById('requiredAction').value = survey['Required Action'];
-            document.getElementById('status').value = survey.Status;
-
-            // Disable all fields for viewing
-            document.querySelectorAll('#ticketForm input, #ticketForm select, #ticketForm textarea').forEach(field => {
-                field.disabled = true;
-            });
-
-            document.querySelector('#ticketForm button[type="submit"]').style.display = 'none';
-            document.getElementById('ticketModal').classList.add('active');
-        }
-
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('active');
-            setTimeout(() => errorDiv.classList.remove('active'), 5000);
-        }
-
-        function showSuccess(message) {
-            const successDiv = document.getElementById('successMessage');
-            successDiv.textContent = message;
-            successDiv.classList.add('active');
-            setTimeout(() => successDiv.classList.remove('active'), 5000);
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 4000);
         }
 
         function logout() {
-            sessionStorage.removeItem('platformAuth');
-            currentUser = null;
-            currentUserRole = 'Viewer';
-            document.getElementById('loginName').value = '';
-            document.getElementById('loginPin').value = '';
-            document.getElementById('loginError').classList.remove('active');
-            showLoginScreen();
+            sessionStorage.removeItem('auth');
+            document.getElementById('nameInput').value = '';
+            document.getElementById('pinInput').value = '';
+            showLogin();
         }
     </script>
 </body>
