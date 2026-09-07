@@ -428,8 +428,7 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
-        const MAIN_SHEET_ID = '1U_UULtDDI9gbBSbORba-0I9z5068vXGC2_ntpoHcGRA'; // Main platform sheet (Users)
-        const SURVEY_SHEET_ID = '1xd12yLTsOvPvurmhiTg060UDlu9a4Xr4_y8eqZtWPQQ'; // Site Survey sheet
+        const SHEET_ID = '1xd12yLTsOvPvurmhiTg060UDlu9a4Xr4_y8eqZtWPQQ'; // Site Survey Tracker sheet (has Users + Active Tickets)
 
         let currentUser = null;
         let currentRole = 'Viewer';
@@ -465,8 +464,8 @@
             const pin = document.getElementById('pinInput').value.trim();
 
             try {
-                // Fetch users from MAIN platform sheet
-                const res = await fetch(`${API_URL}?action=getUsers&sheetId=${MAIN_SHEET_ID}`);
+                // Fetch users from Site Survey sheet
+                const res = await fetch(`${API_URL}?action=getUsers&sheetId=${SHEET_ID}`);
                 const data = await res.json();
 
                 if (!data.success) {
@@ -497,8 +496,8 @@
 
         async function loadData() {
             try {
-                // Fetch surveys from SURVEY sheet
-                const res = await fetch(`${API_URL}?action=getSurveys&sheetId=${SURVEY_SHEET_ID}`);
+                // Fetch surveys from Site Survey sheet
+                const res = await fetch(`${API_URL}?action=getSurveys&sheetId=${SHEET_ID}`);
                 const data = await res.json();
 
                 if (data.success) {
