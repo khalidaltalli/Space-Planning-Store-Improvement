@@ -38,80 +38,91 @@
             display: none !important;
         }
 
+        .login-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+        }
+
         .login-box {
             background: #1a1f2e;
-            border: 2px solid #22d3ee;
-            border-radius: 16px;
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 0.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 320px;
         }
 
-        .login-title {
-            text-align: center;
-            margin-bottom: 30px;
+        .login-box h1 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: #f1f5f9;
         }
 
-        .login-title h1 {
-            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 28px;
-            margin-bottom: 8px;
+        .login-box p {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 1.5rem;
         }
 
-        .login-title p {
-            color: #8b949e;
-            font-size: 13px;
+        .login-form-group {
+            margin-bottom: 10px;
+        }
+
+        .login-form-group label {
+            font-size: 11px;
+            color: #94a3b8;
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
         }
 
         .login-input {
             width: 100%;
-            padding: 12px;
-            margin-bottom: 12px;
             background: #0f1117;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            color: #e6edf3;
+            border: 0.5px solid rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 6px;
             font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
+            transition: all 0.15s;
         }
 
         .login-input:focus {
             outline: none;
-            border-color: #22d3ee;
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+            border-color: rgba(34, 211, 238, 0.4);
         }
 
         .login-btn {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
-            color: #0f1117;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
+            font-size: 12px;
+            padding: 7px 16px;
+            border-radius: 7px;
+            border: 0.5px solid rgba(167, 139, 250, 0.3);
+            background: rgba(167, 139, 250, 0.1);
+            color: #a78bfa;
             cursor: pointer;
-            margin-top: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 600;
+            transition: all 0.15s;
+            margin-top: 10px;
         }
 
         .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(34, 211, 238, 0.3);
+            background: rgba(167, 139, 250, 0.18);
         }
 
         .login-error {
-            color: #ffb1a3;
-            background: rgba(248, 81, 73, 0.1);
-            border: 1px solid #f85149;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 16px;
-            font-size: 13px;
+            font-size: 11px;
+            color: #f87171;
+            margin-top: 8px;
             display: none;
+        }
+
+        .login-error.show {
+            display: block;
         }
 
         .login-error.show {
@@ -338,17 +349,23 @@
 <body>
     <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
-        <div class="login-box">
-            <div class="login-title">
-                <h1>Site Survey Tracker</h1>
-                <p>Login to continue</p>
+        <div class="login-wrap">
+            <div class="login-box">
+                <h1>📍 Site Survey Tracker</h1>
+                <p>Space Planning & Store Improvement</p>
+                <div class="login-form-group">
+                    <label>Name</label>
+                    <select id="nameInput" class="login-input" onchange="togglePinField()">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+                <div id="pinWrap" class="login-form-group">
+                    <label>PIN</label>
+                    <input type="password" id="pinInput" class="login-input" placeholder="Enter PIN" required onkeydown="if(event.key==='Enter')handleLogin(event)">
+                </div>
+                <button type="button" class="login-btn" onclick="handleLogin(event)">Sign In</button>
+                <div id="errorMsg" class="login-error"></div>
             </div>
-            <div class="login-error" id="errorMsg"></div>
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <input type="text" id="nameInput" class="login-input" placeholder="Name" required>
-                <input type="password" id="pinInput" class="login-input" placeholder="PIN" required>
-                <button type="submit" class="login-btn">Login</button>
-            </form>
         </div>
     </div>
 
@@ -428,7 +445,7 @@
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
-        const SHEET_ID = '1xd12yLTsOvPvurmhiTg060UDlu9a4Xr4_y8eqZtWPQQ'; // Site Survey Tracker sheet (has Users + Active Tickets)
+        const SHEET_ID = '1xd12yLTsOvPvurmhiTg060UDlu9a4Xr4_y8eqZtWPQQ'; // Site Survey Tracker sheet
 
         let currentUser = null;
         let currentRole = 'Viewer';
@@ -436,9 +453,8 @@
         let allTickets = [];
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', init);
-
-        function init() {
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUsersForDropdown();
             const auth = sessionStorage.getItem('auth');
             if (auth) {
                 const data = JSON.parse(auth);
@@ -449,13 +465,35 @@
             } else {
                 showLogin();
             }
+        });
 
-            document.getElementById('logoutBtn').onclick = logout;
-            document.getElementById('addBtn').onclick = () => alert('Add ticket feature coming soon!');
-            document.getElementById('resetBtn').onclick = resetFilters;
-            document.getElementById('statusFilter').onchange = filter;
-            document.getElementById('surveyorFilter').onchange = filter;
-            document.getElementById('locationFilter').oninput = filter;
+        // Load users and populate dropdown
+        async function loadUsersForDropdown() {
+            try {
+                const res = await fetch(`${API_URL}?action=getUsers&sheetId=${SHEET_ID}`);
+                const data = await res.json();
+
+                if (data.success && data.users) {
+                    allUsers = data.users;
+                    populateUserDropdown();
+                }
+            } catch (err) {
+                console.error('Error loading users:', err);
+            }
+        }
+
+        function populateUserDropdown() {
+            const select = document.getElementById('nameInput');
+            select.innerHTML = '<option value="">Select your name</option>' +
+                allUsers.map(u => `<option value="${u.Name}">${u.Name}</option>`).join('');
+            togglePinField();
+        }
+
+        function togglePinField() {
+            const name = document.getElementById('nameInput').value;
+            const pinWrap = document.getElementById('pinWrap');
+            // Show PIN field only if a user is selected
+            pinWrap.style.display = name ? 'block' : 'none';
         }
 
         async function handleLogin(e) {
@@ -463,21 +501,17 @@
             const name = document.getElementById('nameInput').value.trim();
             const pin = document.getElementById('pinInput').value.trim();
 
+            if (!name) {
+                showError('Please select your name');
+                return;
+            }
+
             try {
-                // Fetch users from Site Survey sheet
-                const res = await fetch(`${API_URL}?action=getUsers&sheetId=${SHEET_ID}`);
-                const data = await res.json();
-
-                if (!data.success) {
-                    showError('Unable to connect to server');
-                    return;
-                }
-
-                allUsers = data.users || [];
                 const user = allUsers.find(u => u.Name === name && u.PIN === pin);
 
                 if (!user) {
-                    showError('Invalid name or PIN');
+                    showError('Invalid PIN');
+                    document.getElementById('pinInput').value = '';
                     return;
                 }
 
@@ -488,7 +522,6 @@
                 currentRole = role;
 
                 showApp();
-                loadData();
             } catch (err) {
                 showError('Connection error: ' + err.message);
             }
@@ -584,12 +617,24 @@
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.add('show');
+            setupEventListeners();
+            loadData();
+        }
+
+        function setupEventListeners() {
             document.getElementById('userName').textContent = currentUser;
             document.getElementById('userRole').textContent = currentRole;
 
             if (currentRole === 'Viewer') {
                 document.getElementById('addBtn').style.display = 'none';
             }
+
+            document.getElementById('addBtn').onclick = () => alert('Add ticket feature coming soon!');
+            document.getElementById('logoutBtn').onclick = logout;
+            document.getElementById('resetBtn').onclick = resetFilters;
+            document.getElementById('statusFilter').onchange = filter;
+            document.getElementById('surveyorFilter').onchange = filter;
+            document.getElementById('locationFilter').oninput = filter;
         }
 
         function showError(msg) {
@@ -601,8 +646,12 @@
 
         function logout() {
             sessionStorage.removeItem('auth');
+            currentUser = null;
+            currentRole = 'Viewer';
             document.getElementById('nameInput').value = '';
             document.getElementById('pinInput').value = '';
+            document.getElementById('errorMsg').textContent = '';
+            togglePinField();
             showLogin();
         }
     </script>
