@@ -1,215 +1,936 @@
-// Add these functions to your existing Apps_Script.gs file
-
-/**
- * Handle requests from Site Survey Tracker page
- */
-function doGet(e) {
-  const action = e.parameter.action;
-  const sheetId = e.parameter.sheetId;
-
-  try {
-    switch(action) {
-      case 'getSurveys':
-        return getSurveys(sheetId);
-      case 'getUsers':
-        return getUsers(sheetId);
-      default:
-        return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Unknown action'}))
-          .setMimeType(ContentService.MimeType.JSON);
-    }
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-/**
- * Handle POST requests for adding/updating surveys
- */
-function doPost(e) {
-  const action = e.parameter.action;
-  const sheetId = e.parameter.sheetId;
-  const data = JSON.parse(e.parameter.data);
-
-  try {
-    switch(action) {
-      case 'addSurvey':
-        return addSurvey(sheetId, data);
-      case 'updateSurvey':
-        return updateSurvey(sheetId, data);
-      default:
-        return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Unknown action'}))
-          .setMimeType(ContentService.MimeType.JSON);
-    }
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-/**
- * Get all surveys from the sheet
- */
-function getSurveys(sheetId) {
-  try {
-    const spreadsheet = SpreadsheetApp.openById(sheetId);
-    const sheet = spreadsheet.getSheetByName('Receiving Checklist'); // Adjust sheet name if needed
-    
-    if (!sheet) {
-      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Sheet not found'}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const surveys = [];
-
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const survey = {};
-      headers.forEach((header, index) => {
-        survey[header] = row[index] || '';
-      });
-      if (survey['No.']) { // Only include non-empty rows
-        surveys.push(survey);
-      }
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({success: true, surveys: surveys}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-/**
- * Get all users from the Users sheet
- */
-function getUsers(sheetId) {
-  try {
-    const spreadsheet = SpreadsheetApp.openById(sheetId);
-    const sheet = spreadsheet.getSheetByName('Users');
-    
-    if (!sheet) {
-      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Users sheet not found'}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const users = [];
-
-    for (let i = 1; i < data.length; i++) {
-      const row = data[i];
-      const user = {};
-      headers.forEach((header, index) => {
-        user[header] = row[index] || '';
-      });
-      if (user['Name']) { // Only include non-empty rows
-        users.push(user);
-      }
-    }
-
-    return ContentService.createTextOutput(JSON.stringify({success: true, users: users}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-/**
- * Add a new survey to the sheet
- */
-function addSurvey(sheetId, surveyData) {
-  try {
-    const spreadsheet = SpreadsheetApp.openById(sheetId);
-    const sheet = spreadsheet.getSheetByName('Receiving Checklist'); // Adjust sheet name if needed
-    
-    if (!sheet) {
-      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Sheet not found'}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    // Get headers
-    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-    
-    // Create row array based on headers
-    const newRow = headers.map(header => {
-      return surveyData[header] || '';
-    });
-
-    // Append new row to sheet
-    sheet.appendRow(newRow);
-
-    // Log to Activity Log if it exists
-    logActivity(sheetId, `New survey added: ${surveyData['No.']} - ${surveyData['Site / Location']}`);
-
-    return ContentService.createTextOutput(JSON.stringify({success: true, message: 'Survey added successfully'}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-/**
- * Update an existing survey
- */
-function updateSurvey(sheetId, surveyData) {
-  try {
-    const spreadsheet = SpreadsheetApp.openById(sheetId);
-    const sheet = spreadsheet.getSheetByName('Receiving Checklist'); // Adjust sheet name if needed
-    
-    if (!sheet) {
-      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Sheet not found'}))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    const data = sheet.getDataRange().getValues();
-    const headers = data[0];
-    const ticketNo = surveyData['No.'];
-
-    // Find the row with matching ticket number
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0] === ticketNo) { // Assuming first column is 'No.'
-        // Update the row
-        for (let j = 0; j < headers.length; j++) {
-          const header = headers[j];
-          if (surveyData[header] !== undefined) {
-            sheet.getRange(i + 1, j + 1).setValue(surveyData[header]);
-          }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Survey Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        logActivity(sheetId, `Survey updated: ${ticketNo}`);
-        
-        return ContentService.createTextOutput(JSON.stringify({success: true, message: 'Survey updated successfully'}))
-          .setMimeType(ContentService.MimeType.JSON);
-      }
-    }
 
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Survey not found'}))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(error) {
-    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, #0f1117 0%, #1a1f2e 100%);
+            color: #e6edf3;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-/**
- * Log activity to the Activity Log sheet
- */
-function logActivity(sheetId, message) {
-  try {
-    const spreadsheet = SpreadsheetApp.openById(sheetId);
-    const sheet = spreadsheet.getSheetByName('Activity Log');
-    
-    if (!sheet) return; // Silently fail if Activity Log doesn't exist
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
 
-    const timestamp = new Date();
-    sheet.appendRow([timestamp, message]);
-  } catch(error) {
-    Logger.log('Error logging activity: ' + error);
-  }
-}
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            color: #0f1117;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(34, 211, 238, 0.3);
+        }
+
+        .btn-secondary {
+            background: #1a1f2e;
+            color: #22d3ee;
+            border: 1px solid #22d3ee;
+        }
+
+        .btn-secondary:hover {
+            background: #22d3ee;
+            color: #0f1117;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #1a1f2e;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #22d3ee;
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.15);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #22d3ee;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            background: #1a1f2e;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #30363d;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            color: #8b949e;
+            font-weight: 500;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            background: #0f1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #e6edf3;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+
+        .table-wrapper {
+            background: #1a1f2e;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: #0f1117;
+            border-bottom: 2px solid #22d3ee;
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #22d3ee;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        tbody tr {
+            transition: background-color 0.2s ease;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(34, 211, 238, 0.05);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-open {
+            background: rgba(168, 85, 247, 0.2);
+            color: #d8b4fe;
+        }
+
+        .status-closed {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            padding: 6px 10px;
+            background: transparent;
+            border: 1px solid #30363d;
+            color: #22d3ee;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-icon:hover {
+            background: #22d3ee;
+            color: #0f1117;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1f2e;
+            border: 1px solid #22d3ee;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 16px;
+        }
+
+        .modal-header h2 {
+            color: #22d3ee;
+            font-size: 20px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #8b949e;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #22d3ee;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #e6edf3;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0f1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #e6edf3;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #30363d;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8b949e;
+        }
+
+        .empty-state p {
+            margin-bottom: 16px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+        }
+
+        .error-message {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid #f85149;
+            color: #ffb1a3;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        .success-message {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #34d399;
+            color: #86efac;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #1a1f2e;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            font-size: 13px;
+        }
+
+        .user-badge {
+            background: #22d3ee;
+            color: #0f1117;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .filter-group {
+                min-width: auto;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px 8px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="header">
+            <h1>Site Survey Tracker</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" id="addTicketBtn">+ Add New Ticket</button>
+                <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+
+        <div class="user-info" id="userInfo">
+            <span id="userName">User</span>
+            <span class="user-badge" id="userRole">Viewer</span>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Surveys</div>
+                <div class="stat-value" id="totalCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Open</div>
+                <div class="stat-value" id="openCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Closed</div>
+                <div class="stat-value" id="closedCount">0</div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label>Status</label>
+                <select id="filterStatus">
+                    <option value="">All Statuses</option>
+                    <option value="Open">Open</option>
+                    <option value="Closed">Closed</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Surveyor</label>
+                <select id="filterSurveyor">
+                    <option value="">All Surveyors</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Site/Location</label>
+                <input type="text" id="filterLocation" placeholder="Search location...">
+            </div>
+            <div class="filter-group">
+                <label>&nbsp;</label>
+                <button class="btn btn-secondary" id="resetFilters">Reset Filters</button>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <div id="loadingSpinner" class="loading">Loading surveys...</div>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <p>No surveys found. Click "Add New Ticket" to create one.</p>
+            </div>
+            <table id="surveysTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Site / Location</th>
+                        <th>Visit Date</th>
+                        <th>Visit Time</th>
+                        <th>Surveyor / Team</th>
+                        <th>Reason for Visit</th>
+                        <th>Required Action</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="surveysTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal" id="ticketModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Ticket</h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <form id="ticketForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ticket No. *</label>
+                        <input type="text" id="ticketNo" placeholder="e.g., TIK:20" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Site / Location *</label>
+                        <input type="text" id="siteLocation" placeholder="e.g., RUH-ABD001" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Visit Date *</label>
+                        <input type="date" id="visitDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Visit Time *</label>
+                        <input type="time" id="visitTime" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Surveyor / Team *</label>
+                    <select id="surveyor" required>
+                        <option value="">Select Surveyor</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Reason for Visit *</label>
+                    <select id="reasonForVisit" required>
+                        <option value="">Select Reason</option>
+                        <option value="Initial Site Survey">Initial Site Survey</option>
+                        <option value="New Site Survey">New Site Survey</option>
+                        <option value="Follow-up Survey">Follow-up Survey</option>
+                        <option value="Layout Update">Layout Update</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Required Action *</label>
+                    <textarea id="requiredAction" placeholder="Describe the required action..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Status *</label>
+                    <select id="status" required>
+                        <option value="Open">Open</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
+        const SHEET_ID = '1U_UULtDDI9gbBSbORba-0I9z5068vXGC2_ntpoHcGRA';
+
+        let allSurveys = [];
+        let currentUser = null;
+        let currentUserRole = 'Viewer';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            setupEventListeners();
+        });
+
+        function checkAuth() {
+            const auth = sessionStorage.getItem('platformAuth');
+            if (!auth) {
+                window.location.href = 'https://khalidaltalli.github.io/Space-Planning-Store-Improvement/';
+                return;
+            }
+
+            const authData = JSON.parse(auth);
+            currentUser = authData.username;
+            currentUserRole = authData.role;
+
+            document.getElementById('userName').textContent = `${currentUser} (${currentUserRole})`;
+            document.getElementById('userRole').textContent = currentUserRole;
+
+            if (currentUserRole === 'Viewer') {
+                document.getElementById('addTicketBtn').style.display = 'none';
+            }
+
+            loadSurveys();
+            loadSurveyors();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('addTicketBtn').addEventListener('click', openAddModal);
+            document.getElementById('modalClose').addEventListener('click', closeModal);
+            document.getElementById('cancelBtn').addEventListener('click', closeModal);
+            document.getElementById('ticketForm').addEventListener('submit', handleFormSubmit);
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+
+            // Filters
+            document.getElementById('filterStatus').addEventListener('change', applyFilters);
+            document.getElementById('filterSurveyor').addEventListener('change', applyFilters);
+            document.getElementById('filterLocation').addEventListener('input', applyFilters);
+            document.getElementById('resetFilters').addEventListener('click', resetFilters);
+
+            // Close modal on background click
+            document.getElementById('ticketModal').addEventListener('click', (e) => {
+                if (e.target.id === 'ticketModal') closeModal();
+            });
+        }
+
+        async function loadSurveys() {
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=getSurveys&sheetId=${SHEET_ID}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    allSurveys = data.surveys || [];
+                    renderSurveys(allSurveys);
+                    updateStats();
+                } else {
+                    showError('Failed to load surveys');
+                }
+            } catch (error) {
+                console.error('Error loading surveys:', error);
+                showError('Error loading surveys: ' + error.message);
+            }
+        }
+
+        async function loadSurveyors() {
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=getUsers&sheetId=${SHEET_ID}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const surveyorSelect = document.getElementById('surveyor');
+                    const surveyors = data.users || [];
+                    surveyors.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.Name;
+                        option.textContent = user.Name;
+                        surveyorSelect.appendChild(option);
+                    });
+
+                    // Also populate filter dropdown
+                    const filterSelect = document.getElementById('filterSurveyor');
+                    surveyors.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.Name;
+                        option.textContent = user.Name;
+                        filterSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading surveyors:', error);
+            }
+        }
+
+        function renderSurveys(surveys) {
+            const tbody = document.getElementById('surveysTableBody');
+            const table = document.getElementById('surveysTable');
+            const emptyState = document.getElementById('emptyState');
+            const loading = document.getElementById('loadingSpinner');
+
+            loading.style.display = 'none';
+
+            if (surveys.length === 0) {
+                table.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            table.style.display = 'table';
+            emptyState.style.display = 'none';
+            tbody.innerHTML = '';
+
+            surveys.forEach(survey => {
+                const row = document.createElement('tr');
+                const isOpen = survey.Status.toLowerCase().includes('open');
+                const statusClass = isOpen ? 'status-open' : 'status-closed';
+
+                row.innerHTML = `
+                    <td>${survey['No.']}</td>
+                    <td>${survey['Site / Location']}</td>
+                    <td>${survey['Visit Date']}</td>
+                    <td>${survey['Visit Time']}</td>
+                    <td>${survey['Surveyor / Team']}</td>
+                    <td>${survey['Reason for Visit']}</td>
+                    <td>${survey['Required Action']}</td>
+                    <td><span class="status-badge ${statusClass}">${survey.Status}</span></td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-icon" onclick="editSurvey('${survey['No.']}')">Edit</button>
+                            <button class="btn-icon" onclick="viewDetails('${survey['No.']}')">View</button>
+                        </div>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateStats() {
+            const total = allSurveys.length;
+            const open = allSurveys.filter(s => s.Status.toLowerCase().includes('open')).length;
+            const closed = total - open;
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('openCount').textContent = open;
+            document.getElementById('closedCount').textContent = closed;
+        }
+
+        function applyFilters() {
+            const statusFilter = document.getElementById('filterStatus').value;
+            const surveyorFilter = document.getElementById('filterSurveyor').value;
+            const locationFilter = document.getElementById('filterLocation').value.toLowerCase();
+
+            const filtered = allSurveys.filter(survey => {
+                const statusMatch = !statusFilter || survey.Status.includes(statusFilter);
+                const surveyorMatch = !surveyorFilter || survey['Surveyor / Team'].includes(surveyorFilter);
+                const locationMatch = !locationFilter || survey['Site / Location'].toLowerCase().includes(locationFilter);
+
+                return statusMatch && surveyorMatch && locationMatch;
+            });
+
+            renderSurveys(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById('filterStatus').value = '';
+            document.getElementById('filterSurveyor').value = '';
+            document.getElementById('filterLocation').value = '';
+            renderSurveys(allSurveys);
+        }
+
+        function openAddModal() {
+            if (currentUserRole === 'Viewer') {
+                showError('You do not have permission to add tickets');
+                return;
+            }
+            document.getElementById('modalTitle').textContent = 'Add New Ticket';
+            document.getElementById('ticketForm').reset();
+            
+            // Generate next ticket number
+            const lastNo = allSurveys[allSurveys.length - 1]?.['No.'] || 'TIK:0';
+            const nextNo = 'TIK:' + (parseInt(lastNo.split(':')[1]) + 1);
+            document.getElementById('ticketNo').value = nextNo;
+
+            document.getElementById('ticketModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('ticketModal').classList.remove('active');
+            // Re-enable all fields (in case they were disabled for viewing)
+            document.querySelectorAll('#ticketForm input, #ticketForm select, #ticketForm textarea').forEach(field => {
+                field.disabled = false;
+            });
+            document.querySelector('#ticketForm button[type="submit"]').style.display = 'inline-block';
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+
+            if (currentUserRole === 'Viewer') {
+                showError('You do not have permission to add tickets');
+                return;
+            }
+
+            const surveyData = {
+                'No.': document.getElementById('ticketNo').value,
+                'Site / Location': document.getElementById('siteLocation').value,
+                'Visit Date': document.getElementById('visitDate').value,
+                'Visit Time': document.getElementById('visitTime').value,
+                'Surveyor / Team': document.getElementById('surveyor').value,
+                'Reason for Visit': document.getElementById('reasonForVisit').value,
+                'Required Action': document.getElementById('requiredAction').value,
+                'Status': document.getElementById('status').value
+            };
+
+            try {
+                const isEditing = document.getElementById('ticketNo').disabled;
+                const action = isEditing ? 'updateSurvey' : 'addSurvey';
+
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: action,
+                        sheetId: SHEET_ID,
+                        data: JSON.stringify(surveyData),
+                        user: currentUser
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showSuccess(isEditing ? 'Ticket updated successfully!' : 'Ticket added successfully!');
+                    closeModal();
+                    loadSurveys();
+                } else {
+                    showError(result.message || 'Failed to save ticket');
+                }
+            } catch (error) {
+                console.error('Error saving ticket:', error);
+                showError('Error saving ticket: ' + error.message);
+            }
+        }
+
+        function editSurvey(ticketNo) {
+            if (currentUserRole === 'Viewer') {
+                showError('You do not have permission to edit tickets');
+                return;
+            }
+
+            const survey = allSurveys.find(s => s['No.'] === ticketNo);
+            if (!survey) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Ticket';
+            document.getElementById('ticketNo').value = survey['No.'];
+            document.getElementById('siteLocation').value = survey['Site / Location'];
+            document.getElementById('visitDate').value = survey['Visit Date'];
+            document.getElementById('visitTime').value = survey['Visit Time'];
+            document.getElementById('surveyor').value = survey['Surveyor / Team'];
+            document.getElementById('reasonForVisit').value = survey['Reason for Visit'];
+            document.getElementById('requiredAction').value = survey['Required Action'];
+            document.getElementById('status').value = survey.Status;
+
+            document.getElementById('ticketNo').disabled = true;
+            document.getElementById('ticketModal').classList.add('active');
+        }
+
+        function viewDetails(ticketNo) {
+            const survey = allSurveys.find(s => s['No.'] === ticketNo);
+            if (!survey) return;
+
+            // For now, just populate the form for viewing
+            document.getElementById('modalTitle').textContent = 'View Ticket Details';
+            document.getElementById('ticketNo').value = survey['No.'];
+            document.getElementById('siteLocation').value = survey['Site / Location'];
+            document.getElementById('visitDate').value = survey['Visit Date'];
+            document.getElementById('visitTime').value = survey['Visit Time'];
+            document.getElementById('surveyor').value = survey['Surveyor / Team'];
+            document.getElementById('reasonForVisit').value = survey['Reason for Visit'];
+            document.getElementById('requiredAction').value = survey['Required Action'];
+            document.getElementById('status').value = survey.Status;
+
+            // Disable all fields for viewing
+            document.querySelectorAll('#ticketForm input, #ticketForm select, #ticketForm textarea').forEach(field => {
+                field.disabled = true;
+            });
+
+            document.querySelector('#ticketForm button[type="submit"]').style.display = 'none';
+            document.getElementById('ticketModal').classList.add('active');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+            setTimeout(() => errorDiv.classList.remove('active'), 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.add('active');
+            setTimeout(() => successDiv.classList.remove('active'), 5000);
+        }
+
+        function logout() {
+            sessionStorage.removeItem('platformAuth');
+            window.location.href = 'https://khalidaltalli.github.io/Space-Planning-Store-Improvement/';
+        }
+    </script>
+</body>
+</html>
