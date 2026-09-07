@@ -506,10 +506,25 @@
                 return;
             }
 
+            if (!pin) {
+                showError('Please enter your PIN');
+                return;
+            }
+
             try {
-                const user = allUsers.find(u => u.Name === name && u.PIN === pin);
+                // Find user with matching name
+                const user = allUsers.find(u => u.Name && u.Name.trim() === name);
 
                 if (!user) {
+                    showError('User not found');
+                    return;
+                }
+
+                // Compare PIN - convert both to string to handle number/string mismatch
+                const userPin = String(user.PIN || '').trim();
+                const enteredPin = String(pin).trim();
+
+                if (userPin !== enteredPin) {
                     showError('Invalid PIN');
                     document.getElementById('pinInput').value = '';
                     return;
@@ -523,7 +538,7 @@
 
                 showApp();
             } catch (err) {
-                showError('Connection error: ' + err.message);
+                showError('Error: ' + err.message);
             }
         }
 
