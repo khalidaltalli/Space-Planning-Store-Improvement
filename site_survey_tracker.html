@@ -1,0 +1,215 @@
+// Add these functions to your existing Apps_Script.gs file
+
+/**
+ * Handle requests from Site Survey Tracker page
+ */
+function doGet(e) {
+  const action = e.parameter.action;
+  const sheetId = e.parameter.sheetId;
+
+  try {
+    switch(action) {
+      case 'getSurveys':
+        return getSurveys(sheetId);
+      case 'getUsers':
+        return getUsers(sheetId);
+      default:
+        return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Unknown action'}))
+          .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Handle POST requests for adding/updating surveys
+ */
+function doPost(e) {
+  const action = e.parameter.action;
+  const sheetId = e.parameter.sheetId;
+  const data = JSON.parse(e.parameter.data);
+
+  try {
+    switch(action) {
+      case 'addSurvey':
+        return addSurvey(sheetId, data);
+      case 'updateSurvey':
+        return updateSurvey(sheetId, data);
+      default:
+        return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Unknown action'}))
+          .setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Get all surveys from the sheet
+ */
+function getSurveys(sheetId) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    const sheet = spreadsheet.getSheetByName('Receiving Checklist'); // Adjust sheet name if needed
+    
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Sheet not found'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const surveys = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const survey = {};
+      headers.forEach((header, index) => {
+        survey[header] = row[index] || '';
+      });
+      if (survey['No.']) { // Only include non-empty rows
+        surveys.push(survey);
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({success: true, surveys: surveys}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Get all users from the Users sheet
+ */
+function getUsers(sheetId) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    const sheet = spreadsheet.getSheetByName('Users');
+    
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Users sheet not found'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const users = [];
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const user = {};
+      headers.forEach((header, index) => {
+        user[header] = row[index] || '';
+      });
+      if (user['Name']) { // Only include non-empty rows
+        users.push(user);
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({success: true, users: users}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Add a new survey to the sheet
+ */
+function addSurvey(sheetId, surveyData) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    const sheet = spreadsheet.getSheetByName('Receiving Checklist'); // Adjust sheet name if needed
+    
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Sheet not found'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Get headers
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    // Create row array based on headers
+    const newRow = headers.map(header => {
+      return surveyData[header] || '';
+    });
+
+    // Append new row to sheet
+    sheet.appendRow(newRow);
+
+    // Log to Activity Log if it exists
+    logActivity(sheetId, `New survey added: ${surveyData['No.']} - ${surveyData['Site / Location']}`);
+
+    return ContentService.createTextOutput(JSON.stringify({success: true, message: 'Survey added successfully'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Update an existing survey
+ */
+function updateSurvey(sheetId, surveyData) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    const sheet = spreadsheet.getSheetByName('Receiving Checklist'); // Adjust sheet name if needed
+    
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Sheet not found'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const ticketNo = surveyData['No.'];
+
+    // Find the row with matching ticket number
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === ticketNo) { // Assuming first column is 'No.'
+        // Update the row
+        for (let j = 0; j < headers.length; j++) {
+          const header = headers[j];
+          if (surveyData[header] !== undefined) {
+            sheet.getRange(i + 1, j + 1).setValue(surveyData[header]);
+          }
+        }
+        
+        logActivity(sheetId, `Survey updated: ${ticketNo}`);
+        
+        return ContentService.createTextOutput(JSON.stringify({success: true, message: 'Survey updated successfully'}))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: 'Survey not found'}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(error) {
+    return ContentService.createTextOutput(JSON.stringify({success: false, error: error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Log activity to the Activity Log sheet
+ */
+function logActivity(sheetId, message) {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    const sheet = spreadsheet.getSheetByName('Activity Log');
+    
+    if (!sheet) return; // Silently fail if Activity Log doesn't exist
+
+    const timestamp = new Date();
+    sheet.appendRow([timestamp, message]);
+  } catch(error) {
+    Logger.log('Error logging activity: ' + error);
+  }
+}
