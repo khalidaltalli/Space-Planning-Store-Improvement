@@ -229,13 +229,13 @@
     loadData();
   }
   const DN_GROUPS = [
-    { key:'freebolt',   name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
+    { key:'freebolt',   name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves'] },
     { key:'signboard',  name:'Sign Board',            assets:['SignBoard','Sign Board'] },
-    { key:'curtain',    name:'Curtains',              assets:['Curtain'] },
-    { key:'coldroom',   name:'Cold Room',             assets:['Coldroom','Cold Room'] },
-    { key:'fridges',    name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'] },
+    { key:'curtain',    name:'Curtains',              assets:['Curtain','Curtains','Sun Curtains'] },
+    { key:'coldroom',   name:'Cold Room',             assets:['Coldroom','Cold Room','Cold Room Chiller','Cold Room Freezer'] },
+    { key:'fridges',    name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer'] },
     { key:'apcctv',     name:'Access Points & CCTV',  assets:['Access Points','CCTV'] },
-    { key:'ac',         name:'Air Condition',         assets:['Air Condition'] },
+    { key:'ac',         name:'Air Condition',         assets:['Air Condition','Air Conditioning'] },
   ];
 
   let allBranches = [];
@@ -778,7 +778,7 @@ function runExport(){
         if(r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http')&&!notSigned) notSigned=r['D.N. Not Signed'];
         if(r['D.N. Signed']   &&r['D.N. Signed'].startsWith('http')   &&!signed)    signed=r['D.N. Signed'];
       });
-      if(notSigned||signed){
+      if(notSigned||signed||true){
         rows.push({'Branch':code,'Delivery Note':g.name,'Not Signed PDF':notSigned,'Signed PDF':signed,'Notes':''});
       }
     });
