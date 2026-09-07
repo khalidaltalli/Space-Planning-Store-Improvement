@@ -20,6 +20,141 @@
             padding: 20px;
         }
 
+        /* Login Screen Styles */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(135deg, #0f1117 0%, #1a1f2e 100%);
+            z-index: 2000;
+        }
+
+        .login-screen.hidden {
+            display: none;
+        }
+
+        .login-container {
+            background: #1a1f2e;
+            border: 1px solid #22d3ee;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: #8b949e;
+            font-size: 14px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .login-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .login-form-group label {
+            color: #e6edf3;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .login-form-group input {
+            padding: 12px;
+            background: #0f1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            color: #e6edf3;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .login-form-group input:focus {
+            outline: none;
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+
+        .login-button {
+            padding: 12px;
+            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+            color: #0f1117;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 8px;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(34, 211, 238, 0.3);
+        }
+
+        .login-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .login-error {
+            background: rgba(248, 81, 73, 0.1);
+            border: 1px solid #f85149;
+            color: #ffb1a3;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .login-error.active {
+            display: block;
+        }
+
+        .login-loading {
+            text-align: center;
+            color: #8b949e;
+            font-size: 13px;
+        }
+
+        /* Main app styles */
+        .app-container {
+            display: none;
+        }
+
+        .app-container.visible {
+            display: block;
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -415,6 +550,15 @@
         }
 
         @media (max-width: 768px) {
+            .login-container {
+                padding: 30px 20px;
+                max-width: 90%;
+            }
+
+            .login-header h1 {
+                font-size: 24px;
+            }
+
             .header {
                 flex-direction: column;
                 align-items: flex-start;
@@ -460,6 +604,30 @@
     </style>
 </head>
 <body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-header">
+                <h1>Site Survey Tracker</h1>
+                <p>Login to continue</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="login-error" id="loginError"></div>
+                <div class="login-form-group">
+                    <label>Name</label>
+                    <input type="text" id="loginName" placeholder="Enter your name" required>
+                </div>
+                <div class="login-form-group">
+                    <label>PIN</label>
+                    <input type="password" id="loginPin" placeholder="Enter your PIN" required>
+                </div>
+                <button type="submit" class="login-button" id="loginBtn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
     <div class="container">
         <div class="error-message" id="errorMessage"></div>
         <div class="success-message" id="successMessage"></div>
@@ -610,6 +778,7 @@
             </form>
         </div>
     </div>
+    </div>
 
     <script>
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
@@ -618,24 +787,128 @@
         let allSurveys = [];
         let currentUser = null;
         let currentUserRole = 'Viewer';
+        let allUsers = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
-            setupEventListeners();
+            setupLoginListeners();
         });
 
+        // Setup login form listeners
+        function setupLoginListeners() {
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        }
+
+        // Check if already authenticated
         function checkAuth() {
             const auth = sessionStorage.getItem('platformAuth');
-            if (!auth) {
-                window.location.href = 'https://khalidaltalli.github.io/Space-Planning-Store-Improvement/';
+            if (auth) {
+                const authData = JSON.parse(auth);
+                currentUser = authData.username;
+                currentUserRole = authData.role;
+                showApp();
+            } else {
+                showLoginScreen();
+            }
+        }
+
+        // Handle login
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('loginName').value.trim();
+            const pin = document.getElementById('loginPin').value.trim();
+            const errorDiv = document.getElementById('loginError');
+            const loginBtn = document.getElementById('loginBtn');
+
+            if (!name || !pin) {
+                showLoginError('Please enter both name and PIN');
                 return;
             }
 
-            const authData = JSON.parse(auth);
-            currentUser = authData.username;
-            currentUserRole = authData.role;
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
 
+            try {
+                // Fetch users from sheet
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=getUsers&sheetId=${SHEET_ID}`);
+                const data = await response.json();
+
+                if (!data.success || !data.users) {
+                    showLoginError('Unable to verify credentials');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login';
+                    return;
+                }
+
+                allUsers = data.users;
+
+                // Find matching user
+                const user = data.users.find(u => 
+                    u.Name.toLowerCase() === name.toLowerCase() && u.PIN === pin
+                );
+
+                if (!user) {
+                    showLoginError('Invalid name or PIN');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Login';
+                    return;
+                }
+
+                // Determine role from sheet (check access column)
+                // Assuming there's a column that indicates access level
+                let role = 'Viewer'; // Default
+                if (user['Receiving Tracker'] === 'Editor' || user.Role === 'Editor') {
+                    role = 'Editor';
+                }
+
+                // Store auth
+                const auth = {
+                    username: user.Name,
+                    pin: pin,
+                    role: role
+                };
+                sessionStorage.setItem('platformAuth', JSON.stringify(auth));
+
+                currentUser = user.Name;
+                currentUserRole = role;
+
+                // Hide login, show app
+                showApp();
+
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginError('Connection error: ' + error.message);
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+            setTimeout(() => errorDiv.classList.remove('active'), 5000);
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('appContainer').classList.remove('visible');
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.add('visible');
+            setupEventListeners();
+            loadSurveys();
+            loadSurveyors();
+        }
+
+
+
+        function setupEventListeners() {
+            // Set user info
             document.getElementById('userName').textContent = `${currentUser} (${currentUserRole})`;
             document.getElementById('userRole').textContent = currentUserRole;
 
@@ -643,11 +916,6 @@
                 document.getElementById('addTicketBtn').style.display = 'none';
             }
 
-            loadSurveys();
-            loadSurveyors();
-        }
-
-        function setupEventListeners() {
             document.getElementById('addTicketBtn').addEventListener('click', openAddModal);
             document.getElementById('modalClose').addEventListener('click', closeModal);
             document.getElementById('cancelBtn').addEventListener('click', closeModal);
@@ -929,7 +1197,12 @@
 
         function logout() {
             sessionStorage.removeItem('platformAuth');
-            window.location.href = 'https://khalidaltalli.github.io/Space-Planning-Store-Improvement/';
+            currentUser = null;
+            currentUserRole = 'Viewer';
+            document.getElementById('loginName').value = '';
+            document.getElementById('loginPin').value = '';
+            document.getElementById('loginError').classList.remove('active');
+            showLoginScreen();
         }
     </script>
 </body>
