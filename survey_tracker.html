@@ -481,7 +481,7 @@
                     return;
                 }
 
-                const role = (user['Receiving Tracker'] === 'Editor' || user.Role === 'Editor') ? 'Editor' : 'Viewer';
+                const role = (user['Receiving Tracker'] === 'Editor' || user['Receiving Tracker'] === 'Admin' || user.Role === 'Editor' || user.Role === 'Admin') ? 'Editor' : 'Viewer';
                 
                 sessionStorage.setItem('auth', JSON.stringify({ name, role }));
                 currentUser = name;
