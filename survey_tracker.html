@@ -605,8 +605,8 @@
     </style>
 </head>
 <body>
-    <!-- Login Screen -->
-    <div class="login-screen" id="loginScreen">
+    <!-- Login Screen - HIDDEN FOR NOW -->
+    <div class="login-screen hidden" id="loginScreen">
         <div class="login-wrap">
             <div class="login-box">
                 <h1>📍 Site Survey Tracker</h1>
@@ -628,7 +628,7 @@
     </div>
 
     <!-- Main App -->
-    <div class="app" id="mainApp">
+    <div class="app show" id="mainApp">
         <!-- Header -->
         <div class="header">
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -761,6 +761,8 @@
             <div id="addTicketError" class="form-error"></div>
         </div>
     </div>
+
+    <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
         const SHEET_ID = '1xd12yLTsOvPvurmhiTg060UDlu9a4Xr4_y8eqZtWPQQ'; // Site Survey Tracker sheet
 
@@ -769,32 +771,30 @@
         let allUsers = [];
         let allTickets = [];
 
-        // Initialize - Wait for page to fully load
+        // Initialize - Skip login, go straight to app
         window.addEventListener('load', async () => {
             try {
                 await loadUsersForDropdown();
-                populateLoginDropdown();
             } catch (err) {
-                console.error('Error in initialization:', err);
+                console.error('Error loading users:', err);
             }
             
-            const auth = sessionStorage.getItem('auth');
-            if (auth) {
-                const data = JSON.parse(auth);
-                currentUser = data.name;
-                currentRole = data.role;
-                showApp();
-                loadData();
-            } else {
-                showLogin();
-            }
+            // Set default user
+            currentUser = 'Khalid';
+            currentRole = 'Editor';
+            
+            // Load data and show app
+            showApp();
+            loadData();
         });
 
-        // Fallback: Show login if load event doesn't fire
+        // Fallback: Show app if load event doesn't fire
         setTimeout(() => {
-            const loginScreen = document.getElementById('loginScreen');
-            if (loginScreen && !loginScreen.classList.contains('hidden')) {
-                console.log('Displaying login screen...');
+            if (!currentUser) {
+                currentUser = 'Khalid';
+                currentRole = 'Editor';
+                showApp();
+                loadData();
             }
         }, 2000);
 
@@ -1045,26 +1045,42 @@
         }
 
         function showApp() {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.add('show');
-            setupEventListeners();
-            loadData();
-        }
-
-        function setupEventListeners() {
-            document.getElementById('current-user-pill').textContent = currentUser;
+            const loginScreen = document.getElementById('loginScreen');
+            const mainApp = document.getElementById('mainApp');
             
-            if (currentRole === 'Viewer') {
-                document.getElementById('addBtn').style.display = 'none';
+            if (loginScreen) loginScreen.classList.add('hidden');
+            if (mainApp) mainApp.classList.add('show');
+            
+            setupEventListeners();
+        }
+            const userPill = document.getElementById('current-user-pill');
+            if (userPill) userPill.textContent = currentUser;
+            
+            const addBtn = document.getElementById('addBtn');
+            if (addBtn) {
+                if (currentRole === 'Viewer') {
+                    addBtn.style.display = 'none';
+                }
+                addBtn.onclick = openAddModal;
             }
 
-            document.getElementById('addBtn').onclick = openAddModal;
-            document.getElementById('logoutBtn').onclick = logout;
-            document.getElementById('resetBtn').onclick = () => location.reload();
-            document.getElementById('resetFiltersBtn').onclick = resetFilters;
-            document.getElementById('statusFilter').onchange = filter;
-            document.getElementById('surveyorFilter').onchange = filter;
-            document.getElementById('locationFilter').oninput = filter;
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) logoutBtn.onclick = () => location.reload();
+
+            const resetBtn = document.getElementById('resetBtn');
+            if (resetBtn) resetBtn.onclick = () => location.reload();
+
+            const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+            if (resetFiltersBtn) resetFiltersBtn.onclick = resetFilters;
+
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) statusFilter.onchange = filter;
+
+            const surveyorFilter = document.getElementById('surveyorFilter');
+            if (surveyorFilter) surveyorFilter.onchange = filter;
+
+            const locationFilter = document.getElementById('locationFilter');
+            if (locationFilter) locationFilter.oninput = filter;
         }
 
         function openAddModal() {
