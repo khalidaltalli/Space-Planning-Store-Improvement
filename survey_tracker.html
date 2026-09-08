@@ -768,8 +768,8 @@
         let allUsers = [];
         let allTickets = [];
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize - Wait for page to fully load
+        window.addEventListener('load', async () => {
             await loadUsersForDropdown();
             populateLoginDropdown();
             
