@@ -693,74 +693,6 @@
             </table>
             </div>
         </div>
-    <!-- Add Ticket Modal -->
-    <div class="modal" id="addTicketModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Add New Ticket</h2>
-                <button class="modal-close" onclick="closeAddModal()">&times;</button>
-            </div>
-            <form id="addTicketForm" onsubmit="handleAddTicket(event)">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Ticket No. *</label>
-                        <input type="text" id="ticketNo" readonly placeholder="Auto-generated">
-                    </div>
-                    <div class="form-group">
-                        <label>Site / Location *</label>
-                        <input type="text" id="siteLocation" placeholder="e.g., RUH-ABD001" required>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Visit Date *</label>
-                        <input type="date" id="visitDate" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Surveyor / Team *</label>
-                    <select id="formSurveyor" required>
-                        <option value="">Select Surveyor</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Reason for Visit *</label>
-                    <div class="reason-input">
-                        <select id="reasonSelect">
-                            <option value="">Select or type custom</option>
-                            <option value="Initial Site Survey">Initial Site Survey</option>
-                            <option value="Follow-up Survey">Follow-up Survey</option>
-                            <option value="New Site Survey">New Site Survey</option>
-                            <option value="Layout Update">Layout Update</option>
-                        </select>
-                        <input type="text" id="reasonCustom" placeholder="Or type custom reason">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Required Action *</label>
-                    <textarea id="requiredAction" placeholder="Describe the required action" required></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>Status</label>
-                    <select id="formStatus">
-                        <option value="Open" selected>Open (In Progress)</option>
-                        <option value="Closed">Closed (Completed)</option>
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <button type="button" class="btn" onclick="closeAddModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Ticket</button>
-                </div>
-            </form>
-            <div id="addTicketError" class="form-error"></div>
-        </div>
-    </div>
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
@@ -1061,7 +993,7 @@
                 if (currentRole === 'Viewer') {
                     addBtn.style.display = 'none';
                 }
-                addBtn.onclick = openAddModal;
+                addBtn.onclick = () => alert('Add ticket feature coming soon!');
             }
 
             const logoutBtn = document.getElementById('logoutBtn');
@@ -1081,106 +1013,6 @@
 
             const locationFilter = document.getElementById('locationFilter');
             if (locationFilter) locationFilter.oninput = filter;
-        }
-
-        function openAddModal() {
-            if (currentRole === 'Viewer') {
-                alert('You do not have permission to add tickets');
-                return;
-            }
-
-            // Auto-generate ticket number
-            const lastNo = allTickets[allTickets.length - 1]?.['No.'] || 'TIK:0';
-            const nextNo = 'TIK:' + (parseInt(lastNo.split(':')[1]) + 1);
-            document.getElementById('ticketNo').value = nextNo;
-
-            // Set today's date
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('visitDate').value = today;
-
-            // Reset form
-            document.getElementById('siteLocation').value = '';
-            document.getElementById('reasonSelect').value = '';
-            document.getElementById('reasonCustom').value = '';
-            document.getElementById('requiredAction').value = '';
-            document.getElementById('formStatus').value = 'Open';
-            document.getElementById('addTicketError').textContent = '';
-            document.getElementById('addTicketError').classList.remove('show');
-
-            // Populate surveyor dropdown
-            populateSurveyorDropdown();
-
-            document.getElementById('addTicketModal').classList.add('active');
-        }
-
-        function closeAddModal() {
-            document.getElementById('addTicketModal').classList.remove('active');
-        }
-
-        async function handleAddTicket(e) {
-            e.preventDefault();
-
-            const ticketData = {
-                'No.': document.getElementById('ticketNo').value,
-                'Site / Location': document.getElementById('siteLocation').value,
-                'Visit Date': document.getElementById('visitDate').value,
-                'Surveyor / Team': document.getElementById('formSurveyor').value,
-                'Reason for Visit': document.getElementById('reasonSelect').value || document.getElementById('reasonCustom').value,
-                'Required Action': document.getElementById('requiredAction').value,
-                'Status': document.getElementById('formStatus').value
-            };
-
-            // Validate
-            if (!ticketData['Site / Location']) {
-                showAddError('Please enter site/location');
-                return;
-            }
-            if (!ticketData['Visit Date']) {
-                showAddError('Please select visit date');
-                return;
-            }
-            if (!ticketData['Surveyor / Team']) {
-                showAddError('Please select surveyor');
-                return;
-            }
-            if (!ticketData['Reason for Visit']) {
-                showAddError('Please select or enter reason for visit');
-                return;
-            }
-            if (!ticketData['Required Action']) {
-                showAddError('Please enter required action');
-                return;
-            }
-
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: new URLSearchParams({
-                        action: 'addSurvey',
-                        sheetId: SHEET_ID,
-                        data: JSON.stringify(ticketData),
-                        user: currentUser
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    closeAddModal();
-                    loadData();
-                    alert('Ticket added successfully!');
-                } else {
-                    showAddError(result.message || 'Failed to add ticket');
-                }
-            } catch (error) {
-                showAddError('Error: ' + error.message);
-            }
-        }
-
-        function showAddError(msg) {
-            const errorDiv = document.getElementById('addTicketError');
-            errorDiv.textContent = msg;
-            errorDiv.classList.add('show');
         }
 
         function updateStats() {
