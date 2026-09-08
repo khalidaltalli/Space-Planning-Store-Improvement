@@ -309,6 +309,160 @@
             color: #4ade80;
         }
 
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1f2e;
+            border: 0.5px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 1rem;
+        }
+
+        .modal-header h2 {
+            color: #f1f5f9;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .modal-close:hover {
+            color: #22d3ee;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            background: #0f1117;
+            border: 0.5px solid rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.15s;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: rgba(34, 211, 238, 0.4);
+        }
+
+        .form-group input:disabled {
+            background: rgba(15, 17, 23, 0.5);
+            color: #64748b;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .reason-input {
+            display: flex;
+            gap: 8px;
+        }
+
+        .reason-input select,
+        .reason-input input {
+            flex: 1;
+            background: #0f1117;
+            border: 0.5px solid rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .form-error {
+            background: rgba(248, 81, 73, 0.1);
+            border: 0.5px solid #f85149;
+            color: #ffb1a3;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        .btn-primary {
+            background: rgba(167, 139, 250, 0.1);
+            border: 0.5px solid rgba(167, 139, 250, 0.3);
+            color: #a78bfa;
+        }
+
+        .btn-primary:hover {
+            background: rgba(167, 139, 250, 0.2);
+        }
+
 
         .container {
             max-width: 100%;
@@ -538,9 +692,74 @@
             </table>
             </div>
         </div>
-    </div>
+    <!-- Add Ticket Modal -->
+    <div class="modal" id="addTicketModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Ticket</h2>
+                <button class="modal-close" onclick="closeAddModal()">&times;</button>
+            </div>
+            <form id="addTicketForm" onsubmit="handleAddTicket(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ticket No. *</label>
+                        <input type="text" id="ticketNo" readonly placeholder="Auto-generated">
+                    </div>
+                    <div class="form-group">
+                        <label>Site / Location *</label>
+                        <input type="text" id="siteLocation" placeholder="e.g., RUH-ABD001" required>
+                    </div>
+                </div>
 
-    <script>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Visit Date *</label>
+                        <input type="date" id="visitDate" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Surveyor / Team *</label>
+                    <select id="formSurveyor" required>
+                        <option value="">Select Surveyor</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Reason for Visit *</label>
+                    <div class="reason-input">
+                        <select id="reasonSelect">
+                            <option value="">Select or type custom</option>
+                            <option value="Initial Site Survey">Initial Site Survey</option>
+                            <option value="Follow-up Survey">Follow-up Survey</option>
+                            <option value="New Site Survey">New Site Survey</option>
+                            <option value="Layout Update">Layout Update</option>
+                        </select>
+                        <input type="text" id="reasonCustom" placeholder="Or type custom reason">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Required Action *</label>
+                    <textarea id="requiredAction" placeholder="Describe the required action" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="formStatus">
+                        <option value="Open" selected>Open (In Progress)</option>
+                        <option value="Closed">Closed (Completed)</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <button type="button" class="btn" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Ticket</button>
+                </div>
+            </form>
+            <div id="addTicketError" class="form-error"></div>
+        </div>
+    </div>
         const API_URL = 'https://script.google.com/macros/s/AKfycbw3BdhY9ti7B3W2i5OoINVEOFE58ysIQOn_6j-gUQo-pQdR_oYrmnqU5Q87qrgZpUBy/exec';
         const SHEET_ID = '1xd12yLTsOvPvurmhiTg060UDlu9a4Xr4_y8eqZtWPQQ'; // Site Survey Tracker sheet
 
@@ -746,7 +965,13 @@
             document.getElementById('closedStat').textContent = closed;
         }
 
-        function filter() {
+        // Close modal when clicking outside
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('addTicketModal');
+            if (e.target === modal) {
+                closeAddModal();
+            }
+        });
             const status = document.getElementById('statusFilter').value;
             const surveyor = document.getElementById('surveyorFilter').value;
             const location = document.getElementById('locationFilter').value.toLowerCase();
@@ -787,13 +1012,120 @@
                 document.getElementById('addBtn').style.display = 'none';
             }
 
-            document.getElementById('addBtn').onclick = () => alert('Add ticket feature coming soon!');
+            document.getElementById('addBtn').onclick = openAddModal;
             document.getElementById('logoutBtn').onclick = logout;
             document.getElementById('resetBtn').onclick = () => location.reload();
             document.getElementById('resetFiltersBtn').onclick = resetFilters;
             document.getElementById('statusFilter').onchange = filter;
             document.getElementById('surveyorFilter').onchange = filter;
             document.getElementById('locationFilter').oninput = filter;
+        }
+
+        function openAddModal() {
+            if (currentRole === 'Viewer') {
+                alert('You do not have permission to add tickets');
+                return;
+            }
+
+            // Auto-generate ticket number
+            const lastNo = allTickets[allTickets.length - 1]?.['No.'] || 'TIK:0';
+            const nextNo = 'TIK:' + (parseInt(lastNo.split(':')[1]) + 1);
+            document.getElementById('ticketNo').value = nextNo;
+
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('visitDate').value = today;
+
+            // Reset form
+            document.getElementById('siteLocation').value = '';
+            document.getElementById('reasonSelect').value = '';
+            document.getElementById('reasonCustom').value = '';
+            document.getElementById('requiredAction').value = '';
+            document.getElementById('formStatus').value = 'Open';
+            document.getElementById('addTicketError').textContent = '';
+            document.getElementById('addTicketError').classList.remove('show');
+
+            // Populate surveyor dropdown
+            const surveyorSelect = document.getElementById('formSurveyor');
+            surveyorSelect.innerHTML = '<option value="">Select Surveyor</option>';
+            allUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.Name;
+                option.textContent = user.Name;
+                surveyorSelect.appendChild(option);
+            });
+
+            document.getElementById('addTicketModal').classList.add('active');
+        }
+
+        function closeAddModal() {
+            document.getElementById('addTicketModal').classList.remove('active');
+        }
+
+        async function handleAddTicket(e) {
+            e.preventDefault();
+
+            const ticketData = {
+                'No.': document.getElementById('ticketNo').value,
+                'Site / Location': document.getElementById('siteLocation').value,
+                'Visit Date': document.getElementById('visitDate').value,
+                'Surveyor / Team': document.getElementById('formSurveyor').value,
+                'Reason for Visit': document.getElementById('reasonSelect').value || document.getElementById('reasonCustom').value,
+                'Required Action': document.getElementById('requiredAction').value,
+                'Status': document.getElementById('formStatus').value
+            };
+
+            // Validate
+            if (!ticketData['Site / Location']) {
+                showAddError('Please enter site/location');
+                return;
+            }
+            if (!ticketData['Visit Date']) {
+                showAddError('Please select visit date');
+                return;
+            }
+            if (!ticketData['Surveyor / Team']) {
+                showAddError('Please select surveyor');
+                return;
+            }
+            if (!ticketData['Reason for Visit']) {
+                showAddError('Please select or enter reason for visit');
+                return;
+            }
+            if (!ticketData['Required Action']) {
+                showAddError('Please enter required action');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        action: 'addSurvey',
+                        sheetId: SHEET_ID,
+                        data: JSON.stringify(ticketData),
+                        user: currentUser
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    closeAddModal();
+                    loadData();
+                    alert('Ticket added successfully!');
+                } else {
+                    showAddError(result.message || 'Failed to add ticket');
+                }
+            } catch (error) {
+                showAddError('Error: ' + error.message);
+            }
+        }
+
+        function showAddError(msg) {
+            const errorDiv = document.getElementById('addTicketError');
+            errorDiv.textContent = msg;
+            errorDiv.classList.add('show');
         }
 
         function updateStats() {
