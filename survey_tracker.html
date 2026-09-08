@@ -769,8 +769,10 @@
         let allTickets = [];
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadUsersForDropdown();
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUsersForDropdown();
+            populateLoginDropdown();
+            
             const auth = sessionStorage.getItem('auth');
             if (auth) {
                 const data = JSON.parse(auth);
@@ -791,18 +793,49 @@
 
                 if (data.success && data.users) {
                     allUsers = data.users;
-                    populateUserDropdown();
+                    console.log('Users loaded:', allUsers.length);
                 }
             } catch (err) {
                 console.error('Error loading users:', err);
             }
         }
 
-        function populateUserDropdown() {
+        function populateLoginDropdown() {
             const select = document.getElementById('nameInput');
-            select.innerHTML = '<option value="">Select your name</option>' +
-                allUsers.map(u => `<option value="${u.Name}">${u.Name}</option>`).join('');
+            select.innerHTML = '<option value="">Select your name</option>';
+            
+            if (!allUsers || allUsers.length === 0) {
+                select.innerHTML += '<option disabled>Loading users...</option>';
+                return;
+            }
+
+            allUsers.forEach(u => {
+                if (u.Name) {
+                    const option = document.createElement('option');
+                    option.value = u.Name;
+                    option.textContent = u.Name;
+                    select.appendChild(option);
+                }
+            });
             togglePinField();
+        }
+            const surveyorSelect = document.getElementById('formSurveyor');
+            surveyorSelect.innerHTML = '<option value="">Select Surveyor</option>';
+            
+            if (!allUsers || allUsers.length === 0) {
+                console.warn('No users available');
+                surveyorSelect.innerHTML += '<option disabled>No users found</option>';
+                return;
+            }
+
+            allUsers.forEach(user => {
+                if (user.Name) {
+                    const option = document.createElement('option');
+                    option.value = user.Name;
+                    option.textContent = user.Name;
+                    surveyorSelect.appendChild(option);
+                }
+            });
         }
 
         function togglePinField() {
@@ -1046,14 +1079,7 @@
             document.getElementById('addTicketError').classList.remove('show');
 
             // Populate surveyor dropdown
-            const surveyorSelect = document.getElementById('formSurveyor');
-            surveyorSelect.innerHTML = '<option value="">Select Surveyor</option>';
-            allUsers.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.Name;
-                option.textContent = user.Name;
-                surveyorSelect.appendChild(option);
-            });
+            populateSurveyorDropdown();
 
             document.getElementById('addTicketModal').classList.add('active');
         }
