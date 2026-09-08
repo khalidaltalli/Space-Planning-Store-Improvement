@@ -19,12 +19,6 @@
             color: #e6edf3;
             min-height: 100vh;
             padding: 20px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        body.loaded {
-            opacity: 1;
         }
 
         /* Login Screen */
@@ -777,8 +771,12 @@
 
         // Initialize - Wait for page to fully load
         window.addEventListener('load', async () => {
-            await loadUsersForDropdown();
-            populateLoginDropdown();
+            try {
+                await loadUsersForDropdown();
+                populateLoginDropdown();
+            } catch (err) {
+                console.error('Error in initialization:', err);
+            }
             
             const auth = sessionStorage.getItem('auth');
             if (auth) {
@@ -790,10 +788,15 @@
             } else {
                 showLogin();
             }
-
-            // Mark page as loaded
-            document.body.classList.add('loaded');
         });
+
+        // Fallback: Show login if load event doesn't fire
+        setTimeout(() => {
+            const loginScreen = document.getElementById('loginScreen');
+            if (loginScreen && !loginScreen.classList.contains('hidden')) {
+                console.log('Displaying login screen...');
+            }
+        }, 2000);
 
         // Load users and populate dropdown
         async function loadUsersForDropdown() {
