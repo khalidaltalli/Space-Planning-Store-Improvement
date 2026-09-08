@@ -676,8 +676,28 @@
                 const isOpen = t.Status.toLowerCase().includes('open');
                 const badge = isOpen ? 'open' : 'closed';
                 
-                // Extract SLA time from Status (e.g., "Closed 20/8" -> "20/8")
-                const slaTime = t.Status.includes('Closed') ? t.Status.replace('Closed ', '').trim() : '-';
+                // Calculate SLA Time (days to close)
+                let slaTime = '-';
+                if (t['Visit Date']) {
+                    const visitDate = parseDate(t['Visit Date']);
+                    let closeDate;
+                    
+                    if (!isOpen && t.Status) {
+                        // Extract date from Status (e.g., "Closed 20/8" -> "20/8")
+                        const dateMatch = t.Status.match(/(\d{1,2}\/\d{1,2})/);
+                        if (dateMatch) {
+                            closeDate = parseDate(dateMatch[1] + '/' + new Date().getFullYear());
+                        }
+                    } else {
+                        // For open tickets, calculate days since visit
+                        closeDate = new Date();
+                    }
+                    
+                    if (visitDate && closeDate) {
+                        const days = Math.floor((closeDate - visitDate) / (1000 * 60 * 60 * 24));
+                        slaTime = days + ' days';
+                    }
+                }
 
                 row.innerHTML = `
                     <td>${t['No.']}</td>
@@ -690,6 +710,30 @@
                     <td>${slaTime}</td>
                 `;
             });
+        }
+
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            
+            // Handle formats: DD/MM/YYYY, MM/DD/YYYY, or YYYY-MM-DD
+            let date;
+            
+            if (dateStr.includes('-')) {
+                date = new Date(dateStr);
+            } else if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    // Try DD/MM/YYYY or MM/DD/YYYY
+                    const d = parseInt(parts[0]);
+                    const m = parseInt(parts[1]);
+                    const y = parseInt(parts[2]);
+                    
+                    // Assume DD/MM/YYYY format (European)
+                    date = new Date(y, m - 1, d);
+                }
+            }
+            
+            return date && date.getTime() ? date : null;
         }
 
         function updateStats() {
