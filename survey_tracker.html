@@ -138,82 +138,185 @@
             display: block;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
+        /* Header */
         .header {
+            background: #1a1f2e;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.07);
+            padding: 0.75rem 1.5rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
 
-        .header h1 {
-            font-size: 32px;
+        .header-title {
+            font-size: 15px;
             font-weight: 700;
-            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #f1f5f9;
+        }
+
+        .header-sub {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 1px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-pill {
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(74, 222, 128, 0.1);
+            border: 0.5px solid rgba(74, 222, 128, 0.3);
+            color: #4ade80;
+            font-weight: 600;
+        }
+
+        .user-pill {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(34, 211, 238, 0.1);
+            border: 0.5px solid rgba(34, 211, 238, 0.2);
+            color: #22d3ee;
         }
 
         .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            background: transparent;
+            color: #94a3b8;
             cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
-            color: #0f1117;
+            background: rgba(167, 139, 250, 0.1);
+            border-color: rgba(167, 139, 250, 0.3);
+            color: #a78bfa;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(34, 211, 238, 0.3);
+        /* Filters */
+        .filters {
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
         }
 
-        .btn-secondary {
-            background: #1a1f2e;
-            color: #22d3ee;
-            border: 1px solid #22d3ee;
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 150px;
         }
 
-        .btn-secondary:hover {
-            background: #22d3ee;
-            color: #0f1117;
+        .filter-group label {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .filter-group input,
+        .filter-group select {
+            background: #0f1117;
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            font-size: 12px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: rgba(34, 211, 238, 0.3);
+        }
+
+        /* Table */
+        .table-wrap {
+            padding: 1rem 1.5rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        thead th {
+            padding: 8px 10px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #64748b;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.04);
+            transition: background 0.1s;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        tbody td {
+            padding: 8px 10px;
+            vertical-align: middle;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 10px;
+            white-space: nowrap;
+        }
+
+        .status-badge.open {
+            background: rgba(168, 85, 247, 0.12);
+            color: #d8b4fe;
+        }
+
+        .status-badge.closed {
+            background: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+        }
+
+
+        .container {
+            max-width: 100%;
+            margin: 0;
         }
 
         .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: #1a1f2e;
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #8b949e;
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #22d3ee;
+            display: none;
         }
 
         .filters {
@@ -371,35 +474,27 @@
 
     <!-- Main App -->
     <div class="app" id="mainApp">
-        <div class="container">
-            <div class="header">
-                <h1>Site Survey Tracker</h1>
+        <!-- Header -->
+        <div class="header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <a href="index.html" style="display: flex; align-items: center; text-decoration: none;">
+                    <img src="logo.png" style="height: 60px; object-fit: contain;" alt="Logo" onerror="this.style.display='none'" />
+                </a>
                 <div>
-                    <button class="btn btn-primary" id="addBtn">+ Add New Ticket</button>
-                    <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+                    <div class="header-title">📍 Site Survey Tracker</div>
+                    <div class="header-sub">Space Planning & Store Improvement</div>
                 </div>
             </div>
-
-            <div class="user-info">
-                <span id="userName">User</span>
-                <span class="role-badge" id="userRole">Viewer</span>
+            <div class="header-controls">
+                <span id="stats-pill" class="status-pill">Loading...</span>
+                <span id="current-user-pill" class="user-pill"></span>
+                <button class="btn" id="addBtn">+ Add Ticket</button>
+                <button class="btn" id="resetBtn">↻ Refresh</button>
+                <button class="btn" id="logoutBtn">Sign Out</button>
             </div>
+        </div>
 
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="stat-label">Total</div>
-                    <div class="stat-value" id="totalStat">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Open</div>
-                    <div class="stat-value" id="openStat">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Closed</div>
-                    <div class="stat-value" id="closedStat">0</div>
-                </div>
-            </div>
-
+        <div class="container">
             <div class="filters">
                 <div class="filter-group">
                     <label>Status</label>
@@ -421,25 +516,27 @@
                 </div>
                 <div class="filter-group">
                     <label>&nbsp;</label>
-                    <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                    <button class="btn" id="resetFiltersBtn">Reset</button>
                 </div>
             </div>
 
+            <div class="table-wrap">
             <table id="ticketTable">
                 <thead>
                     <tr>
                         <th>No.</th>
                         <th>Site</th>
                         <th>Date</th>
-                        <th>Time</th>
                         <th>Surveyor</th>
                         <th>Reason</th>
                         <th>Action</th>
                         <th>Status</th>
+                        <th>SLA Time</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
             </table>
+            </div>
         </div>
     </div>
 
@@ -577,17 +674,20 @@
             tickets.forEach(t => {
                 const row = tbody.insertRow();
                 const isOpen = t.Status.toLowerCase().includes('open');
-                const badge = isOpen ? 'badge-open' : 'badge-closed';
+                const badge = isOpen ? 'open' : 'closed';
+                
+                // Extract SLA time from Status (e.g., "Closed 20/8" -> "20/8")
+                const slaTime = t.Status.includes('Closed') ? t.Status.replace('Closed ', '').trim() : '-';
 
                 row.innerHTML = `
                     <td>${t['No.']}</td>
                     <td>${t['Site / Location']}</td>
                     <td>${t['Visit Date']}</td>
-                    <td>${t['Visit Time']}</td>
                     <td>${t['Surveyor / Team']}</td>
                     <td>${t['Reason for Visit']}</td>
                     <td>${t['Required Action']}</td>
-                    <td><span class="badge ${badge}">${t.Status}</span></td>
+                    <td><span class="status-badge ${badge}">${isOpen ? 'Open' : 'Closed'}</span></td>
+                    <td>${slaTime}</td>
                 `;
             });
         }
@@ -637,19 +737,27 @@
         }
 
         function setupEventListeners() {
-            document.getElementById('userName').textContent = currentUser;
-            document.getElementById('userRole').textContent = currentRole;
-
+            document.getElementById('current-user-pill').textContent = currentUser;
+            
             if (currentRole === 'Viewer') {
                 document.getElementById('addBtn').style.display = 'none';
             }
 
             document.getElementById('addBtn').onclick = () => alert('Add ticket feature coming soon!');
             document.getElementById('logoutBtn').onclick = logout;
-            document.getElementById('resetBtn').onclick = resetFilters;
+            document.getElementById('resetBtn').onclick = () => location.reload();
+            document.getElementById('resetFiltersBtn').onclick = resetFilters;
             document.getElementById('statusFilter').onchange = filter;
             document.getElementById('surveyorFilter').onchange = filter;
             document.getElementById('locationFilter').oninput = filter;
+        }
+
+        function updateStats() {
+            const total = allTickets.length;
+            const open = allTickets.filter(t => t.Status.toLowerCase().includes('open')).length;
+            const closed = total - open;
+            
+            document.getElementById('stats-pill').textContent = `${open} Open • ${closed} Closed`;
         }
 
         function showError(msg) {
