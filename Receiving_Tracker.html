@@ -124,7 +124,6 @@
         <button class="btn" style="background:rgba(248,113,113,0.08);border:0.5px solid rgba(248,113,113,0.2);color:#f87171;font-size:11px;" onclick="sessionStorage.removeItem('tracker_user');location.reload()">Sign Out</button>
         <button class="btn" style="background:rgba(167,139,250,0.08);border:0.5px solid rgba(167,139,250,0.2);color:#a78bfa;" onclick="openMonthlyReport()">📅 Monthly Report</button>
         <button class="btn" style="background:rgba(74,222,128,0.08);border:0.5px solid rgba(74,222,128,0.2);color:#4ade80;" onclick="openAddBranch()">+ Add Branch</button>
-        <span id="dn-missing-pill" style="display:none;"></span>
         <button class="btn" onclick="loadTracker()">↻ Refresh</button>
       </div>
     </div>
@@ -449,10 +448,13 @@
 
     function updateDNMissingPill(){
       const DN_GROUPS_DASH=[
-        ['Freebolt','Heavy Rack','Heavyrack'],
-        ['SignBoard','Sign Board'],['Curtain'],['Coldroom','Cold Room'],
-        ['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'],
-        ['Access Points','CCTV'],['Air Condition']
+        ['Freebolt','Heavy Rack','Heavyrack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves'],
+        ['SignBoard','Sign Board'],
+        ['Curtain','Curtains','Sun Curtains'],
+        ['Coldroom','Cold Room','Cold Room Chiller','Cold Room Freezer'],
+        ['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer'],
+        ['Access Points','CCTV'],
+        ['Air Condition','Air Conditioning']
       ];
       let missing=0;
       trackerBranches.forEach(b=>{
@@ -589,11 +591,11 @@
       const tagCls={Receiving:'#22d3ee',Live:'#4ade80',Pending:'#fbbf24',Completed:'#94a3b8'}[branch.status]||'#94a3b8';
       const cardId='tc_'+branch.code.replace(/[^a-zA-Z0-9]/g,'_');
       const SECTION_ORDER=['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
-      const SHARED_GROUPS={'Shelves':['Freebolt','Heavyrack','Heavy Rack'],'Fridges':['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'],'CCTV+AccessPoints':['CCTV','Access Points'],'OfficeFurniture':['Office Chair','Office Desk']};
+      const SHARED_GROUPS={'Shelves':['Freebolt','Heavyrack','Heavy Rack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves'],'Fridges':['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer'],'CCTV+AccessPoints':['CCTV','Access Points'],'OfficeFurniture':['Office Chair','Office Desk']};
       const assetToGroup={};
       Object.entries(SHARED_GROUPS).forEach(([grp,assets])=>assets.forEach(a=>assetToGroup[a]=grp));
 
-      const DN_ASSETS = new Set(['Freebolt','Heavyrack','Heavy Rack','Air Condition','Access Points','CCTV','1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','Coldroom','Curtain','SignBoard']);
+      const DN_ASSETS = new Set(['Freebolt','Heavyrack','Heavy Rack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves','Air Condition','Air Conditioning','Access Points','CCTV','1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer','Coldroom','Cold Room','Cold Room Chiller','Cold Room Freezer','Curtain','Curtains','Sun Curtains','SignBoard','Sign Board']);
 
       const card=document.createElement('div');
       card.style.cssText='background:#1a1f2e;border:0.5px solid rgba(255,255,255,0.07);border-radius:10px;margin-bottom:1.25rem;overflow:hidden;';
@@ -1429,7 +1431,7 @@
       };
 
       const SECTION_ORDER = ['Construction','Shelves','Fridges','Office','Store Sections','Consumable Assets','Store Tools'];
-      const DN_ASSETS = new Set(['Freebolt','Heavyrack','Heavy Rack','Air Condition','Access Points','CCTV','1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','Coldroom','Curtain','SignBoard']);
+      const DN_ASSETS = new Set(['Freebolt','Heavyrack','Heavy Rack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves','Air Condition','Air Conditioning','Access Points','CCTV','1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer','Coldroom','Cold Room','Cold Room Chiller','Cold Room Freezer','Curtain','Curtains','Sun Curtains','SignBoard','Sign Board']);
 
       /* ── helpers ── */
       function sc(r) { return r.filter(x=>x['Asset Status']==='Received').length; }
@@ -2230,7 +2232,7 @@
     ══════════════════════════════════════════════════════ */
     let outCache={};  /* branchCode -> [{...}] */
 
-    const FRIDGE_ASSETS=new Set(['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','Freebolt','Heavy Rack','Heavyrack','Coldroom']);
+    const FRIDGE_ASSETS=new Set(['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer','Freebolt','Heavy Rack','Heavyrack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves','Coldroom','Cold Room','Cold Room Chiller','Cold Room Freezer']);
     const SOFT_ASSETS  =new Set(['Bin Stickers','Cleaning Supplies','First Aid Kit','Stationery','File Drawer','Captains Chairs','Handshake Cabinet','Consumables']);
 
     function defaultOwner(asset){
@@ -2546,13 +2548,13 @@
 
       /* ── DN Status ── */
       const DN_GE=[
-        {name:'Freebolt & Heavy Rack',assets:['Freebolt','Heavy Rack','Heavyrack']},
+        {name:'Freebolt & Heavy Rack',assets:['Freebolt','Heavy Rack','Heavyrack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves']},
         {name:'Sign Board',           assets:['SignBoard','Sign Board']},
-        {name:'Curtains',             assets:['Curtain']},
-        {name:'Cold Room',            assets:['Coldroom','Cold Room']},
-        {name:'Fridges & Freezers',   assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer']},
+        {name:'Curtains',             assets:['Curtain','Curtains','Sun Curtains']},
+        {name:'Cold Room',            assets:['Coldroom','Cold Room','Cold Room Chiller','Cold Room Freezer']},
+        {name:'Fridges & Freezers',   assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer']},
         {name:'Access Points & CCTV', assets:['Access Points','CCTV']},
-        {name:'Air Condition',        assets:['Air Condition']},
+        {name:'Air Condition',        assets:['Air Condition','Air Conditioning']},
       ];
       /* ── DN rows — skip None status assets, skip fully signed groups ── */
       const dnRowsFiltered=DN_GE.map(g=>{
