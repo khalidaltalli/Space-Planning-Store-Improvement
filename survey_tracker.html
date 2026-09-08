@@ -764,24 +764,6 @@
             });
             togglePinField();
         }
-            const surveyorSelect = document.getElementById('formSurveyor');
-            surveyorSelect.innerHTML = '<option value="">Select Surveyor</option>';
-            
-            if (!allUsers || allUsers.length === 0) {
-                console.warn('No users available');
-                surveyorSelect.innerHTML += '<option disabled>No users found</option>';
-                return;
-            }
-
-            allUsers.forEach(user => {
-                if (user.Name) {
-                    const option = document.createElement('option');
-                    option.value = user.Name;
-                    option.textContent = user.Name;
-                    surveyorSelect.appendChild(option);
-                }
-            });
-        }
 
         function togglePinField() {
             const name = document.getElementById('nameInput').value;
