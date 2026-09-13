@@ -209,7 +209,7 @@
 <div class="toast" id="toast"><div class="toast-dot" id="toast-dot"></div><span id="toast-msg"></span></div>
 
 <script>
-  const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
+  const APPS_URL = 'https://script.google.com/macros/s/AKfycbxWzthIcE-BqyEPP38SJC76Na_csgfGUvH4TQuRYfQ4MEMIBRWddQROA4un2DplK6G-HQ/exec';
   const STORES_URL = 'https://script.google.com/macros/s/AKfycbxZ4DlhFv-RHsGhvEHT6766aCprbrWn8shmOLRZTaKqOtdhHUERfV01Ih3sG29hj0M/exec';
 
   let sheetUsers  = {};
@@ -420,7 +420,7 @@
     document.getElementById('modal-code').textContent=s['Store Code']||'';
     document.getElementById('modal-name').textContent=s['Name']||'Store Details';
     const statusOptions=['Live','Opening Soon','Under Construction','Closed','Receiving'];
-    const layoutOptions=['Puplished','Proposed','Draft','Need Update','Missing'];
+    const layoutOptions=['Draft','Missing','Need Update','Proposed','Published'];
     const classOptions=['A','B','C','D'];
     const field=(label,key,type='text',options=[])=>{
       const val=s[key]||'';
