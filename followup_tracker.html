@@ -286,7 +286,7 @@
 <div id="toast"></div>
 
 <script>
-  const APPS_URL = 'https://script.google.com/macros/s/AKfycbxY3lrOH9WfROO51kJfik2McVOE1MsWtFzsR-G6b8wqqSdTUOTiG-1ONj946YAXSwAzeQ/exec';
+  const APPS_URL = 'https://script.google.com/macros/s/AKfycbxWzthIcE-BqyEPP38SJC76Na_csgfGUvH4TQuRYfQ4MEMIBRWddQROA4un2DplK6G-HQ/exec';
   const PAGE_KEY_FU = 'Followup Tracker';
   let usersDataFU  = [];
   let currentUser  = sessionStorage.getItem('followup_user') || '';
@@ -362,13 +362,13 @@
   }
 
   const DN_GROUPS = [
-    { name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack'] },
+    { name:'Freebolt & Heavy Rack', assets:['Freebolt','Heavy Rack','Heavyrack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves'] },
     { name:'Sign Board',            assets:['SignBoard','Sign Board'] },
-    { name:'Curtains',              assets:['Curtain'] },
-    { name:'Cold Room',             assets:['Coldroom','Cold Room'] },
-    { name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer'] },
+    { name:'Curtains',              assets:['Curtain','Curtains','Sun Curtains'] },
+    { name:'Cold Room',             assets:['Coldroom','Cold Room','Cold Room Chiller','Cold Room Freezer'] },
+    { name:'Fridges & Freezers',    assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer'] },
     { name:'Access Points & CCTV',  assets:['Access Points','CCTV'] },
-    { name:'Air Condition',         assets:['Air Condition'] },
+    { name:'Air Condition',         assets:['Air Condition','Air Conditioning'] },
   ];
 
   const QTY_ITEMS = [
@@ -1702,6 +1702,19 @@
     const btn = document.getElementById('bulk-send-btn');
     btn.disabled=true;
     const summary = document.getElementById('bulk-send-summary');
+    summary.textContent='Refreshing data...'; summary.style.color='#64748b';
+
+    /* Refresh checklist and qty data before sending */
+    try {
+      const [clRes, qtyRes] = await Promise.all([
+        fetch(`${APPS_URL}?sheet=Receiving%20Checklist`).then(r=>r.json()),
+        fetch(`${APPS_URL}?sheet=Fridge%20%26%20Shelf%20Quantities`).then(r=>r.json()).catch(()=>({rows:[]})),
+      ]);
+      checklist = clRes.rows||[];
+      qtyData   = {};
+      (qtyRes.rows||[]).forEach(r=>{ const b=(r['Branch Code']||'').trim(); if(b) qtyData[b]=r; });
+    } catch(e){ /* proceed with existing data */ }
+
     const today   = new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
     const sig     = {'Khalid':'Khalid Altalli','Azhar':'Azhar Alamri','Eissa':'Eng. Eissa Alawwas'}[currentUser]||currentUser||'Khalid Altalli';
 
@@ -1760,7 +1773,7 @@
       const shortageRows2=QTY_ITEMS2.map(item=>{const req=parseInt(fq2[item.req]||0)||0,rec=parseInt(fq2[item.rec]||0)||0;if(!req||rec>=req)return null;return[item.label,req,rec,`<span style="color:#b91c1c;font-weight:bold;">${rec-req}</span>`];}).filter(Boolean);
 
       /* DN groups */
-      const DN_GROUPS2=[{name:'Freebolt & Heavy Rack',assets:['Freebolt','Heavy Rack','Heavyrack']},{name:'Sign Board',assets:['SignBoard','Sign Board']},{name:'Curtains',assets:['Curtain']},{name:'Cold Room',assets:['Coldroom','Cold Room']},{name:'Fridges & Freezers',assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer']},{name:'Access Points & CCTV',assets:['Access Points','CCTV']},{name:'Air Condition',assets:['Air Condition']}];
+      const DN_GROUPS2=[{name:'Freebolt & Heavy Rack',assets:['Freebolt','Heavy Rack','Heavyrack','Free Bolt Units','Heavy Racks','Free Bolt Shelves','Heavy Rack Shelves']},{name:'Sign Board',assets:['SignBoard','Sign Board']},{name:'Curtains',assets:['Curtain','Curtains','Sun Curtains']},{name:'Cold Room',assets:['Coldroom','Cold Room','Cold Room Chiller','Cold Room Freezer']},{name:'Fridges & Freezers',assets:['1 Door Chiller','2 Door Chiller','3 Door Chiller','1 Door Freezer','2 Door Freezer','3 Door Freezer','1-Door Chiller','2-Door Chiller','1-Door Freezer','Double-Door Freezer']},{name:'Access Points & CCTV',assets:['Access Points','CCTV']},{name:'Air Condition',assets:['Air Condition','Air Conditioning']}];
       const dnRows2=DN_GROUPS2.map(g=>{const ga=assets2.filter(r=>g.assets.includes((r['Asset']||'').trim())&&r['Asset Status']&&r['Asset Status']!=='None');if(!ga.length)return null;const signed=ga.some(r=>r['D.N. Signed']&&r['D.N. Signed'].startsWith('http'));if(signed)return null;const anyUnsigned=ga.some(r=>r['D.N. Not Signed']&&r['D.N. Not Signed'].startsWith('http'));const status=anyUnsigned?`<span style="color:#e67e22;font-weight:bold;">📎 Uploaded — Awaiting Signature</span>`:`<span style="color:#c0392b;font-weight:bold;">✗ Missing</span>`;return[g.name,status];}).filter(Boolean);
 
       const statusLine2=bObj.status==='Live'
@@ -1784,17 +1797,21 @@
       /* Generate Excel */
       let xlsxBase64='', xlsxName='';
       try{
-        const rows=[...assets]
+        const rows=[...checklist.filter(r=>(r['Branch Code']||'').trim()===code)]
           .filter(r=>r['Asset']&&r['Asset']!=='')
           .sort((a,b)=>{const sc=(a['Section']||'').localeCompare(b['Section']||'');return sc!==0?sc:(a['Asset']||'').localeCompare(b['Asset']||'');})
           .map(r=>({'Category':r['Section']||'','Asset':r['Asset']||'','Status':r['Asset Status']||'None','Updated Status':'','Photo':assetImages[(r['Asset']||'').trim()]||''}));
-        const ws=XLSX.utils.json_to_sheet(rows);
-        ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18},{wch:40}];
-        rows.forEach((r,i)=>{if(r['Photo']){const cell='E'+(i+2);ws[cell]={v:'View Photo',t:'s',l:{Target:r['Photo']}};}});
-        const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,code);
-        xlsxBase64=XLSX.write(wb,{bookType:'xlsx',type:'base64'});
-        xlsxName=`Receiving_Status_${code}_${today}.xlsx`;
-      }catch(e){}
+        if(rows.length){
+          const ws=XLSX.utils.json_to_sheet(rows);
+          ws['!cols']=[{wch:22},{wch:35},{wch:18},{wch:18},{wch:40}];
+          rows.forEach((r,i)=>{if(r['Photo']){const cell='E'+(i+2);ws[cell]={v:'View Photo',t:'s',l:{Target:r['Photo']}};}});
+          const wb=XLSX.utils.book_new();
+          const sheetName=code.replace(/[^a-zA-Z0-9\-]/g,'').substring(0,31);
+          XLSX.utils.book_append_sheet(wb,ws,sheetName);
+          xlsxBase64=XLSX.write(wb,{bookType:'xlsx',type:'base64'});
+          xlsxName=`Receiving_Status_${code.replace(/\s/g,'_')}_${today}.xlsx`;
+        }
+      }catch(e){ console.error('Excel error for '+code+':', e); }
 
       /* Send via no-cors POST */
       const sendId=`BULK_${code}_${Date.now()}`;
