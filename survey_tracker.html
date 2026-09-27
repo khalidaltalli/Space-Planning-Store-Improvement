@@ -221,7 +221,7 @@
 
         .charts-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: 1fr;
             gap: 1.5rem;
         }
 
@@ -230,6 +230,42 @@
             border: 0.5px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
             padding: 1.5rem;
+        }
+
+        .chart-card.unified {
+            padding: 2rem;
+        }
+
+        .unified-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .chart-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metrics-box {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1rem;
+            border-radius: 6px;
+            border: 0.5px solid rgba(255, 255, 255, 0.04);
         }
 
         .chart-card h3 {
@@ -254,6 +290,10 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
+        }
+
+        .surveyor-mini {
+            height: 200px !important;
         }
 
         .metric {
@@ -711,29 +751,32 @@
 
         <div class="charts-section">
             <div class="charts-container">
-                <div class="chart-card">
-                    <h3>Ticket Status</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="statusChart"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>SLA Metrics</h3>
-                    <div class="sla-metrics">
-                        <div class="metric">
-                            <div class="metric-label">Average SLA</div>
-                            <div class="metric-value" id="avgSla">-</div>
+                <div class="chart-card unified">
+                    <h3>📊 Dashboard Analytics</h3>
+                    <div class="unified-layout">
+                        <div class="chart-col">
+                            <div class="section-title">Ticket Status</div>
+                            <div class="chart-wrapper">
+                                <canvas id="statusChart"></canvas>
+                            </div>
                         </div>
-                        <div class="metric">
-                            <div class="metric-label">Closed Tickets</div>
-                            <div class="metric-value" id="closedCount">0</div>
+                        <div class="chart-col">
+                            <div class="section-title">Team Performance</div>
+                            <div class="metrics-box">
+                                <div class="metric">
+                                    <div class="metric-label">Average SLA</div>
+                                    <div class="metric-value" id="avgSla">-</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-label">Closed Tickets</div>
+                                    <div class="metric-value" id="closedCount">0</div>
+                                </div>
+                            </div>
+                            <div class="section-title" style="margin-top: 1rem;">Surveyor Workload</div>
+                            <div class="chart-wrapper surveyor-mini">
+                                <canvas id="surveyorChart"></canvas>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>Tickets by Surveyor</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="surveyorChart"></canvas>
                     </div>
                 </div>
             </div>
