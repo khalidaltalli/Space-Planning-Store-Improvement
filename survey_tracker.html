@@ -1218,14 +1218,6 @@
             if (locationFilter) locationFilter.oninput = filter;
         }
 
-        function updateStats() {
-            const total = allTickets.length;
-            const open = allTickets.filter(t => t.Status.toLowerCase().includes('open')).length;
-            const closed = total - open;
-            
-            document.getElementById('stats-pill').textContent = `${open} Open • ${closed} Closed`;
-        }
-
         function showError(msg) {
             const el = document.getElementById('errorMsg');
             el.textContent = msg;
