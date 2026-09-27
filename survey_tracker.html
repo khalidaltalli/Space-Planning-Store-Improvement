@@ -240,6 +240,16 @@
             margin-top: 0;
         }
 
+        .chart-wrapper {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .chart-wrapper canvas {
+            max-height: 100%;
+        }
+
         .sla-metrics {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -703,7 +713,9 @@
             <div class="charts-container">
                 <div class="chart-card">
                     <h3>Ticket Status</h3>
-                    <canvas id="statusChart"></canvas>
+                    <div class="chart-wrapper">
+                        <canvas id="statusChart"></canvas>
+                    </div>
                 </div>
                 <div class="chart-card">
                     <h3>SLA Metrics</h3>
@@ -990,8 +1002,13 @@
             const open = allTickets.filter(t => t.Status.toLowerCase().includes('open')).length;
             const closed = total - open;
 
+            console.log('Updating stats - Total:', total, 'Open:', open, 'Closed:', closed);
+
             // Update header stats pill
-            document.getElementById('stats-pill').textContent = `${open} Open • ${closed} Closed`;
+            const statsPill = document.getElementById('stats-pill');
+            if (statsPill) {
+                statsPill.textContent = `${open} Open • ${closed} Closed`;
+            }
 
             // Update chart
             updateStatusChart(open, closed);
@@ -1002,54 +1019,72 @@
 
         function updateStatusChart(open, closed) {
             const ctx = document.getElementById('statusChart');
-            if (!ctx) return;
+            if (!ctx) {
+                console.error('Chart canvas not found');
+                return;
+            }
 
             // Destroy existing chart if it exists
             if (window.statusChartInstance) {
                 window.statusChartInstance.destroy();
             }
 
-            window.statusChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Open', 'Closed'],
-                    datasets: [{
-                        data: [open, closed],
-                        backgroundColor: [
-                            'rgba(168, 85, 247, 0.3)',  // Purple for open
-                            'rgba(74, 222, 128, 0.3)'   // Green for closed
-                        ],
-                        borderColor: [
-                            'rgba(168, 85, 247, 0.8)',
-                            'rgba(74, 222, 128, 0.8)'
-                        ],
-                        borderWidth: 1.5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#94a3b8',
-                                font: { size: 11 },
-                                padding: 15
+            try {
+                window.statusChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Open', 'Closed'],
+                        datasets: [{
+                            data: [open, closed],
+                            backgroundColor: [
+                                'rgba(168, 85, 247, 0.4)',  // Purple for open
+                                'rgba(74, 222, 128, 0.4)'   // Green for closed
+                            ],
+                            borderColor: [
+                                'rgba(168, 85, 247, 0.9)',
+                                'rgba(74, 222, 128, 0.9)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: '#94a3b8',
+                                    font: { size: 12, family: "'DM Sans', sans-serif" },
+                                    padding: 15,
+                                    usePointStyle: true
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+                console.log('Chart rendered:', open, closed);
+            } catch (err) {
+                console.error('Error rendering chart:', err);
+            }
         }
 
         function updateSlaMetrics() {
             const closedTickets = allTickets.filter(t => !t.Status.toLowerCase().includes('open'));
             
-            document.getElementById('closedCount').textContent = closedTickets.length;
+            const closedCountEl = document.getElementById('closedCount');
+            const avgSlaEl = document.getElementById('avgSla');
+            
+            if (!closedCountEl || !avgSlaEl) {
+                console.error('SLA metrics elements not found');
+                return;
+            }
+            
+            closedCountEl.textContent = closedTickets.length;
+            console.log('Closed tickets:', closedTickets.length);
 
             if (closedTickets.length === 0) {
-                document.getElementById('avgSla').textContent = '-';
+                avgSlaEl.textContent = '-';
                 return;
             }
 
@@ -1066,7 +1101,8 @@
             });
 
             const avgSla = validCount > 0 ? (totalDays / validCount).toFixed(1) : '-';
-            document.getElementById('avgSla').textContent = avgSla + ' days';
+            avgSlaEl.textContent = avgSla + ' days';
+            console.log('Average SLA:', avgSla, 'days from', validCount, 'tickets');
         }
 
         function calculateSla(visitDate, status) {
