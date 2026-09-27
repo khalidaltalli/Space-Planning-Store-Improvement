@@ -730,6 +730,12 @@
                         </div>
                     </div>
                 </div>
+                <div class="chart-card">
+                    <h3>Tickets by Surveyor</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="surveyorChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
             <div class="filters">
@@ -1137,7 +1143,7 @@
             if (!visitDateObj || !closeDate) return null;
 
             const days = Math.floor((closeDate - visitDateObj) / (1000 * 60 * 60 * 24));
-            return days >= 0 ? days : null;
+            return days >= 0 ? days : 0;  // Return 0 for same-day, not negative
         }
 
         // Close modal when clicking outside
