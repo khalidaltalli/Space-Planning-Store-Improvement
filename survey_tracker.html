@@ -1249,8 +1249,6 @@
         }
 
         function updateSlaMetrics() {
-            const closedTickets = allTickets.filter(t => !t.Status.toLowerCase().includes('open'));
-            
             const closedCountEl = document.getElementById('closedCount');
             const avgSlaEl = document.getElementById('avgSla');
             
@@ -1259,8 +1257,26 @@
                 return;
             }
             
+            // Get current filter values
+            const surveyorFilter = document.getElementById('surveyorFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            // Filter tickets based on current filters
+            let filteredTickets = allTickets;
+            
+            if (surveyorFilter) {
+                filteredTickets = filteredTickets.filter(t => t['Surveyor / Team'] === surveyorFilter);
+            }
+            
+            if (statusFilter) {
+                filteredTickets = filteredTickets.filter(t => t.Status.includes(statusFilter));
+            }
+            
+            // Get closed tickets from filtered set
+            const closedTickets = filteredTickets.filter(t => !t.Status.toLowerCase().includes('open'));
+            
             closedCountEl.textContent = closedTickets.length;
-            console.log('Closed tickets:', closedTickets.length);
+            console.log('Closed tickets:', closedTickets.length, 'for surveyor:', surveyorFilter || 'All');
 
             if (closedTickets.length === 0) {
                 avgSlaEl.textContent = '-';
@@ -1324,6 +1340,7 @@
             });
 
             renderTable(filtered);
+            updateSlaMetrics();
         }
 
         function resetFilters() {
@@ -1331,6 +1348,7 @@
             document.getElementById('surveyorFilter').value = '';
             document.getElementById('locationFilter').value = '';
             renderTable(allTickets);
+            updateSlaMetrics();
         }
 
         function showLogin() {
