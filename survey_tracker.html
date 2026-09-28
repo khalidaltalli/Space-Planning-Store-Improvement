@@ -294,6 +294,7 @@
 
         .surveyor-mini {
             height: 200px !important;
+            cursor: pointer;
         }
 
         .metric {
@@ -985,6 +986,12 @@
         function loadSurveyors() {
             const surveyers = [...new Set(allTickets.map(t => t['Surveyor / Team']))].filter(Boolean);
             const select = document.getElementById('surveyorFilter');
+            
+            // Clear existing options except the first "All" option
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
             surveyers.forEach(s => {
                 const opt = document.createElement('option');
                 opt.value = s;
@@ -1182,6 +1189,15 @@
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const surveyorName = labels[index];
+                                document.getElementById('surveyorFilter').value = surveyorName;
+                                filter();
+                                console.log('Filtered by:', surveyorName);
+                            }
+                        },
                         plugins: {
                             legend: {
                                 display: false
@@ -1310,7 +1326,7 @@
 
         function setupEventListeners() {
             const userPill = document.getElementById('current-user-pill');
-            if (userPill) userPill.textContent = currentRole;
+            if (userPill) userPill.textContent = 'Editor';
             
             const addBtn = document.getElementById('addBtn');
             if (addBtn) {
