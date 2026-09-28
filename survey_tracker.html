@@ -280,6 +280,7 @@
             position: relative;
             height: 250px;
             width: 100%;
+            cursor: pointer;
         }
 
         .chart-wrapper canvas {
@@ -1126,6 +1127,15 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        onClick: (event, elements) => {
+                            if (elements.length > 0) {
+                                const index = elements[0].index;
+                                const status = index === 0 ? 'Open' : 'Closed';
+                                console.log('Clicked status:', status);
+                                document.getElementById('statusFilter').value = status;
+                                filter();
+                            }
+                        },
                         plugins: {
                             legend: {
                                 position: 'bottom',
@@ -1134,6 +1144,11 @@
                                     font: { size: 12, family: "'DM Sans', sans-serif" },
                                     padding: 15,
                                     usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: () => 'Click to filter'
                                 }
                             }
                         }
@@ -1193,14 +1208,19 @@
                             if (elements.length > 0) {
                                 const index = elements[0].index;
                                 const surveyorName = labels[index];
+                                console.log('Clicked surveyor:', surveyorName);
                                 document.getElementById('surveyorFilter').value = surveyorName;
                                 filter();
-                                console.log('Filtered by:', surveyorName);
                             }
                         },
                         plugins: {
                             legend: {
                                 display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    afterLabel: () => 'Click to filter'
+                                }
                             }
                         },
                         scales: {
@@ -1210,7 +1230,13 @@
                                 grid: { color: 'rgba(255, 255, 255, 0.05)' }
                             },
                             y: {
-                                ticks: { color: '#94a3b8', font: { size: 11 } },
+                                ticks: { 
+                                    color: '#94a3b8', 
+                                    font: { size: 11 },
+                                    callback: function(value) {
+                                        return labels[value];
+                                    }
+                                },
                                 grid: { display: false }
                             }
                         }
